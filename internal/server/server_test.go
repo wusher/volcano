@@ -217,3 +217,106 @@ func TestNew(t *testing.T) {
 		t.Errorf("Port = %d, want %d", s.config.Port, 9999)
 	}
 }
+
+func TestServerLog(t *testing.T) {
+	var buf bytes.Buffer
+	s := New(Config{Dir: ".", Port: 8080, Quiet: false}, &buf)
+
+	s.log("test message %s", "arg")
+
+	output := buf.String()
+	if !strings.Contains(output, "test message arg") {
+		t.Errorf("log output missing expected content, got %q", output)
+	}
+}
+
+func TestServerLogQuiet(t *testing.T) {
+	var buf bytes.Buffer
+	s := New(Config{Dir: ".", Port: 8080, Quiet: true}, &buf)
+
+	s.log("test message")
+
+	if buf.String() != "" {
+		t.Errorf("quiet mode should suppress log, got %q", buf.String())
+	}
+}
+
+func TestLogRequest404(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create only index.html
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.html"), []byte("<html>Home</html>"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	s := New(Config{Dir: tmpDir, Port: 8080, Quiet: false}, &buf)
+
+	req := httptest.NewRequest("GET", "/missing", nil)
+	rec := httptest.NewRecorder()
+
+	s.handleRequest(rec, req)
+
+	output := buf.String()
+	if !strings.Contains(output, "404") {
+		t.Errorf("log should contain 404 status, got %q", output)
+	}
+}
+
+func TestLogRequest300(t *testing.T) {
+	var buf bytes.Buffer
+	s := New(Config{Dir: ".", Port: 8080, Quiet: false}, &buf)
+
+	// Test 3xx status code path in logRequest
+	s.logRequest("GET", "/redirect", 302, 0)
+
+	output := buf.String()
+	if !strings.Contains(output, "302") {
+		t.Errorf("log should contain 302 status, got %q", output)
+	}
+}
+
+func TestResponseRecorder(t *testing.T) {
+	rec := httptest.NewRecorder()
+	rr := &responseRecorder{ResponseWriter: rec, statusCode: http.StatusOK}
+
+	// Test default status
+	if rr.statusCode != http.StatusOK {
+		t.Errorf("default status should be 200, got %d", rr.statusCode)
+	}
+
+	// Test WriteHeader
+	rr.WriteHeader(http.StatusNotFound)
+	if rr.statusCode != http.StatusNotFound {
+		t.Errorf("status should be 404 after WriteHeader, got %d", rr.statusCode)
+	}
+}
+
+func TestServerHandler(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.html"), []byte("<html>Home</html>"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	s := New(Config{Dir: tmpDir, Port: 8080, Quiet: true}, io.Discard)
+	handler := s.Handler()
+
+	if handler == nil {
+		t.Fatal("Handler() should not return nil")
+	}
+
+	// Test the handler with httptest.Server
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/")
+	if err != nil {
+		t.Fatalf("Failed to make request: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status 200, got %d", resp.StatusCode)
+	}
+}

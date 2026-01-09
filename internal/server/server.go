@@ -37,15 +37,21 @@ func New(config Config, writer io.Writer) *Server {
 	}
 }
 
-// Start starts the HTTP server and blocks until shutdown
-func (s *Server) Start() error {
+// Handler returns the HTTP handler for this server
+func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.handleRequest)
+	return mux
+}
+
+// Start starts the HTTP server and blocks until shutdown
+func (s *Server) Start() error {
+	handler := s.Handler()
 
 	addr := fmt.Sprintf(":%d", s.config.Port)
 	s.server = &http.Server{
 		Addr:              addr,
-		Handler:           mux,
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

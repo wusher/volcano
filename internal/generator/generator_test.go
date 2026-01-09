@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"volcano/internal/tree"
 )
 
 func TestNew(t *testing.T) {
@@ -362,5 +364,137 @@ func TestGenerateNavigationLinks(t *testing.T) {
 	aboutContent, _ := os.ReadFile(filepath.Join(outputDir, "about", "index.html"))
 	if !strings.Contains(string(aboutContent), "Index") {
 		t.Error("About page should contain link to Index")
+	}
+}
+
+func TestGenerateColoredOutput(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Test"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Test",
+		Colored:   true,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Should have some output
+	if buf.Len() == 0 {
+		t.Error("With colored=true, should have output")
+	}
+}
+
+func TestCountFolders(t *testing.T) {
+	tests := []struct {
+		name     string
+		setup    func() *tree.Node
+		expected int
+	}{
+		{
+			name: "nil node",
+			setup: func() *tree.Node {
+				return nil
+			},
+			expected: 0,
+		},
+		{
+			name: "single folder",
+			setup: func() *tree.Node {
+				return &tree.Node{IsFolder: true}
+			},
+			expected: 1,
+		},
+		{
+			name: "folder with children",
+			setup: func() *tree.Node {
+				root := &tree.Node{IsFolder: true}
+				root.Children = []*tree.Node{
+					{IsFolder: true},
+					{IsFolder: false},
+					{IsFolder: true, Children: []*tree.Node{{IsFolder: true}}},
+				}
+				return root
+			},
+			expected: 4, // root + 2 direct folders + 1 nested
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := countFolders(tc.setup())
+			if result != tc.expected {
+				t.Errorf("countFolders() = %d, expected %d", result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestGenerateWithNestedFolders(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create deeply nested structure
+	files := map[string]string{
+		"index.md":                    "# Home",
+		"level1/index.md":             "# Level 1",
+		"level1/level2/index.md":      "# Level 2",
+		"level1/level2/level3/doc.md": "# Deep Doc",
+	}
+
+	for path, content := range files {
+		fullPath := filepath.Join(inputDir, path)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Nested Test",
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	if result.PagesGenerated != 4 {
+		t.Errorf("PagesGenerated = %d, want 4", result.PagesGenerated)
+	}
+
+	// Check deeply nested file
+	deepPath := filepath.Join(outputDir, "level1", "level2", "level3", "doc", "index.html")
+	if _, err := os.Stat(deepPath); os.IsNotExist(err) {
+		t.Error("Deeply nested file should exist")
 	}
 }
