@@ -417,10 +417,11 @@ a:hover {
   body.drawer-open {
     overflow: hidden;
   }
+}
 
-  body.drawer-open .mobile-menu-btn {
-    display: none;
-  }
+/* Hide mobile menu button when drawer is open */
+body.drawer-open .mobile-menu-btn {
+  display: none !important;
 }
 
 /* Syntax highlighting - Light mode (GitHub-like) */
