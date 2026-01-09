@@ -34,6 +34,7 @@ type Config struct {
 	OGImage     string // Default Open Graph image
 	FaviconPath string // Path to favicon file
 	ShowLastMod bool   // Show last modified date
+	TopNav      bool   // Display root files in top navigation bar
 }
 
 // Result holds the result of generation
@@ -49,6 +50,7 @@ type Generator struct {
 	parser       *markdown.Parser
 	logger       *output.Logger
 	faviconLinks template.HTML
+	topNavItems  []templates.TopNavItem
 }
 
 // New creates a new Generator
@@ -110,6 +112,12 @@ func (g *Generator) Generate() (*Result, error) {
 	folderCount := countFolders(site.Root)
 	g.logger.Println("Found %d markdown files in %d folders", len(site.AllPages), folderCount)
 	g.logger.Println("")
+
+	// Build top nav items if enabled
+	g.topNavItems = templates.BuildTopNavItems(site.Root, g.config.TopNav)
+	if len(g.topNavItems) > 0 {
+		g.logger.Verbose("Using top navigation bar with %d items", len(g.topNavItems))
+	}
 
 	// Step 3: Generate pages
 	g.logger.Println("Generating pages...")
@@ -250,8 +258,8 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 	pageMeta := seo.GeneratePageMeta(page.Title, htmlContent, urlPath, seoConfig)
 	metaTagsHTML := seo.RenderMetaTags(pageMeta)
 
-	// Render navigation
-	nav := templates.RenderNavigation(root, urlPath)
+	// Render navigation (filtered when top nav is enabled)
+	nav := templates.RenderNavigationWithTopNav(root, urlPath, g.topNavItems)
 
 	// Prepare template data
 	data := templates.PageData{
@@ -269,6 +277,7 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		LastModified: lastModified,
 		HasTOC:       hasTOC,
 		ShowSearch:   true,
+		TopNavItems:  g.topNavItems,
 	}
 
 	// Create output directory

@@ -20,6 +20,7 @@ func Generate(cfg *Config, w io.Writer) error {
 		OGImage:     cfg.OGImage,
 		FaviconPath: cfg.FaviconPath,
 		ShowLastMod: cfg.ShowLastMod,
+		TopNav:      cfg.TopNav,
 	}
 
 	gen, err := generator.New(genConfig, w)

@@ -6,12 +6,19 @@ import (
 	"embed"
 	"html/template"
 	"io"
+	"strings"
 
 	"volcano/internal/tree"
 )
 
 //go:embed layout.html
 var layoutFS embed.FS
+
+// TopNavItem represents an item in the top navigation bar
+type TopNavItem struct {
+	Name string // Display name
+	URL  string // URL path
+}
 
 // PageData contains all data needed to render a page
 type PageData struct {
@@ -30,6 +37,7 @@ type PageData struct {
 	LastModified string        // Last modified date (e.g., "January 5, 2025")
 	HasTOC       bool          // Whether to show TOC sidebar
 	ShowSearch   bool          // Whether to show nav search
+	TopNavItems  []TopNavItem  // Items for top navigation bar (when --top-nav enabled)
 }
 
 // Renderer handles HTML template rendering
@@ -146,4 +154,83 @@ func renderFileNode(buf *bytes.Buffer, node *tree.Node, currentPath string) {
 	buf.WriteString("\">\n")
 	buf.WriteString("<a href=\"" + template.HTMLEscapeString(urlPath) + "\" class=\"file-link" + active + "\">" + template.HTMLEscapeString(node.Name) + "</a>\n")
 	buf.WriteString("</li>\n")
+}
+
+// BuildTopNavItems extracts root-level files for top navigation bar
+// Returns nil if topNav is disabled or there are more than 5 root files
+func BuildTopNavItems(root *tree.Node, topNav bool) []TopNavItem {
+	if !topNav || root == nil {
+		return nil
+	}
+
+	// Count root files (excluding index)
+	var rootFiles []*tree.Node
+	for _, child := range root.Children {
+		if !child.IsFolder && !isIndexFile(child.FileName) {
+			rootFiles = append(rootFiles, child)
+		}
+	}
+
+	// Only use top nav if 5 or fewer root files
+	if len(rootFiles) > 5 {
+		return nil
+	}
+
+	// Build top nav items
+	var items []TopNavItem
+	for _, node := range rootFiles {
+		items = append(items, TopNavItem{
+			Name: node.Name,
+			URL:  tree.GetURLPath(node),
+		})
+	}
+
+	return items
+}
+
+// RenderNavigationWithTopNav renders navigation excluding root files when top nav is enabled
+func RenderNavigationWithTopNav(root *tree.Node, currentPath string, topNavItems []TopNavItem) template.HTML {
+	if len(topNavItems) == 0 {
+		return RenderNavigation(root, currentPath)
+	}
+
+	// Create a set of URLs to exclude from sidebar
+	topNavURLs := make(map[string]bool)
+	for _, item := range topNavItems {
+		topNavURLs[item.URL] = true
+	}
+
+	var buf bytes.Buffer
+	renderNavNodeFiltered(&buf, root.Children, currentPath, 0, topNavURLs)
+	return template.HTML(buf.String())
+}
+
+// renderNavNodeFiltered renders nav nodes, filtering out specified URLs
+func renderNavNodeFiltered(buf *bytes.Buffer, nodes []*tree.Node, currentPath string, depth int, excludeURLs map[string]bool) {
+	if len(nodes) == 0 {
+		return
+	}
+
+	buf.WriteString("<ul role=\"tree\">\n")
+
+	for _, node := range nodes {
+		// Skip excluded files
+		if !node.IsFolder && excludeURLs[tree.GetURLPath(node)] {
+			continue
+		}
+
+		if node.IsFolder {
+			renderFolderNode(buf, node, currentPath, depth)
+		} else {
+			renderFileNode(buf, node, currentPath)
+		}
+	}
+
+	buf.WriteString("</ul>\n")
+}
+
+// isIndexFile checks if a filename is an index file
+func isIndexFile(name string) bool {
+	lower := strings.ToLower(name)
+	return lower == "index.md" || lower == "readme.md"
 }
