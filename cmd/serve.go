@@ -1,16 +1,20 @@
 package cmd
 
 import (
-	"fmt"
 	"io"
+
+	"volcano/internal/server"
 )
 
 // Serve starts the HTTP server to preview the generated site
 func Serve(cfg *Config, w io.Writer) error {
-	_, err := fmt.Fprintf(w, "Serving %s on port %d\n", cfg.InputDir, cfg.Port)
-	if err != nil {
-		return err
+	srvConfig := server.Config{
+		Dir:     cfg.InputDir,
+		Port:    cfg.Port,
+		Quiet:   cfg.Quiet,
+		Verbose: cfg.Verbose,
 	}
-	// TODO: Implement full server in later stories
-	return nil
+
+	srv := server.New(srvConfig, w)
+	return srv.Start()
 }

@@ -2,10 +2,15 @@ package main
 
 import (
 	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestValidateInputDir(t *testing.T) {
@@ -198,13 +203,42 @@ func TestCLIServe(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	mustMkdirAll(t, inputDir)
 
-	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-s", inputDir}, &stdout, &stderr)
-
-	if exitCode != 0 {
-		t.Fatalf("Serve command failed with exit code %d, stderr: %s", exitCode, stderr.String())
+	// Create an index.html for the server to serve
+	if err := os.WriteFile(filepath.Join(inputDir, "index.html"), []byte("<html>Test</html>"), 0644); err != nil {
+		t.Fatal(err)
 	}
 
+	port := 19001
+	var stdout bytes.Buffer
+
+	// Start server in a goroutine (it blocks)
+	go func() {
+		_ = Run([]string{"-s", "-p", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
+	}()
+
+	// Wait for server to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Make a test request
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://localhost:%d/", port), nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Server should be serving, got error: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+
+	// Check stdout contains "Serving"
 	output := stdout.String()
 	if !strings.Contains(output, "Serving") {
 		t.Errorf("Output should contain 'Serving', got: %s", output)
@@ -217,13 +251,42 @@ func TestCLIServeLong(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	mustMkdirAll(t, inputDir)
 
-	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"--serve", inputDir}, &stdout, &stderr)
-
-	if exitCode != 0 {
-		t.Fatalf("Serve command failed with exit code %d, stderr: %s", exitCode, stderr.String())
+	// Create an index.html for the server to serve
+	if err := os.WriteFile(filepath.Join(inputDir, "index.html"), []byte("<html>Test</html>"), 0644); err != nil {
+		t.Fatal(err)
 	}
 
+	port := 19002
+	var stdout bytes.Buffer
+
+	// Start server in a goroutine (it blocks)
+	go func() {
+		_ = Run([]string{"--serve", "-p", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
+	}()
+
+	// Wait for server to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Make a test request
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://localhost:%d/", port), nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Server should be serving, got error: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+
+	// Check stdout contains "Serving"
 	output := stdout.String()
 	if !strings.Contains(output, "Serving") {
 		t.Errorf("Output should contain 'Serving', got: %s", output)
@@ -295,15 +358,40 @@ func TestCLIWithPort(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	mustMkdirAll(t, inputDir)
 
-	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-s", "-p", "9999", inputDir}, &stdout, &stderr)
-
-	if exitCode != 0 {
-		t.Fatalf("Command with port flag failed with exit code %d, stderr: %s", exitCode, stderr.String())
+	// Create an index.html for the server to serve
+	if err := os.WriteFile(filepath.Join(inputDir, "index.html"), []byte("<html>Test</html>"), 0644); err != nil {
+		t.Fatal(err)
 	}
 
+	port := 19003
+	var stdout bytes.Buffer
+
+	// Start server in a goroutine (it blocks)
+	go func() {
+		_ = Run([]string{"-s", "-p", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
+	}()
+
+	// Wait for server to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify server is running on the specified port
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://localhost:%d/", port), nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Server should be serving on port %d, got error: %v", port, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	// Check stdout contains the port number
 	output := stdout.String()
-	if !strings.Contains(output, "9999") {
+	if !strings.Contains(output, fmt.Sprintf("%d", port)) {
 		t.Errorf("Output should contain custom port, got: %s", output)
 	}
 }
@@ -314,15 +402,40 @@ func TestCLIWithPortLong(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	mustMkdirAll(t, inputDir)
 
-	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-s", "--port", "8888", inputDir}, &stdout, &stderr)
-
-	if exitCode != 0 {
-		t.Fatalf("Command with port flag failed with exit code %d, stderr: %s", exitCode, stderr.String())
+	// Create an index.html for the server to serve
+	if err := os.WriteFile(filepath.Join(inputDir, "index.html"), []byte("<html>Test</html>"), 0644); err != nil {
+		t.Fatal(err)
 	}
 
+	port := 19004
+	var stdout bytes.Buffer
+
+	// Start server in a goroutine (it blocks)
+	go func() {
+		_ = Run([]string{"-s", "--port", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
+	}()
+
+	// Wait for server to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify server is running on the specified port
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://localhost:%d/", port), nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Server should be serving on port %d, got error: %v", port, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	// Check stdout contains the port number
 	output := stdout.String()
-	if !strings.Contains(output, "8888") {
+	if !strings.Contains(output, fmt.Sprintf("%d", port)) {
 		t.Errorf("Output should contain custom port, got: %s", output)
 	}
 }
