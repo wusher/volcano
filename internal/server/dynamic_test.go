@@ -2,12 +2,14 @@ package server
 
 import (
 	"io"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"volcano/internal/tree"
 )
@@ -324,7 +326,7 @@ func TestDynamicServer_ResolveMarkdownPath(t *testing.T) {
 	}
 
 	config := DynamicConfig{SourceDir: tmpDir}
-	srv := &DynamicServer{config: config}
+	srv := &DynamicServer{config: config, fs: osFileSystem{}, scanner: defaultScanner{}}
 
 	tests := []struct {
 		urlPath  string
@@ -704,5 +706,201 @@ func TestDynamicServer_Handler(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected status 200, got %d", resp.StatusCode)
+	}
+}
+
+// Mock implementations for testing
+
+// mockFileInfo implements fs.FileInfo
+type mockFileInfo struct {
+	name  string
+	isDir bool
+}
+
+func (m mockFileInfo) Name() string       { return m.name }
+func (m mockFileInfo) Size() int64        { return 0 }
+func (m mockFileInfo) Mode() os.FileMode  { return 0644 }
+func (m mockFileInfo) ModTime() time.Time { return time.Time{} }
+func (m mockFileInfo) IsDir() bool        { return m.isDir }
+func (m mockFileInfo) Sys() any           { return nil }
+
+// mockFileSystem implements FileSystem for testing
+type mockFileSystem struct {
+	files map[string]mockFileInfo
+	err   error
+}
+
+func (m mockFileSystem) Stat(path string) (fs.FileInfo, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	if info, ok := m.files[path]; ok {
+		return info, nil
+	}
+	return nil, os.ErrNotExist
+}
+
+func (m mockFileSystem) ReadFile(_ string) ([]byte, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return nil, nil
+}
+
+// mockScanner implements TreeScanner for testing
+type mockScanner struct {
+	site *tree.Site
+	err  error
+}
+
+func (m mockScanner) Scan(_ string) (*tree.Site, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.site, nil
+}
+
+func TestDynamicServer_WithFileSystem(t *testing.T) {
+	config := DynamicConfig{
+		SourceDir: "/test",
+		Title:     "Test",
+		Port:      8080,
+		Quiet:     true,
+	}
+
+	srv, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockFS := mockFileSystem{
+		files: map[string]mockFileInfo{
+			"/test/index.md": {name: "index.md", isDir: false},
+		},
+	}
+
+	srv.WithFileSystem(mockFS)
+
+	// Test that the custom FileSystem is used
+	result := srv.resolveMarkdownPath("/")
+	if result != "index.md" {
+		t.Errorf("expected 'index.md', got %q", result)
+	}
+}
+
+func TestDynamicServer_WithScanner(t *testing.T) {
+	config := DynamicConfig{
+		SourceDir: "/test",
+		Title:     "Test",
+		Port:      8080,
+		Quiet:     true,
+	}
+
+	srv, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockSite := &tree.Site{
+		Root:     tree.NewNode("", "", true),
+		AllPages: []*tree.Node{},
+	}
+
+	srv.WithScanner(mockScanner{site: mockSite})
+
+	// The scanner is used internally, just verify it was set
+	if srv.scanner == nil {
+		t.Error("scanner should not be nil")
+	}
+}
+
+func TestDynamicServer_ScannerError(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create index.md
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	config := DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test",
+		Port:      8080,
+		Quiet:     true,
+	}
+
+	srv, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set a scanner that returns an error
+	srv.WithScanner(mockScanner{err: os.ErrPermission})
+
+	req := httptest.NewRequest("GET", "/", http.NoBody)
+	rec := httptest.NewRecorder()
+
+	srv.handleRequest(rec, req)
+
+	// Should return 404 since scan fails
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("expected 404 when scanner fails, got %d", rec.Code)
+	}
+}
+
+func TestDynamicServer_FileSystemError(t *testing.T) {
+	config := DynamicConfig{
+		SourceDir: "/test",
+		Title:     "Test",
+		Port:      8080,
+		Quiet:     true,
+	}
+
+	srv, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set a filesystem that returns errors
+	srv.WithFileSystem(mockFileSystem{err: os.ErrPermission})
+
+	// Test resolveMarkdownPath with failing filesystem
+	result := srv.resolveMarkdownPath("/")
+	if result != "" {
+		t.Errorf("expected empty string when filesystem fails, got %q", result)
+	}
+
+	result = srv.resolveMarkdownPath("/about/")
+	if result != "" {
+		t.Errorf("expected empty string when filesystem fails, got %q", result)
+	}
+}
+
+func TestDynamicServer_ServeStaticFile_WithMockFS(t *testing.T) {
+	config := DynamicConfig{
+		SourceDir: "/test",
+		Title:     "Test",
+		Port:      8080,
+		Quiet:     true,
+	}
+
+	srv, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Directory should not be served as static
+	srv.WithFileSystem(mockFileSystem{
+		files: map[string]mockFileInfo{
+			"/test/assets": {name: "assets", isDir: true},
+		},
+	})
+
+	req := httptest.NewRequest("GET", "/assets", http.NoBody)
+	rec := httptest.NewRecorder()
+
+	result := srv.serveStaticFile(rec, req, "/assets")
+	if result {
+		t.Error("should not serve directory as static file")
 	}
 }

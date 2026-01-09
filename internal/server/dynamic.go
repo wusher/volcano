@@ -36,6 +36,8 @@ type DynamicServer struct {
 	renderer *templates.Renderer
 	writer   io.Writer
 	server   *http.Server
+	fs       FileSystem
+	scanner  TreeScanner
 }
 
 // NewDynamicServer creates a new dynamic server
@@ -49,7 +51,21 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 		config:   config,
 		renderer: renderer,
 		writer:   writer,
+		fs:       osFileSystem{},
+		scanner:  defaultScanner{},
 	}, nil
+}
+
+// WithFileSystem sets a custom FileSystem (for testing)
+func (s *DynamicServer) WithFileSystem(fs FileSystem) *DynamicServer {
+	s.fs = fs
+	return s
+}
+
+// WithScanner sets a custom TreeScanner (for testing)
+func (s *DynamicServer) WithScanner(scanner TreeScanner) *DynamicServer {
+	s.scanner = scanner
+	return s
 }
 
 // Handler returns the HTTP handler for this server
@@ -136,7 +152,7 @@ func (s *DynamicServer) serveStaticFile(w http.ResponseWriter, r *http.Request, 
 	fullPath := filepath.Join(s.config.SourceDir, cleanPath)
 
 	// Check if file exists and is not a directory
-	stat, err := os.Stat(fullPath)
+	stat, err := s.fs.Stat(fullPath)
 	if err != nil || stat.IsDir() {
 		return false
 	}
@@ -162,12 +178,12 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 	fullMdPath := filepath.Join(s.config.SourceDir, mdPath)
 
 	// Check if the file exists
-	if _, err := os.Stat(fullMdPath); err != nil {
+	if _, err := s.fs.Stat(fullMdPath); err != nil {
 		return false
 	}
 
 	// Scan the directory tree for navigation (fresh on every request)
-	site, err := tree.Scan(s.config.SourceDir)
+	site, err := s.scanner.Scan(s.config.SourceDir)
 	if err != nil {
 		s.logError("Failed to scan directory: %v", err)
 		return false
@@ -231,7 +247,7 @@ func (s *DynamicServer) resolveMarkdownPath(urlPath string) string {
 	// Root path - look for index.md
 	if urlPath == "" {
 		fullPath := filepath.Join(s.config.SourceDir, "index.md")
-		if _, err := os.Stat(fullPath); err == nil {
+		if _, err := s.fs.Stat(fullPath); err == nil {
 			return "index.md"
 		}
 		return ""
@@ -240,14 +256,14 @@ func (s *DynamicServer) resolveMarkdownPath(urlPath string) string {
 	// Try as a file with .md extension (clean URLs: /about/ -> about.md)
 	mdPath := urlPath + ".md"
 	fullPath := filepath.Join(s.config.SourceDir, mdPath)
-	if _, err := os.Stat(fullPath); err == nil {
+	if _, err := s.fs.Stat(fullPath); err == nil {
 		return mdPath
 	}
 
 	// Try as directory with index.md
 	indexPath := filepath.Join(urlPath, "index.md")
 	fullPath = filepath.Join(s.config.SourceDir, indexPath)
-	if _, err := os.Stat(fullPath); err == nil {
+	if _, err := s.fs.Stat(fullPath); err == nil {
 		return indexPath
 	}
 
@@ -288,7 +304,7 @@ func findNodeBySourcePath(node *tree.Node, sourcePath string) *tree.Node {
 func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 	// Try to scan for navigation
 	var nav template.HTML
-	site, err := tree.Scan(s.config.SourceDir)
+	site, err := s.scanner.Scan(s.config.SourceDir)
 	if err == nil {
 		nav = templates.RenderNavigation(site.Root, "")
 	}
