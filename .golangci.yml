@@ -1,0 +1,32 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - ineffassign
+    - misspell
+    - revive
+  settings:
+    gocritic:
+      disabled-checks:
+        - octalLiteral
+        - httpNoBody
+        - hugeParam
+        - filepathJoin
+        - paramTypeCombine
+        - emptyStringTest
+        - equalFold
+
+formatters:
+  enable:
+    - gofmt
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
