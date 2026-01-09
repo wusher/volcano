@@ -1,3 +1,4 @@
+// Package cmd provides the command implementations for the volcano CLI.
 package cmd
 
 // Config holds all configuration options for the volcano CLI
