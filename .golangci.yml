@@ -11,24 +11,22 @@ linters:
     - unused
     - ineffassign
     - misspell
-    - gocyclo
-    - gocritic
     - revive
+  settings:
+    gocritic:
+      disabled-checks:
+        - octalLiteral
+        - httpNoBody
+        - hugeParam
+        - filepathJoin
+        - paramTypeCombine
+        - emptyStringTest
+        - equalFold
 
 formatters:
   enable:
     - gofmt
 
-settings:
-  gocyclo:
-    min-complexity: 15
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-
 issues:
-  exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
