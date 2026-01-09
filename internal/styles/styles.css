@@ -417,6 +417,10 @@ a:hover {
   body.drawer-open {
     overflow: hidden;
   }
+
+  body.drawer-open .mobile-menu-btn {
+    display: none;
+  }
 }
 
 /* Syntax highlighting - Light mode (GitHub-like) */

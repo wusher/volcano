@@ -1,51 +1,41 @@
 package cmd
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"volcano/internal/generator"
 	"volcano/internal/server"
 )
 
-// Serve starts the HTTP server to preview the generated site
-// If the input directory contains markdown files, it generates the site first
+// Serve starts the HTTP server to preview the site
+// If the input directory is a source directory (contains .md files), it uses
+// dynamic rendering so changes are reflected immediately without restart.
+// Otherwise, it serves static files from the directory.
 func Serve(cfg *Config, w io.Writer) error {
-	serveDir := cfg.InputDir
-
 	// Check if this is a source directory (contains .md files but no index.html)
 	if isSourceDirectory(cfg.InputDir) {
-		// Generate the site first
-		_, _ = fmt.Fprintf(w, "Source directory detected, generating site first...\n\n")
-
-		genConfig := generator.Config{
-			InputDir:  cfg.InputDir,
-			OutputDir: cfg.OutputDir,
+		// Use dynamic server for live rendering
+		dynamicCfg := server.DynamicConfig{
+			SourceDir: cfg.InputDir,
 			Title:     cfg.Title,
+			Port:      cfg.Port,
 			Quiet:     cfg.Quiet,
 			Verbose:   cfg.Verbose,
-			Colored:   cfg.Colored,
 		}
 
-		gen, err := generator.New(genConfig, w)
+		srv, err := server.NewDynamicServer(dynamicCfg, w)
 		if err != nil {
-			return fmt.Errorf("failed to create generator: %w", err)
+			return err
 		}
 
-		_, err = gen.Generate()
-		if err != nil {
-			return fmt.Errorf("failed to generate site: %w", err)
-		}
-
-		_, _ = fmt.Fprintf(w, "\n")
-		serveDir = cfg.OutputDir
+		return srv.Start()
 	}
 
+	// Serve static files from the directory
 	srvConfig := server.Config{
-		Dir:     serveDir,
+		Dir:     cfg.InputDir,
 		Port:    cfg.Port,
 		Quiet:   cfg.Quiet,
 		Verbose: cfg.Verbose,
