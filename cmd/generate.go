@@ -9,12 +9,17 @@ import (
 // Generate handles the static site generation from input folder to output folder
 func Generate(cfg *Config, w io.Writer) error {
 	genConfig := generator.Config{
-		InputDir:  cfg.InputDir,
-		OutputDir: cfg.OutputDir,
-		Title:     cfg.Title,
-		Quiet:     cfg.Quiet,
-		Verbose:   cfg.Verbose,
-		Colored:   cfg.Colored,
+		InputDir:    cfg.InputDir,
+		OutputDir:   cfg.OutputDir,
+		Title:       cfg.Title,
+		Quiet:       cfg.Quiet,
+		Verbose:     cfg.Verbose,
+		Colored:     cfg.Colored,
+		SiteURL:     cfg.SiteURL,
+		Author:      cfg.Author,
+		OGImage:     cfg.OGImage,
+		FaviconPath: cfg.FaviconPath,
+		ShowLastMod: cfg.ShowLastMod,
 	}
 
 	gen, err := generator.New(genConfig, w)

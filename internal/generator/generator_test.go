@@ -362,8 +362,9 @@ func TestGenerateNavigationLinks(t *testing.T) {
 	}
 
 	aboutContent, _ := os.ReadFile(filepath.Join(outputDir, "about", "index.html"))
-	if !strings.Contains(string(aboutContent), "Index") {
-		t.Error("About page should contain link to Index")
+	// The navigation now uses H1 titles, so index.md with "# Home" shows as "Home"
+	if !strings.Contains(string(aboutContent), "Home") {
+		t.Error("About page should contain link to Home")
 	}
 }
 

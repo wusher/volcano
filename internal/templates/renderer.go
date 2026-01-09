@@ -15,12 +15,21 @@ var layoutFS embed.FS
 
 // PageData contains all data needed to render a page
 type PageData struct {
-	SiteTitle   string        // Site title for header
-	PageTitle   string        // Current page title
-	Content     template.HTML // Rendered HTML content
-	Navigation  template.HTML // Rendered navigation HTML
-	CurrentPath string        // Current page URL path for active state
-	CSS         template.CSS  // Embedded CSS styles
+	SiteTitle    string        // Site title for header
+	PageTitle    string        // Current page title
+	Content      template.HTML // Rendered HTML content
+	Navigation   template.HTML // Rendered navigation HTML
+	CurrentPath  string        // Current page URL path for active state
+	CSS          template.CSS  // Embedded CSS styles
+	Breadcrumbs  template.HTML // Breadcrumb navigation
+	PageNav      template.HTML // Previous/Next navigation
+	TOC          template.HTML // Table of contents
+	MetaTags     template.HTML // SEO meta tags
+	FaviconLinks template.HTML // Favicon link tags
+	ReadingTime  string        // Reading time display (e.g., "5 min read")
+	LastModified string        // Last modified date (e.g., "January 5, 2025")
+	HasTOC       bool          // Whether to show TOC sidebar
+	ShowSearch   bool          // Whether to show nav search
 }
 
 // Renderer handles HTML template rendering
@@ -90,7 +99,9 @@ func renderNavNode(buf *bytes.Buffer, nodes []*tree.Node, currentPath string, de
 
 // renderFolderNode renders a folder node with its children
 func renderFolderNode(buf *bytes.Buffer, node *tree.Node, currentPath string, depth int) {
-	buf.WriteString("<li role=\"treeitem\" class=\"folder\">\n")
+	buf.WriteString("<li role=\"treeitem\" class=\"folder\" data-search-text=\"")
+	buf.WriteString(template.HTMLEscapeString(node.Name))
+	buf.WriteString("\">\n")
 	buf.WriteString("<div class=\"folder-header\">\n")
 
 	// Toggle button
@@ -130,7 +141,9 @@ func renderFileNode(buf *bytes.Buffer, node *tree.Node, currentPath string) {
 		active = " active"
 	}
 
-	buf.WriteString("<li role=\"treeitem\">\n")
+	buf.WriteString("<li role=\"treeitem\" data-search-text=\"")
+	buf.WriteString(template.HTMLEscapeString(node.Name))
+	buf.WriteString("\">\n")
 	buf.WriteString("<a href=\"" + template.HTMLEscapeString(urlPath) + "\" class=\"file-link" + active + "\">" + template.HTMLEscapeString(node.Name) + "</a>\n")
 	buf.WriteString("</li>\n")
 }

@@ -144,13 +144,25 @@ func TestGetOutputPath(t *testing.T) {
 			name:     "readme file",
 			path:     "readme.md",
 			isFolder: false,
-			expected: "readme.html",
+			expected: "index.html", // README treated as index
 		},
 		{
 			name:     "folder",
 			path:     "guides",
 			isFolder: true,
 			expected: "",
+		},
+		{
+			name:     "date prefix file",
+			path:     "posts/2024-01-15-hello-world.md",
+			isFolder: false,
+			expected: filepath.Join("posts", "hello-world", "index.html"),
+		},
+		{
+			name:     "number prefix file",
+			path:     "docs/01-getting-started.md",
+			isFolder: false,
+			expected: filepath.Join("docs", "getting-started", "index.html"),
 		},
 	}
 
@@ -201,6 +213,24 @@ func TestGetURLPath(t *testing.T) {
 			path:     "guides",
 			isFolder: true,
 			expected: "",
+		},
+		{
+			name:     "date prefix file",
+			path:     "posts/2024-01-15-hello-world.md",
+			isFolder: false,
+			expected: "/posts/hello-world/",
+		},
+		{
+			name:     "number prefix file",
+			path:     "docs/01-getting-started.md",
+			isFolder: false,
+			expected: "/docs/getting-started/",
+		},
+		{
+			name:     "root date prefix file",
+			path:     "2024-01-01-news.md",
+			isFolder: false,
+			expected: "/news/",
 		},
 	}
 

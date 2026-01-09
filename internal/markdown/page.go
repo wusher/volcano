@@ -23,6 +23,12 @@ func ParseFile(sourcePath string, outputPath string, urlPath string, fallbackTit
 		return nil, err
 	}
 
+	return ParseContent(content, sourcePath, outputPath, urlPath, fallbackTitle)
+}
+
+// ParseContent parses pre-read markdown content, returning a Page.
+// This allows preprocessing (e.g., admonitions) before parsing.
+func ParseContent(content []byte, sourcePath string, outputPath string, urlPath string, fallbackTitle string) (*Page, error) {
 	// Extract title from markdown
 	title := ExtractTitle(content)
 	if title == "" {

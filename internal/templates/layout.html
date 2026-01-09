@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.PageTitle}}{{if .SiteTitle}} - {{.SiteTitle}}{{end}}</title>
+{{.MetaTags}}
+{{.FaviconLinks}}
     <style>
 {{.CSS}}
     </style>
@@ -18,6 +20,11 @@
     </script>
 </head>
 <body>
+    <!-- Scroll progress indicator -->
+    <div class="scroll-progress" aria-hidden="true">
+        <div class="scroll-progress-bar"></div>
+    </div>
+
     <!-- Mobile menu button -->
     <button class="mobile-menu-btn" aria-label="Open menu" onclick="toggleDrawer()">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -41,17 +48,54 @@
                 </svg>
             </button>
         </div>
+        <!-- Navigation search -->
+        <div class="nav-search">
+            <div class="search-input-wrapper">
+                <svg class="search-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="search" class="search-input" placeholder="Search..." aria-label="Search navigation" id="nav-search-input">
+                <button class="search-clear" aria-label="Clear search" hidden>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div id="search-results-status" class="sr-only" aria-live="polite"></div>
+        </div>
         <nav class="tree-nav" aria-label="Site navigation">
 {{.Navigation}}
         </nav>
+        <div class="search-empty" hidden>
+            <p>No pages found</p>
+        </div>
     </aside>
 
-    <!-- Main content -->
-    <main class="content">
-        <article class="prose">
+    <!-- Main content wrapper -->
+    <div class="main-wrapper{{if .HasTOC}} has-toc{{end}}">
+        <!-- Main content -->
+        <main class="content">
+{{.Breadcrumbs}}
+            <article class="prose">
+                {{if or .ReadingTime .LastModified}}<div class="page-meta">
+                    {{if .ReadingTime}}<span class="reading-time">
+                        <svg class="clock-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        {{.ReadingTime}}
+                    </span>{{end}}
+                    {{if .LastModified}}<span class="last-modified">
+                        <svg class="calendar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        Updated {{.LastModified}}
+                    </span>{{end}}
+                </div>{{end}}
 {{.Content}}
-        </article>
-    </main>
+            </article>
+{{.PageNav}}
+        </main>
+
+        <!-- Table of contents sidebar -->
+{{.TOC}}
+    </div>
+
+    <!-- Back to top button -->
+    <button class="back-to-top" aria-label="Scroll to top" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
 
     <!-- Dark mode toggle -->
     <button class="theme-toggle" aria-label="Toggle dark mode" onclick="toggleTheme()">
@@ -71,6 +115,42 @@
         </svg>
     </button>
 
+    <!-- Keyboard shortcuts modal -->
+    <dialog id="shortcuts-modal" class="shortcuts-modal">
+        <h2>Keyboard Shortcuts</h2>
+        <dl class="shortcuts-list">
+            <div class="shortcut-group">
+                <dt><kbd>/</kbd></dt>
+                <dd>Focus search</dd>
+            </div>
+            <div class="shortcut-group">
+                <dt><kbd>t</kbd></dt>
+                <dd>Toggle theme</dd>
+            </div>
+            <div class="shortcut-group">
+                <dt><kbd>n</kbd></dt>
+                <dd>Next page</dd>
+            </div>
+            <div class="shortcut-group">
+                <dt><kbd>p</kbd></dt>
+                <dd>Previous page</dd>
+            </div>
+            <div class="shortcut-group">
+                <dt><kbd>h</kbd></dt>
+                <dd>Go to home</dd>
+            </div>
+            <div class="shortcut-group">
+                <dt><kbd>?</kbd></dt>
+                <dd>Show shortcuts</dd>
+            </div>
+            <div class="shortcut-group">
+                <dt><kbd>Esc</kbd></dt>
+                <dd>Close modal</dd>
+            </div>
+        </dl>
+        <button class="close-modal" onclick="closeShortcutsModal()">Close</button>
+    </dialog>
+
     <script>
         // Theme toggle
         function toggleTheme() {
@@ -89,13 +169,6 @@
             document.body.classList.remove('drawer-open');
         }
 
-        // Close drawer on escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeDrawer();
-            }
-        });
-
         // Tree navigation toggle
         document.querySelectorAll('.folder-toggle').forEach(function(toggle) {
             toggle.addEventListener('click', function(e) {
@@ -113,6 +186,208 @@
                 parent = parent.parentElement.closest('li');
             }
         });
+
+        // Navigation search
+        (function() {
+            const input = document.getElementById('nav-search-input');
+            const clearBtn = document.querySelector('.search-clear');
+            const tree = document.querySelector('.tree-nav');
+            const status = document.getElementById('search-results-status');
+            const emptyState = document.querySelector('.search-empty');
+            const allNodes = tree ? tree.querySelectorAll('[data-search-text]') : [];
+            let debounceTimer;
+
+            function filter() {
+                const query = input.value.trim().toLowerCase();
+                if (!query) {
+                    clear();
+                    return;
+                }
+
+                clearBtn.hidden = false;
+                let matchCount = 0;
+
+                allNodes.forEach(function(node) {
+                    const text = node.getAttribute('data-search-text').toLowerCase();
+                    const matches = text.includes(query);
+
+                    if (matches) {
+                        matchCount++;
+                        node.hidden = false;
+                        node.classList.add('search-match');
+                        expandParents(node);
+                    } else {
+                        node.hidden = true;
+                        node.classList.remove('search-match');
+                    }
+                });
+
+                status.textContent = matchCount ? matchCount + ' result' + (matchCount === 1 ? '' : 's') + ' found' : 'No results found';
+                emptyState.hidden = matchCount > 0;
+            }
+
+            function expandParents(node) {
+                let parent = node.parentElement.closest('[role="treeitem"]');
+                while (parent) {
+                    parent.classList.add('expanded');
+                    parent.hidden = false;
+                    parent = parent.parentElement.closest('[role="treeitem"]');
+                }
+            }
+
+            function clear() {
+                input.value = '';
+                clearBtn.hidden = true;
+                emptyState.hidden = true;
+                status.textContent = '';
+                allNodes.forEach(function(node) {
+                    node.hidden = false;
+                    node.classList.remove('search-match');
+                });
+            }
+
+            if (input) {
+                input.addEventListener('input', function() {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(filter, 150);
+                });
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', clear);
+            }
+        })();
+
+        // Scroll progress indicator
+        (function() {
+            const progressBar = document.querySelector('.scroll-progress-bar');
+            if (!progressBar) return;
+
+            function updateProgress() {
+                const scrollTop = window.scrollY;
+                const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+                const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+                progressBar.style.width = progress + '%';
+            }
+
+            window.addEventListener('scroll', updateProgress, { passive: true });
+            updateProgress();
+        })();
+
+        // Back to top button
+        (function() {
+            const backToTop = document.querySelector('.back-to-top');
+            if (!backToTop) return;
+
+            const showThreshold = 300;
+
+            function toggleBackToTop() {
+                if (window.scrollY > showThreshold) {
+                    backToTop.hidden = false;
+                    backToTop.classList.add('visible');
+                } else {
+                    backToTop.classList.remove('visible');
+                }
+            }
+
+            backToTop.addEventListener('click', function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            window.addEventListener('scroll', toggleBackToTop, { passive: true });
+        })();
+
+        // Copy code button
+        document.querySelectorAll('.copy-button').forEach(function(button) {
+            button.addEventListener('click', async function() {
+                const code = this.parentElement.querySelector('code').textContent;
+                try {
+                    await navigator.clipboard.writeText(code);
+                    this.classList.add('copied');
+                    this.querySelector('.copy-text').textContent = 'Copied!';
+                    setTimeout(function() {
+                        button.classList.remove('copied');
+                        button.querySelector('.copy-text').textContent = 'Copy';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                }
+            });
+        });
+
+        // TOC scroll spy
+        (function() {
+            const toc = document.querySelector('.toc');
+            if (!toc) return;
+
+            const headings = document.querySelectorAll('h2[id], h3[id], h4[id]');
+            const tocLinks = toc.querySelectorAll('a');
+
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        tocLinks.forEach(function(a) { a.classList.remove('active'); });
+                        const link = toc.querySelector('a[href="#' + entry.target.id + '"]');
+                        if (link) link.classList.add('active');
+                    }
+                });
+            }, { rootMargin: '-80px 0px -80% 0px' });
+
+            headings.forEach(function(h) { observer.observe(h); });
+        })();
+
+        // Keyboard shortcuts
+        (function() {
+            const shortcuts = {
+                't': function() { toggleTheme(); },
+                'h': function() { window.location.href = '/'; },
+                '?': function() { showShortcutsModal(); }
+            };
+
+            // Find prev/next links for navigation
+            const prevLink = document.querySelector('.page-nav-prev');
+            const nextLink = document.querySelector('.page-nav-next');
+            const searchInput = document.getElementById('nav-search-input');
+
+            if (prevLink) shortcuts['p'] = function() { window.location.href = prevLink.href; };
+            if (nextLink) shortcuts['n'] = function() { window.location.href = nextLink.href; };
+            if (searchInput) shortcuts['/'] = function() { searchInput.focus(); };
+
+            document.addEventListener('keydown', function(e) {
+                // Skip if in input/textarea
+                if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+                    if (e.key === 'Escape') {
+                        e.target.blur();
+                        closeDrawer();
+                    }
+                    return;
+                }
+
+                // Close modal on Escape
+                if (e.key === 'Escape') {
+                    closeShortcutsModal();
+                    closeDrawer();
+                    return;
+                }
+
+                const handler = shortcuts[e.key];
+                if (handler) {
+                    e.preventDefault();
+                    handler();
+                }
+            });
+        })();
+
+        // Shortcuts modal
+        function showShortcutsModal() {
+            const modal = document.getElementById('shortcuts-modal');
+            if (modal && modal.showModal) modal.showModal();
+        }
+
+        function closeShortcutsModal() {
+            const modal = document.getElementById('shortcuts-modal');
+            if (modal && modal.close) modal.close();
+        }
     </script>
 </body>
 </html>

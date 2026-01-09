@@ -1,9 +1,16 @@
 // Package tree provides functionality for building a tree structure from markdown files.
 package tree
 
+import (
+	"os"
+	"time"
+)
+
 // Node represents a node in the content tree
 type Node struct {
-	Name       string  // Clean display label
+	Name       string  // Clean display label (from H1 or filename)
+	FileName   string  // Original filename
+	H1Title    string  // Extracted H1 title (empty if none)
 	Path       string  // Relative path from input root
 	SourcePath string  // Full path to source .md file
 	IsFolder   bool    // Whether this is a folder
@@ -61,4 +68,16 @@ func (n *Node) HasMarkdownContent() bool {
 		}
 	}
 	return false
+}
+
+// ModTime returns the file modification time for the source file
+func (n *Node) ModTime() time.Time {
+	if n.SourcePath == "" {
+		return time.Now()
+	}
+	info, err := os.Stat(n.SourcePath)
+	if err != nil {
+		return time.Now()
+	}
+	return info.ModTime()
 }
