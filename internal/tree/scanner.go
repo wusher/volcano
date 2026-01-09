@@ -65,9 +65,18 @@ func scanDirectory(basePath, currentPath string, parent *Node, allPages *[]*Node
 				return err
 			}
 		} else if IsMarkdownFile(name) {
-			// Create file node
+			// Create file node with clean label as default name
 			fileNode := NewNode(CleanLabel(name), relPath, false)
 			fileNode.SourcePath = fullPath
+			fileNode.FileName = name
+
+			// Try to extract H1 title from the file content
+			if content, err := os.ReadFile(fullPath); err == nil {
+				if h1 := ExtractH1(content); h1 != "" {
+					fileNode.H1Title = h1
+					fileNode.Name = h1 // Override display name with H1
+				}
+			}
 
 			// Check if this is an index file for the parent folder
 			if IsIndexFile(name) && parent.IsFolder {

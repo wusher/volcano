@@ -8,22 +8,32 @@ import (
 	"os"
 	"path/filepath"
 
+	"volcano/internal/assets"
+	"volcano/internal/content"
 	"volcano/internal/markdown"
+	"volcano/internal/navigation"
 	"volcano/internal/output"
+	"volcano/internal/seo"
 	"volcano/internal/styles"
 	"volcano/internal/templates"
+	"volcano/internal/toc"
 	"volcano/internal/tree"
 )
 
 // Config holds configuration for the generator
 type Config struct {
-	InputDir  string
-	OutputDir string
-	Title     string
-	Clean     bool
-	Quiet     bool
-	Verbose   bool
-	Colored   bool
+	InputDir    string
+	OutputDir   string
+	Title       string
+	Clean       bool
+	Quiet       bool
+	Verbose     bool
+	Colored     bool
+	SiteURL     string // Base URL for canonical links
+	Author      string // Site author
+	OGImage     string // Default Open Graph image
+	FaviconPath string // Path to favicon file
+	ShowLastMod bool   // Show last modified date
 }
 
 // Result holds the result of generation
@@ -34,10 +44,11 @@ type Result struct {
 
 // Generator handles static site generation
 type Generator struct {
-	config   Config
-	renderer *templates.Renderer
-	parser   *markdown.Parser
-	logger   *output.Logger
+	config       Config
+	renderer     *templates.Renderer
+	parser       *markdown.Parser
+	logger       *output.Logger
+	faviconLinks template.HTML
 }
 
 // New creates a new Generator
@@ -71,6 +82,17 @@ func (g *Generator) Generate() (*Result, error) {
 		return nil, err
 	}
 
+	// Process favicon if configured
+	if g.config.FaviconPath != "" {
+		faviconConfig := assets.FaviconConfig{IconPath: g.config.FaviconPath}
+		links, err := assets.ProcessFavicon(faviconConfig, g.config.OutputDir)
+		if err != nil {
+			g.logger.Warning("Failed to process favicon: %v", err)
+		} else {
+			g.faviconLinks = assets.RenderFaviconLinks(links)
+		}
+	}
+
 	// Step 2: Scan input directory
 	g.logger.Println("Scanning input directory...")
 	site, err := tree.Scan(g.config.InputDir)
@@ -92,14 +114,26 @@ func (g *Generator) Generate() (*Result, error) {
 	// Step 3: Generate pages
 	g.logger.Println("Generating pages...")
 	for _, node := range site.AllPages {
-		if err := g.generatePage(node, site.Root); err != nil {
+		if err := g.generatePage(node, site.Root, site.AllPages); err != nil {
 			return nil, fmt.Errorf("failed to generate %s: %w", node.Path, err)
 		}
 		result.PagesGenerated++
 		g.logger.FileSuccess(node.Path)
 	}
 
-	// Step 4: Generate 404 page
+	// Step 4: Generate auto-index pages for folders without index.md
+	foldersNeedingIndex := collectFoldersNeedingAutoIndex(site.Root)
+	if len(foldersNeedingIndex) > 0 {
+		g.logger.Verbose("Generating auto-index pages for %d folders...", len(foldersNeedingIndex))
+		for _, folder := range foldersNeedingIndex {
+			if err := g.generateAutoIndex(folder, site.Root); err != nil {
+				return nil, fmt.Errorf("failed to generate auto-index for %s: %w", folder.Path, err)
+			}
+			g.logger.Verbose("  Auto-indexed: %s", folder.Path)
+		}
+	}
+
+	// Step 5: Generate 404 page
 	if err := g.generate404(site.Root); err != nil {
 		return nil, fmt.Errorf("failed to generate 404 page: %w", err)
 	}
@@ -143,14 +177,24 @@ func (g *Generator) prepareOutputDir() error {
 }
 
 // generatePage generates a single page
-func (g *Generator) generatePage(node *tree.Node, root *tree.Node) error {
+func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*tree.Node) error {
 	// Get paths
 	outputPath := tree.GetOutputPath(node)
 	urlPath := tree.GetURLPath(node)
 	fullOutputPath := filepath.Join(g.config.OutputDir, outputPath)
 
-	// Parse markdown file
-	page, err := markdown.ParseFile(
+	// Read markdown content
+	mdContent, err := os.ReadFile(node.SourcePath)
+	if err != nil {
+		return err
+	}
+
+	// Process admonitions before parsing
+	mdContent = []byte(markdown.ProcessAdmonitions(string(mdContent)))
+
+	// Parse the preprocessed content
+	page, err := markdown.ParseContent(
+		mdContent,
 		node.SourcePath,
 		outputPath,
 		urlPath,
@@ -160,16 +204,71 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node) error {
 		return err
 	}
 
+	// Process content enhancements
+	htmlContent := page.Content
+
+	// Add heading anchors
+	htmlContent = markdown.AddHeadingAnchors(htmlContent)
+
+	// Process external links
+	htmlContent = markdown.ProcessExternalLinks(htmlContent, g.config.SiteURL)
+
+	// Wrap code blocks with copy button
+	htmlContent = markdown.WrapCodeBlocks(htmlContent)
+
+	// Calculate reading time
+	rt := content.CalculateReadingTime(htmlContent)
+	readingTime := content.FormatReadingTime(rt)
+
+	// Get last modified date if enabled
+	var lastModified string
+	if g.config.ShowLastMod {
+		mod := content.GetLastModified(node.SourcePath)
+		lastModified = content.FormatLastModified(mod, false) // Use absolute format
+	}
+
+	// Build breadcrumbs
+	breadcrumbs := navigation.BuildBreadcrumbs(node, g.config.Title)
+	breadcrumbsHTML := navigation.RenderBreadcrumbs(breadcrumbs)
+
+	// Build page navigation
+	pageNav := navigation.BuildPageNavigation(node, allPages)
+	pageNavHTML := navigation.RenderPageNavigation(pageNav)
+
+	// Extract TOC
+	pageTOC := toc.ExtractTOC(htmlContent, 3)
+	tocHTML := toc.RenderTOC(pageTOC)
+	hasTOC := pageTOC != nil && len(pageTOC.Items) > 0
+
+	// Generate SEO meta tags
+	seoConfig := seo.Config{
+		SiteURL:   g.config.SiteURL,
+		SiteTitle: g.config.Title,
+		Author:    g.config.Author,
+		OGImage:   g.config.OGImage,
+	}
+	pageMeta := seo.GeneratePageMeta(page.Title, htmlContent, urlPath, seoConfig)
+	metaTagsHTML := seo.RenderMetaTags(pageMeta)
+
 	// Render navigation
 	nav := templates.RenderNavigation(root, urlPath)
 
 	// Prepare template data
 	data := templates.PageData{
-		SiteTitle:   g.config.Title,
-		PageTitle:   page.Title,
-		Content:     template.HTML(page.Content),
-		Navigation:  nav,
-		CurrentPath: urlPath,
+		SiteTitle:    g.config.Title,
+		PageTitle:    page.Title,
+		Content:      template.HTML(htmlContent),
+		Navigation:   nav,
+		CurrentPath:  urlPath,
+		Breadcrumbs:  breadcrumbsHTML,
+		PageNav:      pageNavHTML,
+		TOC:          tocHTML,
+		MetaTags:     metaTagsHTML,
+		FaviconLinks: g.faviconLinks,
+		ReadingTime:  readingTime,
+		LastModified: lastModified,
+		HasTOC:       hasTOC,
+		ShowSearch:   true,
 	}
 
 	// Create output directory

@@ -3,7 +3,9 @@ package tree
 
 // Node represents a node in the content tree
 type Node struct {
-	Name       string  // Clean display label
+	Name       string  // Clean display label (from H1 or filename)
+	FileName   string  // Original filename
+	H1Title    string  // Extracted H1 title (empty if none)
 	Path       string  // Relative path from input root
 	SourcePath string  // Full path to source .md file
 	IsFolder   bool    // Whether this is a folder
