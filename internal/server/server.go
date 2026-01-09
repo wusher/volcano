@@ -39,6 +39,19 @@ func New(config Config, writer io.Writer) *Server {
 
 // Start starts the HTTP server and blocks until shutdown
 func (s *Server) Start() error {
+	// Check if directory looks like generated output
+	indexPath := filepath.Join(s.config.Dir, "index.html")
+	if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+		// Check if it has markdown files instead (source directory)
+		if hasMarkdownFiles(s.config.Dir) {
+			s.log("Warning: %s contains .md files but no index.html", s.config.Dir)
+			s.log("Did you mean to generate first?")
+			s.log("  volcano %s -o ./output", s.config.Dir)
+			s.log("  volcano -s ./output")
+			s.log("")
+		}
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.handleRequest)
 
@@ -197,4 +210,18 @@ func (s *Server) logRequest(method, path string, status int, duration time.Durat
 			duration.Round(time.Millisecond),
 		)
 	}
+}
+
+// hasMarkdownFiles checks if a directory contains any .md files
+func hasMarkdownFiles(dir string) bool {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".md") {
+			return true
+		}
+	}
+	return false
 }
