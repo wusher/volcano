@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"volcano/cmd"
 	"volcano/internal/output"
@@ -60,6 +61,9 @@ func runWithConfig(args []string, cfg *cmd.Config, stdout, stderr io.Writer) (in
 	fs.Usage = func() {
 		printUsage(stdout)
 	}
+
+	// Reorder args to put flags first (Go's flag package stops at first non-flag)
+	args = reorderArgs(args)
 
 	if err := fs.Parse(args); err != nil {
 		return 1, err
@@ -159,4 +163,50 @@ func ValidateInputDir(path string) error {
 	}
 
 	return nil
+}
+
+// reorderArgs moves flags before positional arguments
+// This is needed because Go's flag package stops at the first non-flag argument
+func reorderArgs(args []string) []string {
+	var flags []string
+	var positional []string
+
+	i := 0
+	for i < len(args) {
+		arg := args[i]
+		if strings.HasPrefix(arg, "-") {
+			// This is a flag
+			flags = append(flags, arg)
+			// Check if this flag takes a value (not a boolean flag)
+			// Flags with = don't need special handling
+			if !strings.Contains(arg, "=") && i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				// Check if the next arg looks like a flag value (not a path)
+				nextArg := args[i+1]
+				// Only treat as value if flag is a known value-taking flag
+				if isValueFlag(arg) {
+					i++
+					flags = append(flags, nextArg)
+				}
+			}
+		} else {
+			positional = append(positional, arg)
+		}
+		i++
+	}
+
+	return append(flags, positional...)
+}
+
+// isValueFlag returns true if the flag takes a value argument
+func isValueFlag(flag string) bool {
+	// Strip leading dashes
+	name := strings.TrimLeft(flag, "-")
+	// List of flags that take values
+	valueFlags := map[string]bool{
+		"o": true, "output": true,
+		"p": true, "port": true,
+		"title": true, "url": true, "author": true,
+		"og-image": true, "favicon": true,
+	}
+	return valueFlags[name]
 }

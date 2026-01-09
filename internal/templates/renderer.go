@@ -163,16 +163,22 @@ func BuildTopNavItems(root *tree.Node, topNav bool) []TopNavItem {
 		return nil
 	}
 
-	// Count root files (excluding index)
+	// Count root files (excluding index/readme files)
 	var rootFiles []*tree.Node
 	for _, child := range root.Children {
-		if !child.IsFolder && !isIndexFile(child.FileName) {
-			rootFiles = append(rootFiles, child)
+		if child.IsFolder {
+			continue
 		}
+		// Skip index files using the same logic as tree package
+		filename := strings.ToLower(child.FileName)
+		if filename == "index.md" || filename == "readme.md" {
+			continue
+		}
+		rootFiles = append(rootFiles, child)
 	}
 
-	// Only use top nav if 5 or fewer root files
-	if len(rootFiles) > 5 {
+	// Only use top nav if between 1 and 5 root files
+	if len(rootFiles) == 0 || len(rootFiles) > 5 {
 		return nil
 	}
 
@@ -229,8 +235,3 @@ func renderNavNodeFiltered(buf *bytes.Buffer, nodes []*tree.Node, currentPath st
 	buf.WriteString("</ul>\n")
 }
 
-// isIndexFile checks if a filename is an index file
-func isIndexFile(name string) bool {
-	lower := strings.ToLower(name)
-	return lower == "index.md" || lower == "readme.md"
-}
