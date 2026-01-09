@@ -70,6 +70,20 @@ Serve the generated site:
 volcano -s -p 8080 ./public
 ```
 
+## Example Site
+
+The `example/` folder contains sample markdown content demonstrating all features:
+
+```bash
+# Generate the example site
+volcano ./example -o ./output --title="Volcano Docs"
+
+# Serve it locally
+volcano -s ./output
+
+# Open http://localhost:1776 in your browser
+```
+
 ## Development
 
 ### Prerequisites
@@ -80,7 +94,21 @@ volcano -s -p 8080 ./public
 ### Running tests
 
 ```bash
+# Run all tests
 go test -race ./...
+
+# Run with verbose output
+go test -v ./...
+
+# Run integration tests only
+go test -v -run TestIntegration ./...
+```
+
+### Check coverage
+
+```bash
+go test -coverprofile=coverage.out ./...
+go tool cover -func=coverage.out | grep total
 ```
 
 ### Running lint
@@ -89,10 +117,32 @@ go test -race ./...
 golangci-lint run
 ```
 
-### Check all (lint, test, coverage)
+### Full quality check
 
 ```bash
-./scripts/check.sh
+# Lint, test, and verify coverage
+golangci-lint run && \
+go test -race ./... && \
+go test -coverprofile=coverage.out ./... && \
+go tool cover -func=coverage.out | grep total
+```
+
+## Project Structure
+
+```
+volcano/
+├── main.go                  # CLI entry point
+├── cmd/                     # Command implementations
+├── internal/
+│   ├── generator/           # Site generation engine
+│   ├── markdown/            # Markdown parsing
+│   ├── templates/           # HTML templates
+│   ├── tree/                # File tree building
+│   ├── styles/              # Embedded CSS
+│   ├── server/              # HTTP server
+│   └── output/              # Colored logging
+├── example/                 # Example content
+└── integration_test.go      # Integration tests
 ```
 
 ## License
