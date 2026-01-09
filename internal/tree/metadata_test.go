@@ -118,3 +118,42 @@ func TestIsDraftFile(t *testing.T) {
 		})
 	}
 }
+
+func TestSortNodes(t *testing.T) {
+	// Create nodes with different dates
+	node1 := &Node{Name: "Old Post", Path: "2024-01-01-old.md", IsFolder: false, SourcePath: ""}
+	node2 := &Node{Name: "New Post", Path: "2024-03-15-new.md", IsFolder: false, SourcePath: ""}
+	node3 := &Node{Name: "Folder", Path: "folder", IsFolder: true}
+
+	nodes := []*Node{node1, node2, node3}
+
+	// Sort newest first
+	SortNodes(nodes, true)
+
+	// Folders should come first
+	if !nodes[0].IsFolder {
+		t.Error("Folder should be first after sorting")
+	}
+}
+
+func TestGetNumberForSort(t *testing.T) {
+	num := 5
+
+	// With number, newest first
+	result := getNumberForSort(&num, true)
+	if result != 5 {
+		t.Errorf("getNumberForSort with number = %d, want 5", result)
+	}
+
+	// Without number, newest first
+	result = getNumberForSort(nil, true)
+	if result != -1 {
+		t.Errorf("getNumberForSort nil newest first = %d, want -1", result)
+	}
+
+	// Without number, oldest first
+	result = getNumberForSort(nil, false)
+	if result != 999999 {
+		t.Errorf("getNumberForSort nil oldest first = %d, want 999999", result)
+	}
+}

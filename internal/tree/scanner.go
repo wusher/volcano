@@ -130,50 +130,65 @@ func sortAndPrune(node *Node) {
 // GetOutputPath returns the output path for a file node
 // Converts: guides/intro.md → guides/intro/index.html (clean URLs)
 // Converts: index.md → index.html (root index)
+// Converts: posts/2024-01-15-hello.md → posts/hello/index.html (strips date prefix)
 func GetOutputPath(node *Node) string {
 	if node.IsFolder {
 		return ""
 	}
 
-	// Remove .md extension
-	path := node.Path
-	ext := filepath.Ext(path)
-	pathWithoutExt := strings.TrimSuffix(path, ext)
+	// Get directory and filename
+	dir := filepath.Dir(node.Path)
+	filename := filepath.Base(node.Path)
 
 	// Handle index files - they stay as index.html
-	baseName := filepath.Base(pathWithoutExt)
-	if strings.ToLower(baseName) == "index" || strings.ToLower(baseName) == "readme" {
-		return pathWithoutExt + ".html"
+	stem := strings.TrimSuffix(filename, filepath.Ext(filename))
+	if strings.ToLower(stem) == "index" || strings.ToLower(stem) == "readme" {
+		if dir == "." {
+			return "index.html"
+		}
+		return filepath.Join(dir, "index.html")
 	}
 
+	// Extract metadata to get slug (strips date/number prefixes)
+	meta := ExtractFileMetadata(filename, node.ModTime())
+	slug := meta.Slug
+
 	// For non-index files, create clean URLs: file.md → file/index.html
-	return filepath.Join(pathWithoutExt, "index.html")
+	if dir == "." {
+		return filepath.Join(slug, "index.html")
+	}
+	return filepath.Join(dir, slug, "index.html")
 }
 
 // GetURLPath returns the URL path for a file node
 // Converts: guides/intro.md → /guides/intro/
 // Converts: index.md → /
+// Converts: posts/2024-01-15-hello.md → /posts/hello/ (strips date prefix)
 func GetURLPath(node *Node) string {
 	if node.IsFolder {
 		return ""
 	}
 
-	// Remove .md extension
-	path := node.Path
-	ext := filepath.Ext(path)
-	pathWithoutExt := strings.TrimSuffix(path, ext)
+	// Get directory and filename
+	dir := filepath.Dir(node.Path)
+	filename := filepath.Base(node.Path)
 
 	// Handle index files
-	baseName := filepath.Base(pathWithoutExt)
-	if strings.ToLower(baseName) == "index" || strings.ToLower(baseName) == "readme" {
-		// Get directory
-		dir := filepath.Dir(pathWithoutExt)
+	stem := strings.TrimSuffix(filename, filepath.Ext(filename))
+	if strings.ToLower(stem) == "index" || strings.ToLower(stem) == "readme" {
 		if dir == "." {
 			return "/"
 		}
 		return "/" + filepath.ToSlash(dir) + "/"
 	}
 
-	// For non-index files, return the path as directory
-	return "/" + filepath.ToSlash(pathWithoutExt) + "/"
+	// Extract metadata to get slug (strips date/number prefixes)
+	meta := ExtractFileMetadata(filename, node.ModTime())
+	slug := meta.Slug
+
+	// For non-index files, return the path with slug as directory
+	if dir == "." {
+		return "/" + slug + "/"
+	}
+	return "/" + filepath.ToSlash(dir) + "/" + slug + "/"
 }
