@@ -54,10 +54,9 @@ jobs:
       - name: Build binary
         run: go build -o volcano .
       - name: Generate site
-        run: ./volcano ./example -o ./test-output --title="E2E Test"
+        run: ./volcano -o ./test-output --title="E2E Test" ./example
       - name: Verify output structure
-        run: |
-          test -d ./test-output || echo "Output directory exists (or generation is not yet complete)"
+        run: test -d ./test-output
       - name: Test serve mode starts
         run: |
           ./volcano -s -p 8888 ./example &
