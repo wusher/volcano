@@ -2,14 +2,28 @@ package cmd
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestGenerate(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create input directory with a markdown file
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home\n\nWelcome!"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
 	cfg := &Config{
-		InputDir:  "/tmp/test-input",
-		OutputDir: "/tmp/test-output",
+		InputDir:  inputDir,
+		OutputDir: outputDir,
 		Title:     "Test Site",
 	}
 
@@ -31,5 +45,11 @@ func TestGenerate(t *testing.T) {
 	}
 	if !strings.Contains(output, cfg.Title) {
 		t.Error("Generate should print site title")
+	}
+
+	// Verify output was created
+	indexPath := filepath.Join(outputDir, "index.html")
+	if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+		t.Error("Generate should create index.html")
 	}
 }
