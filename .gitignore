@@ -1,4 +1,5 @@
 # Binaries
+volcano
 *.exe
 *.exe~
 *.dll
@@ -24,3 +25,6 @@ vendor/
 
 # OS
 .DS_Store
+
+# Generated output
+output/
