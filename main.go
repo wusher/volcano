@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"volcano/cmd"
+	"volcano/internal/output"
 )
 
 // Version is the CLI version
@@ -70,10 +71,13 @@ func runWithConfig(args []string, cfg *cmd.Config, stdout, stderr io.Writer) (in
 		return 0, nil
 	}
 
+	// Detect if stderr is a terminal for colored output
+	errLogger := output.NewLogger(stderr, output.IsStderrTTY(), false, false)
+
 	// Get input directory from positional arguments
 	remainingArgs := fs.Args()
 	if len(remainingArgs) < 1 {
-		_, _ = fmt.Fprintln(stderr, "Error: input folder is required")
+		errLogger.Error("input folder is required")
 		_, _ = fmt.Fprintln(stderr, "")
 		printUsage(stderr)
 		return 1, fmt.Errorf("input folder is required")
@@ -83,9 +87,12 @@ func runWithConfig(args []string, cfg *cmd.Config, stdout, stderr io.Writer) (in
 
 	// Validate input directory exists and is a directory
 	if err := ValidateInputDir(cfg.InputDir); err != nil {
-		_, _ = fmt.Fprintf(stderr, "Error: %v\n", err)
+		errLogger.Error("%v", err)
 		return 1, err
 	}
+
+	// Set colored output based on stdout TTY detection
+	cfg.Colored = output.IsStdoutTTY()
 
 	// Execute the appropriate command
 	var err error
@@ -96,7 +103,7 @@ func runWithConfig(args []string, cfg *cmd.Config, stdout, stderr io.Writer) (in
 	}
 
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Error: %v\n", err)
+		errLogger.Error("%v", err)
 		return 1, err
 	}
 

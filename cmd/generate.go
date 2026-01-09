@@ -14,6 +14,7 @@ func Generate(cfg *Config, w io.Writer) error {
 		Title:     cfg.Title,
 		Quiet:     cfg.Quiet,
 		Verbose:   cfg.Verbose,
+		Colored:   cfg.Colored,
 	}
 
 	gen, err := generator.New(genConfig, w)

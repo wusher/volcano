@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"volcano/internal/markdown"
+	"volcano/internal/output"
 	"volcano/internal/styles"
 	"volcano/internal/templates"
 	"volcano/internal/tree"
@@ -22,6 +23,7 @@ type Config struct {
 	Clean     bool
 	Quiet     bool
 	Verbose   bool
+	Colored   bool
 }
 
 // Result holds the result of generation
@@ -35,7 +37,7 @@ type Generator struct {
 	config   Config
 	renderer *templates.Renderer
 	parser   *markdown.Parser
-	writer   io.Writer
+	logger   *output.Logger
 }
 
 // New creates a new Generator
@@ -49,7 +51,7 @@ func New(config Config, writer io.Writer) (*Generator, error) {
 		config:   config,
 		renderer: renderer,
 		parser:   markdown.NewParser(),
-		writer:   writer,
+		logger:   output.NewLogger(writer, config.Colored, config.Quiet, config.Verbose),
 	}, nil
 }
 
@@ -58,11 +60,11 @@ func (g *Generator) Generate() (*Result, error) {
 	result := &Result{}
 
 	// Print startup info
-	g.log("Generating site...")
-	g.log("  Input:  %s", g.config.InputDir)
-	g.log("  Output: %s", g.config.OutputDir)
-	g.log("  Title:  %s", g.config.Title)
-	g.log("")
+	g.logger.Println("Generating site...")
+	g.logger.Println("  Input:  %s", g.config.InputDir)
+	g.logger.Println("  Output: %s", g.config.OutputDir)
+	g.logger.Println("  Title:  %s", g.config.Title)
+	g.logger.Println("")
 
 	// Step 1: Prepare output directory
 	if err := g.prepareOutputDir(); err != nil {
@@ -70,27 +72,31 @@ func (g *Generator) Generate() (*Result, error) {
 	}
 
 	// Step 2: Scan input directory
-	g.log("Scanning input directory...")
+	g.logger.Println("Scanning input directory...")
 	site, err := tree.Scan(g.config.InputDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan input directory: %w", err)
 	}
 
 	if len(site.AllPages) == 0 {
+		g.logger.Warning("No markdown files found in %s", g.config.InputDir)
 		result.Warnings = append(result.Warnings, "No markdown files found")
 		return result, nil
 	}
 
-	g.log("Found %d markdown files", len(site.AllPages))
+	// Count folders
+	folderCount := countFolders(site.Root)
+	g.logger.Println("Found %d markdown files in %d folders", len(site.AllPages), folderCount)
+	g.logger.Println("")
 
 	// Step 3: Generate pages
-	g.log("Generating pages...")
+	g.logger.Println("Generating pages...")
 	for _, node := range site.AllPages {
 		if err := g.generatePage(node, site.Root); err != nil {
 			return nil, fmt.Errorf("failed to generate %s: %w", node.Path, err)
 		}
 		result.PagesGenerated++
-		g.logVerbose("  ✓ %s", node.Path)
+		g.logger.FileSuccess(node.Path)
 	}
 
 	// Step 4: Generate 404 page
@@ -99,16 +105,31 @@ func (g *Generator) Generate() (*Result, error) {
 	}
 
 	// Print summary
-	g.log("")
-	g.log("Generated %d pages in %s", result.PagesGenerated, g.config.OutputDir)
+	g.logger.Println("")
+	g.logger.Success("Generated %d pages in %s", result.PagesGenerated, g.config.OutputDir)
 
 	return result, nil
+}
+
+// countFolders counts the number of folders in the tree
+func countFolders(node *tree.Node) int {
+	if node == nil {
+		return 0
+	}
+	count := 0
+	if node.IsFolder {
+		count = 1
+	}
+	for _, child := range node.Children {
+		count += countFolders(child)
+	}
+	return count
 }
 
 // prepareOutputDir creates or cleans the output directory
 func (g *Generator) prepareOutputDir() error {
 	if g.config.Clean {
-		g.logVerbose("Cleaning output directory...")
+		g.logger.Verbose("Cleaning output directory...")
 		if err := os.RemoveAll(g.config.OutputDir); err != nil {
 			return fmt.Errorf("failed to clean output directory: %w", err)
 		}
@@ -195,18 +216,4 @@ func (g *Generator) generate404(root *tree.Node) error {
 	defer func() { _ = f.Close() }()
 
 	return g.renderer.Render(f, data)
-}
-
-// log prints a message if not in quiet mode
-func (g *Generator) log(format string, args ...interface{}) {
-	if !g.config.Quiet {
-		_, _ = fmt.Fprintf(g.writer, format+"\n", args...)
-	}
-}
-
-// logVerbose prints a message only in verbose mode
-func (g *Generator) logVerbose(format string, args ...interface{}) {
-	if g.config.Verbose {
-		_, _ = fmt.Fprintf(g.writer, format+"\n", args...)
-	}
 }

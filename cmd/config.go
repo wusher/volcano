@@ -10,6 +10,7 @@ type Config struct {
 	Title     string // Site title
 	Quiet     bool   // Suppress non-error output
 	Verbose   bool   // Enable debug output
+	Colored   bool   // Enable colored output (auto-detected from TTY)
 }
 
 // DefaultConfig returns a Config with default values
