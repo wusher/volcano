@@ -219,17 +219,19 @@ func (s *DynamicServer) resolveMarkdownPath(urlPath string) string {
 	// Remove leading slash
 	urlPath = strings.TrimPrefix(urlPath, "/")
 
-	// If empty or ends with /, look for index.md
-	if urlPath == "" || strings.HasSuffix(urlPath, "/") {
-		indexPath := filepath.Join(urlPath, "index.md")
-		fullPath := filepath.Join(s.config.SourceDir, indexPath)
+	// Remove trailing slash for processing
+	urlPath = strings.TrimSuffix(urlPath, "/")
+
+	// Root path - look for index.md
+	if urlPath == "" {
+		fullPath := filepath.Join(s.config.SourceDir, "index.md")
 		if _, err := os.Stat(fullPath); err == nil {
-			return indexPath
+			return "index.md"
 		}
 		return ""
 	}
 
-	// Try exact match with .md extension
+	// Try as a file with .md extension (clean URLs: /about/ -> about.md)
 	mdPath := urlPath + ".md"
 	fullPath := filepath.Join(s.config.SourceDir, mdPath)
 	if _, err := os.Stat(fullPath); err == nil {
