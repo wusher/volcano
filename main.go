@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"volcano/cmd"
 	"volcano/internal/output"
@@ -47,6 +48,7 @@ func runWithConfig(args []string, cfg *cmd.Config, stdout, stderr io.Writer) (in
 	fs.StringVar(&cfg.OGImage, "og-image", "", "Default Open Graph image URL")
 	fs.StringVar(&cfg.FaviconPath, "favicon", "", "Path to favicon file")
 	fs.BoolVar(&cfg.ShowLastMod, "last-modified", false, "Show last modified date")
+	fs.BoolVar(&cfg.TopNav, "top-nav", false, "Display root files in top navigation bar")
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Enable debug output")
@@ -59,6 +61,9 @@ func runWithConfig(args []string, cfg *cmd.Config, stdout, stderr io.Writer) (in
 	fs.Usage = func() {
 		printUsage(stdout)
 	}
+
+	// Reorder args to put flags first (Go's flag package stops at first non-flag)
+	args = reorderArgs(args)
 
 	if err := fs.Parse(args); err != nil {
 		return 1, err
@@ -132,6 +137,7 @@ func printUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  --og-image <url>     Default Open Graph image URL")
 	_, _ = fmt.Fprintln(w, "  --favicon <path>     Path to favicon file (.ico, .png, .svg)")
 	_, _ = fmt.Fprintln(w, "  --last-modified      Show last modified date on pages")
+	_, _ = fmt.Fprintln(w, "  --top-nav            Display root files in top navigation bar")
 	_, _ = fmt.Fprintln(w, "  -q, --quiet          Suppress non-error output")
 	_, _ = fmt.Fprintln(w, "  --verbose            Enable debug output")
 	_, _ = fmt.Fprintln(w, "  -v, --version        Show version")
@@ -157,4 +163,50 @@ func ValidateInputDir(path string) error {
 	}
 
 	return nil
+}
+
+// reorderArgs moves flags before positional arguments
+// This is needed because Go's flag package stops at the first non-flag argument
+func reorderArgs(args []string) []string {
+	var flags []string
+	var positional []string
+
+	i := 0
+	for i < len(args) {
+		arg := args[i]
+		if strings.HasPrefix(arg, "-") {
+			// This is a flag
+			flags = append(flags, arg)
+			// Check if this flag takes a value (not a boolean flag)
+			// Flags with = don't need special handling
+			if !strings.Contains(arg, "=") && i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				// Check if the next arg looks like a flag value (not a path)
+				nextArg := args[i+1]
+				// Only treat as value if flag is a known value-taking flag
+				if isValueFlag(arg) {
+					i++
+					flags = append(flags, nextArg)
+				}
+			}
+		} else {
+			positional = append(positional, arg)
+		}
+		i++
+	}
+
+	return append(flags, positional...)
+}
+
+// isValueFlag returns true if the flag takes a value argument
+func isValueFlag(flag string) bool {
+	// Strip leading dashes
+	name := strings.TrimLeft(flag, "-")
+	// List of flags that take values
+	valueFlags := map[string]bool{
+		"o": true, "output": true,
+		"p": true, "port": true,
+		"title": true, "url": true, "author": true,
+		"og-image": true, "favicon": true,
+	}
+	return valueFlags[name]
 }

@@ -16,6 +16,7 @@ type Config struct {
 	OGImage     string // Default Open Graph image
 	FaviconPath string // Path to favicon file
 	ShowLastMod bool   // Show last modified date
+	TopNav      bool   // Display root files in top navigation bar
 }
 
 // DefaultConfig returns a Config with default values

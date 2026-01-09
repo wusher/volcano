@@ -19,7 +19,7 @@
         })();
     </script>
 </head>
-<body>
+<body{{if .TopNavItems}} class="has-top-nav"{{end}}>
     <!-- Scroll progress indicator -->
     <div class="scroll-progress" aria-hidden="true">
         <div class="scroll-progress-bar"></div>
@@ -36,6 +36,19 @@
 
     <!-- Backdrop -->
     <div class="drawer-backdrop" aria-hidden="true" onclick="closeDrawer()"></div>
+
+{{if .TopNavItems}}
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav" aria-label="Main navigation">
+        <ul class="top-nav-list">
+{{range .TopNavItems}}
+            <li>
+                <a href="{{.URL}}"{{if eq .URL $.CurrentPath}} aria-current="page" class="active"{{end}}>{{.Name}}</a>
+            </li>
+{{end}}
+        </ul>
+    </nav>
+{{end}}
 
     <!-- Sidebar / Drawer -->
     <aside class="sidebar" aria-label="Navigation">
