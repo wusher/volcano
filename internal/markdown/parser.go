@@ -4,6 +4,7 @@ package markdown
 import (
 	"bytes"
 
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
@@ -25,8 +26,9 @@ func NewParser() *Parser {
 			extension.Footnote,       // Footnotes
 			extension.DefinitionList, // Definition lists
 			highlighting.NewHighlighting(
-				highlighting.WithStyle("github"),
-				highlighting.WithFormatOptions(),
+				highlighting.WithFormatOptions(
+					chromahtml.WithClasses(true), // Use CSS classes instead of inline styles
+				),
 			),
 		),
 		goldmark.WithParserOptions(
