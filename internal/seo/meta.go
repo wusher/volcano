@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// SEOMeta contains SEO meta tag data
-type SEOMeta struct {
+// Meta contains SEO meta tag data
+type Meta struct {
 	Title       string // Page title
 	Description string // Meta description
 	Canonical   string // Canonical URL
@@ -36,7 +36,7 @@ type TwitterCard struct {
 
 // PageMeta combines all meta information for a page
 type PageMeta struct {
-	SEO     SEOMeta
+	SEO     Meta
 	OG      OpenGraph
 	Twitter TwitterCard
 }
@@ -72,7 +72,7 @@ func GeneratePageMeta(pageTitle, pageContent, urlPath string, config Config) Pag
 	}
 
 	return PageMeta{
-		SEO: SEOMeta{
+		SEO: Meta{
 			Title:       fullTitle,
 			Description: description,
 			Canonical:   canonical,

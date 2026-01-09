@@ -91,7 +91,7 @@ func RenderPageNavigation(nav PageNavigation) template.HTML {
 		sb.WriteString(`    <span class="page-nav-label">Previous</span>`)
 		sb.WriteString("\n")
 		sb.WriteString(`    <span class="page-nav-title">`)
-		sb.WriteString(template.HTMLEscapeString("← "+nav.Previous.Title))
+		sb.WriteString(template.HTMLEscapeString("← " + nav.Previous.Title))
 		sb.WriteString(`</span>`)
 		sb.WriteString("\n")
 		sb.WriteString(`  </a>`)

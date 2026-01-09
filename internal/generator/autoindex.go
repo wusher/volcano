@@ -40,10 +40,12 @@ func NeedsAutoIndex(node *tree.Node) bool {
 		return false
 	}
 
-	// Check for index.md or readme.md in children
+	// Check for index.md or readme.md in children by looking at the Path (filename)
 	for _, child := range node.Children {
 		if !child.IsFolder {
-			lower := strings.ToLower(child.Name)
+			// Use the path's base name instead of the display name (which could be H1 title)
+			baseName := strings.TrimSuffix(filepath.Base(child.Path), filepath.Ext(child.Path))
+			lower := strings.ToLower(baseName)
 			if lower == "index" || lower == "readme" {
 				return false
 			}
@@ -58,9 +60,14 @@ func BuildAutoIndex(node *tree.Node) AutoIndex {
 	var items []IndexItem
 
 	for _, child := range node.Children {
+		url := tree.GetURLPath(child)
+		// For folders, construct the URL from the path
+		if child.IsFolder {
+			url = "/" + filepath.ToSlash(child.Path) + "/"
+		}
 		items = append(items, IndexItem{
 			Title:    child.Name,
-			URL:      tree.GetURLPath(child),
+			URL:      url,
 			IsFolder: child.IsFolder,
 		})
 	}

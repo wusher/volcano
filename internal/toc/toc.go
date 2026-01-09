@@ -7,17 +7,17 @@ import (
 	"strings"
 )
 
-// TOCItem represents a single item in the table of contents
-type TOCItem struct {
-	ID       string     // Heading ID for anchor link
-	Text     string     // Heading text content
-	Level    int        // 2, 3, or 4
-	Children []*TOCItem // Nested headings
+// Item represents a single item in the table of contents
+type Item struct {
+	ID       string  // Heading ID for anchor link
+	Text     string  // Heading text content
+	Level    int     // 2, 3, or 4
+	Children []*Item // Nested headings
 }
 
 // PageTOC represents the table of contents for a page
 type PageTOC struct {
-	Items    []*TOCItem
+	Items    []*Item
 	MinItems int // Minimum headings to show TOC (default: 3)
 }
 
@@ -39,8 +39,8 @@ func ExtractTOC(htmlContent string, minItems int) *PageTOC {
 		return nil
 	}
 
-	var items []*TOCItem
-	var stack []*TOCItem
+	var items []*Item
+	var stack []*Item
 
 	for _, match := range matches {
 		level := int(match[1][0] - '0') // Convert '2', '3', '4' to 2, 3, 4
@@ -48,7 +48,7 @@ func ExtractTOC(htmlContent string, minItems int) *PageTOC {
 		text := stripTagsRegex.ReplaceAllString(match[3], "")
 		text = strings.TrimSpace(text)
 
-		item := &TOCItem{
+		item := &Item{
 			ID:    id,
 			Text:  text,
 			Level: level,
@@ -99,7 +99,7 @@ func RenderTOC(toc *PageTOC) template.HTML {
 	return template.HTML(sb.String())
 }
 
-func renderTOCItems(sb *strings.Builder, items []*TOCItem, indent int) {
+func renderTOCItems(sb *strings.Builder, items []*Item, indent int) {
 	if len(items) == 0 {
 		return
 	}

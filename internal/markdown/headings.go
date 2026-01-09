@@ -53,9 +53,9 @@ func AddHeadingAnchors(htmlContent string) string {
 			return match
 		}
 
-		tag := matches[1]       // h1, h2, etc
-		attrs := matches[2]     // existing attributes
-		content := matches[3]   // heading content
+		tag := matches[1]     // h1, h2, etc
+		attrs := matches[2]   // existing attributes
+		content := matches[3] // heading content
 
 		// Strip HTML tags from content to get plain text for slug
 		plainText := stripHTMLTags(content)
