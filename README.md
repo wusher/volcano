@@ -1,5 +1,7 @@
 # Volcano
 
+![Volcano Logo](docs/logo.png)
+
 [![CI](https://github.com/wusher/volcano/actions/workflows/ci.yml/badge.svg)](https://github.com/wusher/volcano/actions/workflows/ci.yml)
 
 A Go CLI static site generator that converts a folder of markdown files into a styled static website with a tree navigation layout.
