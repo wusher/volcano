@@ -39,6 +39,7 @@ type Config struct {
 	ShowPageNav bool   // Show previous/next page navigation
 	Theme       string // Theme name (docs, blog, vanilla)
 	CSSPath     string // Path to custom CSS file
+	AccentColor string // Custom accent color in hex format (e.g., "#ff6600")
 }
 
 // Result holds the result of generation
@@ -70,8 +71,9 @@ type Generator struct {
 func New(config Config, writer io.Writer) (*Generator, error) {
 	// Get CSS content using the shared CSSLoader
 	cssConfig := styles.CSSConfig{
-		Theme:   config.Theme,
-		CSSPath: config.CSSPath,
+		Theme:       config.Theme,
+		CSSPath:     config.CSSPath,
+		AccentColor: config.AccentColor,
 	}
 	cssLoader := styles.NewCSSLoader(cssConfig, os.ReadFile)
 	css, err := cssLoader.LoadCSS()

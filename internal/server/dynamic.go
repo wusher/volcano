@@ -37,6 +37,7 @@ type DynamicConfig struct {
 	ShowPageNav bool
 	Theme       string
 	CSSPath     string
+	AccentColor string // Custom accent color in hex format (e.g., "#ff6600")
 	FaviconPath string // Path to favicon file
 }
 
@@ -59,8 +60,9 @@ type DynamicServer struct {
 // NewDynamicServer creates a new dynamic server
 func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, error) {
 	cssConfig := styles.CSSConfig{
-		Theme:   config.Theme,
-		CSSPath: config.CSSPath,
+		Theme:       config.Theme,
+		CSSPath:     config.CSSPath,
+		AccentColor: config.AccentColor,
 	}
 	cssLoader := styles.NewCSSLoader(cssConfig, os.ReadFile)
 	css, err := cssLoader.LoadCSS()

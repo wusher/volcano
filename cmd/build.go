@@ -33,6 +33,7 @@ func Build(args []string, stdout, stderr io.Writer) error {
 	fs.BoolVar(&cfg.ShowPageNav, "page-nav", false, "Show previous/next page navigation")
 	fs.StringVar(&cfg.Theme, "theme", "docs", "Theme name (docs, blog, vanilla)")
 	fs.StringVar(&cfg.CSSPath, "css", "", "Path to custom CSS file")
+	fs.StringVar(&cfg.AccentColor, "accent-color", "", "Custom accent color (hex format, e.g., '#ff6600')")
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Enable debug output")
@@ -140,6 +141,7 @@ func printBuildUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  --page-nav           Show previous/next page navigation")
 	_, _ = fmt.Fprintln(w, "  --theme <name>       Theme (docs, blog, vanilla; default: docs)")
 	_, _ = fmt.Fprintln(w, "  --css <path>         Path to custom CSS file (overrides theme)")
+	_, _ = fmt.Fprintln(w, "  --accent-color <hex> Custom accent color (e.g., '#ff6600')")
 	_, _ = fmt.Fprintln(w, "  -q, --quiet          Suppress non-error output")
 	_, _ = fmt.Fprintln(w, "  --verbose            Enable debug output")
 	_, _ = fmt.Fprintln(w, "  -h, --help           Show help")
@@ -154,7 +156,7 @@ var buildValueFlags = map[string]bool{
 	"o": true, "output": true,
 	"title": true, "url": true, "author": true,
 	"og-image": true, "favicon": true,
-	"theme": true, "css": true,
+	"theme": true, "css": true, "accent-color": true,
 }
 
 // reorderArgs moves flags before positional arguments

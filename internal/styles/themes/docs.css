@@ -82,7 +82,7 @@ a:hover {
 }
 
 .scroll-progress-bar {
-  background: var(--text-primary);
+  background: var(--accent, var(--text-primary));
 }
 
 /* ==========================================================================
@@ -255,8 +255,8 @@ a:hover {
 }
 
 .top-nav-list li a.active {
-  color: var(--text-primary);
-  border-bottom-color: var(--text-primary);
+  color: var(--accent, var(--text-primary));
+  border-bottom-color: var(--accent, var(--text-primary));
 }
 
 /* ==========================================================================
@@ -275,9 +275,13 @@ a:hover {
 }
 
 .tree-nav a.active {
-  background-color: var(--bg-tertiary);
-  color: var(--text-primary);
+  background-color: var(--accent-light, var(--bg-tertiary));
+  color: var(--accent, var(--text-primary));
   font-weight: 500;
+}
+
+[data-theme="dark"] .tree-nav a.active {
+  background-color: var(--accent-dark, var(--bg-tertiary));
 }
 
 .folder-toggle {
@@ -383,9 +387,9 @@ a:hover {
 }
 
 .toc a.active {
-  color: var(--text-primary);
+  color: var(--accent, var(--text-primary));
   font-weight: 500;
-  border-left-color: var(--text-primary);
+  border-left-color: var(--accent, var(--text-primary));
 }
 
 /* ==========================================================================
