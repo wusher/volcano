@@ -25,7 +25,6 @@ import (
 	"github.com/wusher/volcano/internal/tree"
 )
 
-
 // DynamicConfig holds configuration for the dynamic server
 type DynamicConfig struct {
 	SourceDir   string

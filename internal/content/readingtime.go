@@ -3,6 +3,7 @@ package content
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -88,21 +89,5 @@ func FormatReadingTime(rt ReadingTime) string {
 	if rt.Minutes == 1 {
 		return "1 min read"
 	}
-	return strings.TrimSpace(strings.Join([]string{itoa(rt.Minutes), "min read"}, " "))
-}
-
-// itoa converts int to string without importing strconv
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	if n < 0 {
-		return "-" + itoa(-n)
-	}
-	var digits []byte
-	for n > 0 {
-		digits = append([]byte{byte('0' + n%10)}, digits...)
-		n /= 10
-	}
-	return string(digits)
+	return strings.TrimSpace(strings.Join([]string{strconv.Itoa(rt.Minutes), "min read"}, " "))
 }

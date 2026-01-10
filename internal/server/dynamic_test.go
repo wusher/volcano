@@ -495,7 +495,6 @@ func TestFindNodeBySourcePath(t *testing.T) {
 	}
 }
 
-
 func TestFindFolderByPath(t *testing.T) {
 	// Create tree structure
 	root := tree.NewNode("", "", true)

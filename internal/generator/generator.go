@@ -243,7 +243,6 @@ func (g *Generator) verifyLinks(allPages []*tree.Node) []string {
 	return broken
 }
 
-
 // verifyContentLinks checks all internal links in generated page content
 func (g *Generator) verifyContentLinks(validURLs map[string]bool) []markdown.BrokenLink {
 	var allBroken []markdown.BrokenLink
@@ -425,4 +424,3 @@ func (g *Generator) generate404(root *tree.Node) error {
 
 	return g.renderer.Render(f, data)
 }
-
