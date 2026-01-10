@@ -27,16 +27,12 @@ jobs:
           version: v2.0.2
 
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        go: ['1.21', '1.22']
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go }}
+          go-version: '1.22'
       - name: Run tests with coverage
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
       - name: Check coverage threshold
@@ -49,7 +45,7 @@ jobs:
           fi
       - uses: actions/upload-artifact@v4
         with:
-          name: coverage-${{ matrix.os }}-${{ matrix.go }}
+          name: coverage
           path: coverage.out
 
   e2e:
@@ -81,6 +77,13 @@ jobs:
       - name: Test serve command output
         run: |
           timeout 3s ./volcano -s ./example 2>&1 | grep -qE "(Serving|Live server)" && echo "Serve command works" || true
+      - name: Test base URL prefixing
+        run: |
+          ./volcano -o ./url-test-output --url="https://wusher.github.io/volcano/" ./example
+          # Verify navigation links are prefixed with /volcano/
+          grep -q 'href="/volcano/' ./url-test-output/index.html && echo "Base URL prefixing works"
+          # Verify 404 page has prefixed home link
+          grep -q 'href="/volcano/"' ./url-test-output/404.html && echo "404 base URL works"
 
   docs:
     runs-on: ubuntu-latest

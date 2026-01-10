@@ -261,3 +261,58 @@ func SlugifyPath(path string) string {
 
 	return strings.Join(slugged, "/")
 }
+
+// PrefixURL prefixes a URL path with a base URL
+// The base URL is expected to be a URL like "https://example.com/subpath/"
+// The urlPath is expected to start with "/" (e.g., "/docs/intro/")
+// Returns the combined URL with proper path handling
+func PrefixURL(baseURL, urlPath string) string {
+	if baseURL == "" {
+		return urlPath
+	}
+
+	// Extract just the path portion from the base URL
+	// e.g., "https://example.com/volcano/" -> "/volcano"
+	basePath := extractBasePath(baseURL)
+	if basePath == "" {
+		return urlPath
+	}
+
+	// Combine base path with URL path
+	// basePath is "/volcano", urlPath is "/docs/" -> "/volcano/docs/"
+	if urlPath == "/" {
+		return basePath + "/"
+	}
+
+	return basePath + urlPath
+}
+
+// extractBasePath extracts the path portion from a URL
+// e.g., "https://example.com/volcano/" -> "/volcano"
+// e.g., "https://example.com/" -> ""
+// e.g., "https://example.com" -> ""
+func extractBasePath(baseURL string) string {
+	// Remove trailing slash for consistent handling
+	baseURL = strings.TrimSuffix(baseURL, "/")
+
+	// Find the scheme separator
+	schemeEnd := strings.Index(baseURL, "://")
+	if schemeEnd == -1 {
+		// No scheme, might just be a path
+		if strings.HasPrefix(baseURL, "/") {
+			return strings.TrimSuffix(baseURL, "/")
+		}
+		return ""
+	}
+
+	// Find the host portion (after scheme, before first /)
+	afterScheme := baseURL[schemeEnd+3:]
+	slashIdx := strings.Index(afterScheme, "/")
+	if slashIdx == -1 {
+		// No path portion (e.g., "https://example.com")
+		return ""
+	}
+
+	// Return the path portion without trailing slash
+	return afterScheme[slashIdx:]
+}

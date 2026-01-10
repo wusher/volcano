@@ -736,3 +736,159 @@ func TestIntegrationStory37_FilenamePrefix(t *testing.T) {
 		t.Error("Story 37: navigation should not show date prefix")
 	}
 }
+
+// Test: Base URL Prefixing for Subpath Deployment
+func TestIntegrationBaseURLPrefixing(t *testing.T) {
+	outputDir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	// Use --url flag with a subpath to test URL prefixing
+	exitCode := Run([]string{"-o", outputDir, "--url=https://wusher.github.io/volcano/", "--title=Volcano Docs", "./example"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	// Read index.html to verify URL prefixing
+	content, err := os.ReadFile(filepath.Join(outputDir, "index.html"))
+	if err != nil {
+		t.Fatalf("Failed to read index.html: %v", err)
+	}
+	html := string(content)
+
+	// Verify navigation links are prefixed with /volcano/
+	if !strings.Contains(html, "href=\"/volcano/getting-started/\"") {
+		t.Error("Base URL: navigation links should be prefixed with /volcano/")
+	}
+
+	// Verify site title link is prefixed
+	if !strings.Contains(html, "href=\"/volcano/\"") {
+		t.Error("Base URL: site title link should be prefixed with /volcano/")
+	}
+
+	// Verify keyboard shortcut home URL is set correctly
+	// Note: Go templates escape forward slashes in JavaScript contexts
+	if !strings.Contains(html, "const baseURL = '\\/volcano'") && !strings.Contains(html, "const baseURL = '/volcano'") {
+		t.Error("Base URL: JavaScript baseURL should be set to /volcano")
+	}
+
+	// Read 404.html to verify base URL in error page
+	content404, err := os.ReadFile(filepath.Join(outputDir, "404.html"))
+	if err != nil {
+		t.Fatalf("Failed to read 404.html: %v", err)
+	}
+	html404 := string(content404)
+
+	if !strings.Contains(html404, "href=\"/volcano/\"") {
+		t.Error("Base URL: 404 page home link should be prefixed with /volcano/")
+	}
+}
+
+// Test: Base URL Prefixing with Breadcrumbs
+func TestIntegrationBaseURLBreadcrumbs(t *testing.T) {
+	outputDir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, "--url=https://wusher.github.io/volcano/", "--title=Volcano Docs", "./example"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	// Read a nested page to check breadcrumbs
+	content, err := os.ReadFile(filepath.Join(outputDir, "guides/configuration/index.html"))
+	if err != nil {
+		t.Fatalf("Failed to read guides/configuration/index.html: %v", err)
+	}
+	html := string(content)
+
+	// Verify breadcrumb home link is prefixed
+	if !strings.Contains(html, "href=\"/volcano/\"") {
+		t.Error("Base URL: breadcrumb home link should be prefixed with /volcano/")
+	}
+
+	// Verify breadcrumb intermediate links are prefixed
+	if !strings.Contains(html, "href=\"/volcano/guides/\"") {
+		t.Error("Base URL: breadcrumb guides link should be prefixed with /volcano/")
+	}
+}
+
+// Test: Base URL Prefixing with Page Navigation
+func TestIntegrationBaseURLPageNav(t *testing.T) {
+	outputDir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, "--url=https://wusher.github.io/volcano/", "--page-nav", "./example"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	// Read a page that has prev/next navigation
+	content, err := os.ReadFile(filepath.Join(outputDir, "getting-started/index.html"))
+	if err != nil {
+		t.Fatalf("Failed to read getting-started/index.html: %v", err)
+	}
+	html := string(content)
+
+	// Verify page navigation links contain the base URL prefix
+	// The prev/next links should be prefixed with /volcano/
+	if !strings.Contains(html, "class=\"page-nav\"") {
+		t.Error("Base URL: should have page navigation")
+	}
+
+	// Check that at least some navigation links are prefixed
+	if !strings.Contains(html, "/volcano/") {
+		t.Error("Base URL: page navigation links should be prefixed with /volcano/")
+	}
+}
+
+// Test: Base URL Prefixing with Auto-Index
+func TestIntegrationBaseURLAutoIndex(t *testing.T) {
+	outputDir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, "--url=https://wusher.github.io/volcano/", "./example"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	// Posts folder has no index.md, should have auto-generated index
+	content, err := os.ReadFile(filepath.Join(outputDir, "posts/index.html"))
+	if err != nil {
+		t.Fatalf("Failed to read posts/index.html: %v", err)
+	}
+	html := string(content)
+
+	// Verify auto-index links are prefixed
+	if !strings.Contains(html, "href=\"/volcano/posts/features/\"") {
+		t.Error("Base URL: auto-index links should be prefixed with /volcano/")
+	}
+}
+
+// Test: No Base URL Prefixing when URL has no subpath
+func TestIntegrationBaseURLNoSubpath(t *testing.T) {
+	outputDir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	// Use --url flag without a subpath
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com/", "--title=Test Site", "./example"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	// Read index.html to verify no unnecessary prefixing
+	content, err := os.ReadFile(filepath.Join(outputDir, "index.html"))
+	if err != nil {
+		t.Fatalf("Failed to read index.html: %v", err)
+	}
+	html := string(content)
+
+	// Verify navigation links start with just /
+	if !strings.Contains(html, "href=\"/getting-started/\"") {
+		t.Error("No subpath: navigation links should start with just /")
+	}
+
+	// Verify site title link is just /
+	if !strings.Contains(html, "href=\"/\"") {
+		t.Error("No subpath: site title link should be /")
+	}
+
+	// Verify baseURL is empty in JavaScript
+	// Note: empty baseURL should produce const baseURL = '';
+	if !strings.Contains(html, "const baseURL = '';") {
+		t.Error("No subpath: JavaScript baseURL should be empty")
+	}
+}

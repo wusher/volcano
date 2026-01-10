@@ -69,7 +69,7 @@
     <!-- Sidebar / Drawer -->
     <aside class="sidebar" aria-label="Navigation">
         <div class="sidebar-header">
-            <a href="/" class="site-title">{{.SiteTitle}}</a>
+            <a href="{{if .BaseURL}}{{.BaseURL}}/{{else}}/{{end}}" class="site-title">{{.SiteTitle}}</a>
             <button class="close-btn" aria-label="Close menu" onclick="closeDrawer()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -400,9 +400,11 @@
 
         // Keyboard shortcuts
         (function() {
+            const baseURL = '{{.BaseURL}}';
+            const homeURL = baseURL ? baseURL + '/' : '/';
             const shortcuts = {
                 't': function() { toggleTheme(); },
-                'h': function() { window.location.href = '/'; },
+                'h': function() { window.location.href = homeURL; },
                 '?': function() { showShortcutsModal(); }
             };
 

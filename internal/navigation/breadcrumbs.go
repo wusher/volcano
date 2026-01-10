@@ -18,16 +18,22 @@ type Breadcrumb struct {
 
 // BuildBreadcrumbs generates breadcrumb trail for a page
 func BuildBreadcrumbs(node *tree.Node, siteTitle string) []Breadcrumb {
+	return BuildBreadcrumbsWithBaseURL(node, siteTitle, "")
+}
+
+// BuildBreadcrumbsWithBaseURL generates breadcrumb trail for a page with base URL prefixing
+func BuildBreadcrumbsWithBaseURL(node *tree.Node, siteTitle, baseURL string) []Breadcrumb {
 	if node == nil {
 		return nil
 	}
 
 	var crumbs []Breadcrumb
 
-	// Add home link
+	// Add home link with base URL prefix
+	homeURL := tree.PrefixURL(baseURL, "/")
 	crumbs = append(crumbs, Breadcrumb{
 		Label:   siteTitle,
-		URL:     "/",
+		URL:     homeURL,
 		Current: false,
 	})
 
@@ -56,9 +62,11 @@ func BuildBreadcrumbs(node *tree.Node, siteTitle string) []Breadcrumb {
 			if url == "/./" {
 				url = "/"
 			}
+			// Apply base URL prefix
+			prefixedURL := tree.PrefixURL(baseURL, url)
 			crumbs = append(crumbs, Breadcrumb{
 				Label:   ancestor.Name,
-				URL:     url,
+				URL:     prefixedURL,
 				Current: false,
 			})
 		}

@@ -57,6 +57,11 @@ func NeedsAutoIndex(node *tree.Node) bool {
 
 // BuildAutoIndex creates an AutoIndex for a folder
 func BuildAutoIndex(node *tree.Node) AutoIndex {
+	return BuildAutoIndexWithBaseURL(node, "")
+}
+
+// BuildAutoIndexWithBaseURL creates an AutoIndex for a folder with base URL prefixing
+func BuildAutoIndexWithBaseURL(node *tree.Node, baseURL string) AutoIndex {
 	var items []IndexItem
 
 	for _, child := range node.Children {
@@ -65,9 +70,11 @@ func BuildAutoIndex(node *tree.Node) AutoIndex {
 		if child.IsFolder {
 			url = "/" + tree.SlugifyPath(child.Path) + "/"
 		}
+		// Apply base URL prefix
+		prefixedURL := tree.PrefixURL(baseURL, url)
 		items = append(items, IndexItem{
 			Title:    child.Name,
-			URL:      url,
+			URL:      prefixedURL,
 			IsFolder: child.IsFolder,
 		})
 	}
@@ -144,14 +151,14 @@ func RenderAutoIndexContent(index AutoIndex) template.HTML {
 
 // generateAutoIndex generates an auto-index page for a folder without an index.md
 func (g *Generator) generateAutoIndex(node *tree.Node, root *tree.Node) error {
-	index := BuildAutoIndex(node)
+	index := BuildAutoIndexWithBaseURL(node, g.config.SiteURL)
 	fullOutputPath := filepath.Join(g.config.OutputDir, index.OutputPath)
 
 	// Build content
 	htmlContent := RenderAutoIndexContent(index)
 
-	// Build breadcrumbs
-	breadcrumbs := navigation.BuildBreadcrumbs(node, g.config.Title)
+	// Build breadcrumbs (with base URL prefixing)
+	breadcrumbs := navigation.BuildBreadcrumbsWithBaseURL(node, g.config.Title, g.config.SiteURL)
 	breadcrumbsHTML := navigation.RenderBreadcrumbs(breadcrumbs)
 
 	// Generate SEO meta tags
@@ -164,8 +171,8 @@ func (g *Generator) generateAutoIndex(node *tree.Node, root *tree.Node) error {
 	pageMeta := seo.GeneratePageMeta(index.Title, string(htmlContent), index.URLPath, seoConfig)
 	metaTagsHTML := seo.RenderMetaTags(pageMeta)
 
-	// Render navigation
-	nav := templates.RenderNavigation(root, index.URLPath)
+	// Render navigation (with base URL prefixing)
+	nav := templates.RenderNavigationWithBaseURL(root, index.URLPath, g.config.SiteURL)
 
 	// Prepare template data
 	data := templates.PageData{
@@ -177,6 +184,7 @@ func (g *Generator) generateAutoIndex(node *tree.Node, root *tree.Node) error {
 		Breadcrumbs: breadcrumbsHTML,
 		MetaTags:    metaTagsHTML,
 		ShowSearch:  true,
+		BaseURL:     g.baseURL,
 	}
 
 	// Create output directory

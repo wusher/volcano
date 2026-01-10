@@ -246,6 +246,121 @@ func TestGetURLPath(t *testing.T) {
 	}
 }
 
+func TestPrefixURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		baseURL  string
+		urlPath  string
+		expected string
+	}{
+		{
+			name:     "empty base URL",
+			baseURL:  "",
+			urlPath:  "/docs/intro/",
+			expected: "/docs/intro/",
+		},
+		{
+			name:     "base URL with subpath",
+			baseURL:  "https://wusher.github.io/volcano/",
+			urlPath:  "/docs/intro/",
+			expected: "/volcano/docs/intro/",
+		},
+		{
+			name:     "base URL with subpath no trailing slash",
+			baseURL:  "https://wusher.github.io/volcano",
+			urlPath:  "/docs/intro/",
+			expected: "/volcano/docs/intro/",
+		},
+		{
+			name:     "root URL with subpath",
+			baseURL:  "https://wusher.github.io/volcano/",
+			urlPath:  "/",
+			expected: "/volcano/",
+		},
+		{
+			name:     "base URL without subpath",
+			baseURL:  "https://example.com/",
+			urlPath:  "/docs/intro/",
+			expected: "/docs/intro/",
+		},
+		{
+			name:     "base URL without subpath no trailing slash",
+			baseURL:  "https://example.com",
+			urlPath:  "/docs/intro/",
+			expected: "/docs/intro/",
+		},
+		{
+			name:     "nested subpath",
+			baseURL:  "https://example.com/org/project/",
+			urlPath:  "/getting-started/",
+			expected: "/org/project/getting-started/",
+		},
+		{
+			name:     "root path with nested subpath",
+			baseURL:  "https://example.com/org/project/",
+			urlPath:  "/",
+			expected: "/org/project/",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := PrefixURL(tt.baseURL, tt.urlPath)
+			if result != tt.expected {
+				t.Errorf("PrefixURL(%q, %q) = %q, want %q", tt.baseURL, tt.urlPath, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestExtractBasePath(t *testing.T) {
+	tests := []struct {
+		name     string
+		baseURL  string
+		expected string
+	}{
+		{
+			name:     "full URL with subpath",
+			baseURL:  "https://wusher.github.io/volcano/",
+			expected: "/volcano",
+		},
+		{
+			name:     "full URL without subpath",
+			baseURL:  "https://example.com/",
+			expected: "",
+		},
+		{
+			name:     "full URL without subpath no trailing slash",
+			baseURL:  "https://example.com",
+			expected: "",
+		},
+		{
+			name:     "nested subpath",
+			baseURL:  "https://example.com/org/project/",
+			expected: "/org/project",
+		},
+		{
+			name:     "just a path",
+			baseURL:  "/volcano/",
+			expected: "/volcano",
+		},
+		{
+			name:     "empty string",
+			baseURL:  "",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractBasePath(tt.baseURL)
+			if result != tt.expected {
+				t.Errorf("extractBasePath(%q) = %q, want %q", tt.baseURL, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestSortAndPrune(t *testing.T) {
 	// Create a root with unsorted children
 	root := NewNode("Root", "", true)
