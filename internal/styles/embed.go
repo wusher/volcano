@@ -54,3 +54,44 @@ func ValidateTheme(theme string) error {
 	}
 	return fmt.Errorf("invalid theme %q, valid themes are: docs, blog, vanilla", theme)
 }
+
+// CSSLoader provides CSS content loading functionality.
+// This interface enables dependency injection for testing.
+type CSSLoader interface {
+	LoadCSS() (string, error)
+}
+
+// CSSConfig holds configuration for loading CSS
+type CSSConfig struct {
+	Theme   string // Theme name (docs, blog, vanilla)
+	CSSPath string // Path to custom CSS file (takes precedence over Theme)
+}
+
+// cssLoader implements CSSLoader
+type cssLoader struct {
+	config   CSSConfig
+	readFile func(string) ([]byte, error)
+}
+
+// NewCSSLoader creates a new CSSLoader with the given configuration
+func NewCSSLoader(config CSSConfig, readFile func(string) ([]byte, error)) CSSLoader {
+	return &cssLoader{
+		config:   config,
+		readFile: readFile,
+	}
+}
+
+// LoadCSS returns minified CSS content from custom file or embedded theme
+func (l *cssLoader) LoadCSS() (string, error) {
+	var css string
+	if l.config.CSSPath != "" {
+		content, err := l.readFile(l.config.CSSPath)
+		if err != nil {
+			return "", err
+		}
+		css = string(content)
+	} else {
+		css = GetCSS(l.config.Theme)
+	}
+	return MinifyCSS(css)
+}

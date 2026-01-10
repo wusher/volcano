@@ -495,61 +495,6 @@ func TestFindNodeBySourcePath(t *testing.T) {
 	}
 }
 
-func TestNeedsAutoIndex(t *testing.T) {
-	tests := []struct {
-		name     string
-		setup    func() *tree.Node
-		expected bool
-	}{
-		{
-			name: "folder without index needs auto-index",
-			setup: func() *tree.Node {
-				folder := tree.NewNode("Folder", "folder", true)
-				file := tree.NewNode("File", "folder/file.md", false)
-				folder.AddChild(file)
-				return folder
-			},
-			expected: true,
-		},
-		{
-			name: "folder with index.md does not need auto-index",
-			setup: func() *tree.Node {
-				folder := tree.NewNode("Folder", "folder", true)
-				index := tree.NewNode("Index", "folder/index.md", false)
-				index.Path = "folder/index.md"
-				folder.AddChild(index)
-				return folder
-			},
-			expected: false,
-		},
-		{
-			name: "folder with HasIndex=true does not need auto-index",
-			setup: func() *tree.Node {
-				folder := tree.NewNode("Folder", "folder", true)
-				folder.HasIndex = true
-				return folder
-			},
-			expected: false,
-		},
-		{
-			name: "non-folder does not need auto-index",
-			setup: func() *tree.Node {
-				return tree.NewNode("File", "file.md", false)
-			},
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			node := tt.setup()
-			result := needsAutoIndex(node)
-			if result != tt.expected {
-				t.Errorf("needsAutoIndex() = %v, want %v", result, tt.expected)
-			}
-		})
-	}
-}
 
 func TestFindFolderByPath(t *testing.T) {
 	// Create tree structure
@@ -802,13 +747,23 @@ func TestDynamicServer_ServeBrokenLinksError(t *testing.T) {
 func TestDynamicServer_GetRenderer_MissingCSS(t *testing.T) {
 	tmpDir := t.TempDir()
 
+	// Create a CSS file first so server can be created
+	cssPath := filepath.Join(tmpDir, "custom.css")
+	if err := os.WriteFile(cssPath, []byte("body { color: red; }"), 0644); err != nil {
+		t.Fatalf("WriteFile error = %v", err)
+	}
+
 	var buf bytes.Buffer
-	server, err := NewDynamicServer(DynamicConfig{SourceDir: tmpDir}, &buf)
+	server, err := NewDynamicServer(DynamicConfig{SourceDir: tmpDir, CSSPath: cssPath}, &buf)
 	if err != nil {
 		t.Fatalf("NewDynamicServer() error = %v", err)
 	}
 
-	server.config.CSSPath = filepath.Join(tmpDir, "missing.css")
+	// Now remove the CSS file to simulate missing file on subsequent loads
+	if err := os.Remove(cssPath); err != nil {
+		t.Fatalf("Remove error = %v", err)
+	}
+
 	renderer, err := server.getRenderer()
 	if err != nil {
 		t.Fatalf("getRenderer() error = %v", err)

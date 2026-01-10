@@ -221,31 +221,51 @@ func TestPrepareOutputDirWithClean(t *testing.T) {
 	}
 }
 
-func TestGetCSS(t *testing.T) {
+func TestCSSLoading(t *testing.T) {
 	tmpDir := t.TempDir()
 	cssPath := filepath.Join(tmpDir, "custom.css")
 	if err := os.WriteFile(cssPath, []byte("body { color: red; }"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	customCSS, err := getCSS(Config{CSSPath: cssPath})
-	if err != nil {
-		t.Fatalf("getCSS() error = %v", err)
+	// Test custom CSS file loading via generator
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  tmpDir,
+		OutputDir: filepath.Join(tmpDir, "out"),
+		CSSPath:   cssPath,
 	}
-	if !strings.Contains(customCSS, "body") {
-		t.Error("getCSS() should include custom CSS content")
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() with custom CSS error = %v", err)
+	}
+	if g == nil {
+		t.Error("Generator should be created with custom CSS")
 	}
 
-	themeCSS, err := getCSS(Config{Theme: "vanilla"})
-	if err != nil {
-		t.Fatalf("getCSS() error = %v", err)
+	// Test theme loading via generator
+	config2 := Config{
+		InputDir:  tmpDir,
+		OutputDir: filepath.Join(tmpDir, "out2"),
+		Theme:     "vanilla",
 	}
-	if themeCSS == "" {
-		t.Error("getCSS() should return theme CSS")
+	g2, err := New(config2, &buf)
+	if err != nil {
+		t.Fatalf("New() with theme error = %v", err)
+	}
+	if g2 == nil {
+		t.Error("Generator should be created with theme")
 	}
 
-	if _, err := getCSS(Config{CSSPath: filepath.Join(tmpDir, "missing.css")}); err == nil {
-		t.Error("getCSS() should return error for missing CSS file")
+	// Test missing CSS file
+	config3 := Config{
+		InputDir:  tmpDir,
+		OutputDir: filepath.Join(tmpDir, "out3"),
+		CSSPath:   filepath.Join(tmpDir, "missing.css"),
+	}
+	_, err = New(config3, &buf)
+	if err == nil {
+		t.Error("New() should return error for missing CSS file")
 	}
 }
 

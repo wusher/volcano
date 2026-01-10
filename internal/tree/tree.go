@@ -81,3 +81,62 @@ func (n *Node) ModTime() time.Time {
 	}
 	return info.ModTime()
 }
+
+// BuildValidURLMap creates a map of all valid URLs from a site structure.
+// This is used for validating internal links in generated content.
+func BuildValidURLMap(site *Site) map[string]bool {
+	validURLs := make(map[string]bool)
+	validURLs["/"] = true
+
+	// Add all page URLs
+	for _, node := range site.AllPages {
+		urlPath := GetURLPath(node)
+		if urlPath != "" {
+			validURLs[urlPath] = true
+		}
+	}
+
+	// Add folder URLs (for auto-index pages)
+	addFolderURLs(site.Root, validURLs)
+
+	return validURLs
+}
+
+// BuildValidURLMapWithAutoIndex creates a map of all valid URLs including specific auto-index folders.
+// The autoIndexFolders parameter contains additional folders that will have auto-generated indexes.
+func BuildValidURLMapWithAutoIndex(allPages []*Node, autoIndexFolders []*Node) map[string]bool {
+	validURLs := make(map[string]bool)
+	validURLs["/"] = true
+
+	// Add all page URLs
+	for _, node := range allPages {
+		urlPath := GetURLPath(node)
+		if urlPath != "" {
+			validURLs[urlPath] = true
+		}
+	}
+
+	// Add auto-index folder URLs
+	for _, folder := range autoIndexFolders {
+		urlPath := "/" + SlugifyPath(folder.Path) + "/"
+		validURLs[urlPath] = true
+	}
+
+	return validURLs
+}
+
+// addFolderURLs recursively adds folder URLs to the map
+func addFolderURLs(node *Node, validURLs map[string]bool) {
+	if node == nil {
+		return
+	}
+
+	if node.IsFolder && node.Path != "" {
+		urlPath := "/" + SlugifyPath(node.Path) + "/"
+		validURLs[urlPath] = true
+	}
+
+	for _, child := range node.Children {
+		addFolderURLs(child, validURLs)
+	}
+}

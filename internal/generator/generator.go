@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/wusher/volcano/internal/assets"
+	"github.com/wusher/volcano/internal/autoindex"
 	"github.com/wusher/volcano/internal/content"
 	"github.com/wusher/volcano/internal/markdown"
 	"github.com/wusher/volcano/internal/navigation"
@@ -66,8 +67,13 @@ type Generator struct {
 
 // New creates a new Generator
 func New(config Config, writer io.Writer) (*Generator, error) {
-	// Get CSS content - from file if specified, otherwise from theme
-	css, err := getCSS(config)
+	// Get CSS content using the shared CSSLoader
+	cssConfig := styles.CSSConfig{
+		Theme:   config.Theme,
+		CSSPath: config.CSSPath,
+	}
+	cssLoader := styles.NewCSSLoader(cssConfig, os.ReadFile)
+	css, err := cssLoader.LoadCSS()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load CSS: %w", err)
 	}
@@ -157,7 +163,7 @@ func (g *Generator) Generate() (*Result, error) {
 	}
 
 	// Step 4: Generate auto-index pages for folders without index.md
-	foldersNeedingIndex := collectFoldersNeedingAutoIndex(site.Root)
+	foldersNeedingIndex := autoindex.CollectFoldersNeedingAutoIndex(site.Root)
 	if len(foldersNeedingIndex) > 0 {
 		g.logger.Verbose("Generating auto-index pages for %d folders...", len(foldersNeedingIndex))
 		for _, folder := range foldersNeedingIndex {
@@ -187,7 +193,7 @@ func (g *Generator) Generate() (*Result, error) {
 
 	// Step 7: Verify all internal links in content resolve
 	g.logger.Verbose("Verifying internal links in content...")
-	validURLs := g.buildValidURLMap(site.AllPages, foldersNeedingIndex)
+	validURLs := tree.BuildValidURLMapWithAutoIndex(site.AllPages, foldersNeedingIndex)
 	brokenContentLinks := g.verifyContentLinks(validURLs)
 	if len(brokenContentLinks) > 0 {
 		g.logger.Println("")
@@ -237,29 +243,6 @@ func (g *Generator) verifyLinks(allPages []*tree.Node) []string {
 	return broken
 }
 
-// buildValidURLMap creates a map of all valid URLs in the site
-func (g *Generator) buildValidURLMap(allPages []*tree.Node, autoIndexFolders []*tree.Node) map[string]bool {
-	validURLs := make(map[string]bool)
-
-	// Add root URL
-	validURLs["/"] = true
-
-	// Add all page URLs
-	for _, node := range allPages {
-		urlPath := tree.GetURLPath(node)
-		if urlPath != "" {
-			validURLs[urlPath] = true
-		}
-	}
-
-	// Add auto-index folder URLs
-	for _, folder := range autoIndexFolders {
-		urlPath := "/" + tree.SlugifyPath(folder.Path) + "/"
-		validURLs[urlPath] = true
-	}
-
-	return validURLs
-}
 
 // verifyContentLinks checks all internal links in generated page content
 func (g *Generator) verifyContentLinks(validURLs map[string]bool) []markdown.BrokenLink {
@@ -456,17 +439,3 @@ func (g *Generator) generate404(root *tree.Node) error {
 	return g.renderer.Render(f, data)
 }
 
-// getCSS returns minified CSS content from custom file or embedded theme
-func getCSS(config Config) (string, error) {
-	var css string
-	if config.CSSPath != "" {
-		content, err := os.ReadFile(config.CSSPath)
-		if err != nil {
-			return "", err
-		}
-		css = string(content)
-	} else {
-		css = styles.GetCSS(config.Theme)
-	}
-	return styles.MinifyCSS(css)
-}
