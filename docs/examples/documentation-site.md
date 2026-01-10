@@ -203,7 +203,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Volcano
-        run: go install github.com/example/volcano@latest
+        run: go install github.com/wusher/volcano@latest
 
       - name: Build Documentation
         run: |

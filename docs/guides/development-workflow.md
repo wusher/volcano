@@ -148,9 +148,23 @@ watchexec -e md -w docs -- volcano ./docs -o ./output
 fswatch -o docs | xargs -n1 -I{} volcano ./docs -o ./output
 ```
 
-## Testing Links
+## Link Validation
 
-After generating, verify all internal links work:
+Volcano automatically validates all internal links during generation. If any broken links are found, the build fails with detailed error messages:
+
+```
+✗ Found 2 broken internal links:
+  Page /guides/intro/: broken link /setup/ (not found)
+  Page /reference/api/: broken link /deprecated/ (not found)
+```
+
+This catches broken wiki links, markdown links, and navigation references before deployment.
+
+In dynamic serve mode (`volcano -s ./docs`), broken links are displayed inline on the page with helpful error messages.
+
+## Manual Testing
+
+After generating, you can also manually verify your site:
 
 ```bash
 # Generate the site

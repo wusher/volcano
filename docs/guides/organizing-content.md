@@ -125,8 +125,8 @@ Volcano determines page titles in this order:
 
 Pages in the sidebar are sorted as follows:
 
-1. **Folders first**, then files
-2. **Within each group**: by date prefix, then number prefix, then alphabetically
+1. **Files first**, then folders
+2. **Within each group**: by date prefix (newest first), then number prefix, then alphabetically
 
 Example:
 

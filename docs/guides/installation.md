@@ -4,7 +4,7 @@ Install Volcano on your system using one of these methods.
 
 ## Using Go Install (Recommended)
 
-If you have Go 1.21+ installed, this is the simplest method:
+If you have Go 1.24+ installed, this is the simplest method:
 
 ```bash
 go install github.com/wusher/volcano@latest

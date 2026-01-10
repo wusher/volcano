@@ -57,7 +57,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.24'
 
       - name: Install Volcano
         run: go install github.com/wusher/volcano@latest
@@ -107,7 +107,7 @@ Create `netlify.toml` in your repository root:
   publish = "public"
 
 [build.environment]
-  GO_VERSION = "1.21"
+  GO_VERSION = "1.24"
 ```
 
 ### Using Netlify CLI
