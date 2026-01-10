@@ -481,6 +481,11 @@
                     window.location.reload();
                 });
 
+                eventSource.addEventListener('css', function(e) {
+                    console.log('[volcano] CSS changed, reloading...');
+                    window.location.reload();
+                });
+
                 eventSource.addEventListener('topNav', function(e) {
                     console.log('[volcano] Top nav toggled, reloading...');
                     window.location.reload();

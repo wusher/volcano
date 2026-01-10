@@ -76,15 +76,17 @@ type DynamicConfig struct {
 
 // DynamicServer serves markdown files with live rendering
 type DynamicServer struct {
-	config      DynamicConfig
-	renderer    *templates.Renderer
-	writer      io.Writer
-	server      *http.Server
-	fs          FileSystem
-	scanner     TreeScanner
-	sse         *SSEBroadcaster
-	keyboard    *KeyboardHandler
-	validThemes []string
+	config        DynamicConfig
+	renderer      *templates.Renderer
+	writer        io.Writer
+	server        *http.Server
+	fs            FileSystem
+	scanner       TreeScanner
+	sse           *SSEBroadcaster
+	keyboard      *KeyboardHandler
+	validThemes   []string
+	cssSelectMode bool     // Whether we're in CSS file selection mode
+	cssFiles      []string // Available CSS files for selection
 }
 
 // NewDynamicServer creates a new dynamic server
@@ -724,6 +726,12 @@ func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 
 // handleKeyPress handles keyboard input for toggling settings
 func (s *DynamicServer) handleKeyPress(key rune) {
+	// Check if we're in CSS selection mode
+	if s.cssSelectMode {
+		s.handleCSSSelection(key)
+		return
+	}
+
 	switch key {
 	case '1':
 		s.setTheme("docs")
@@ -731,6 +739,8 @@ func (s *DynamicServer) handleKeyPress(key rune) {
 		s.setTheme("blog")
 	case '3':
 		s.setTheme("vanilla")
+	case '4', 'c', 'C':
+		s.startCSSSelection()
 	case 't', 'T':
 		s.cycleTheme()
 	case 'n', 'N':
@@ -774,6 +784,103 @@ func (s *DynamicServer) cycleTheme() {
 	s.setTheme(s.validThemes[nextIdx])
 }
 
+// findCSSFiles scans the source directory for CSS files
+func (s *DynamicServer) findCSSFiles() []string {
+	var cssFiles []string
+
+	err := filepath.Walk(s.config.SourceDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // Skip files we can't access
+		}
+		if !info.IsDir() && strings.HasSuffix(strings.ToLower(info.Name()), ".css") {
+			// Store relative path for display, but keep full path for use
+			cssFiles = append(cssFiles, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil
+	}
+
+	// Sort by filename for consistent ordering
+	sort.Slice(cssFiles, func(i, j int) bool {
+		return filepath.Base(cssFiles[i]) < filepath.Base(cssFiles[j])
+	})
+
+	return cssFiles
+}
+
+// startCSSSelection initiates the CSS file selection process
+func (s *DynamicServer) startCSSSelection() {
+	cssFiles := s.findCSSFiles()
+
+	if len(cssFiles) == 0 {
+		s.logRaw("\r\033[K\033[33m!\033[0m No CSS files found in %s", s.config.SourceDir)
+		return
+	}
+
+	if len(cssFiles) == 1 {
+		// Only one CSS file, use it directly
+		s.setCustomCSS(cssFiles[0])
+		return
+	}
+
+	// Multiple CSS files, show selection prompt
+	s.cssSelectMode = true
+	s.cssFiles = cssFiles
+	s.printCSSSelectionMenu()
+}
+
+// printCSSSelectionMenu displays the CSS file selection menu
+func (s *DynamicServer) printCSSSelectionMenu() {
+	s.logRaw("")
+	s.logRaw("\033[1mSelect CSS file:\033[0m")
+	for i, path := range s.cssFiles {
+		relPath, _ := filepath.Rel(s.config.SourceDir, path)
+		if relPath == "" {
+			relPath = filepath.Base(path)
+		}
+		s.logRaw("  \033[33m%d\033[0m  %s", i+1, relPath)
+	}
+	s.logRaw("  \033[90mPress 1-%d to select, Esc to cancel\033[0m", len(s.cssFiles))
+}
+
+// handleCSSSelection handles key presses during CSS selection mode
+func (s *DynamicServer) handleCSSSelection(key rune) {
+	// Escape cancels selection
+	if key == 27 { // Escape key
+		s.cssSelectMode = false
+		s.cssFiles = nil
+		s.logRaw("\r\033[K\033[90mCSS selection cancelled\033[0m")
+		return
+	}
+
+	// Number keys select a file
+	if key >= '1' && key <= '9' {
+		idx := int(key - '1')
+		if idx < len(s.cssFiles) {
+			s.cssSelectMode = false
+			selectedFile := s.cssFiles[idx]
+			s.cssFiles = nil
+			s.setCustomCSS(selectedFile)
+		}
+	}
+}
+
+// setCustomCSS sets a custom CSS file and updates the renderer
+func (s *DynamicServer) setCustomCSS(cssPath string) {
+	s.config.CSSPath = cssPath
+	s.config.Theme = "" // Clear theme when using custom CSS
+	s.updateRenderer()
+	s.notifyReload("css", cssPath)
+
+	relPath, _ := filepath.Rel(s.config.SourceDir, cssPath)
+	if relPath == "" {
+		relPath = filepath.Base(cssPath)
+	}
+	s.logRaw("\r\033[K\033[36m◆\033[0m CSS: %s", relPath)
+}
+
 // updateRenderer updates the renderer with new CSS
 func (s *DynamicServer) updateRenderer() {
 	css, err := getCSSContent(s.config)
@@ -802,6 +909,7 @@ func (s *DynamicServer) printDevModeHelp() {
 	s.logRaw("\033[1mDev Mode Shortcuts:\033[0m")
 	s.logRaw("  \033[33mt\033[0m       Cycle theme (docs → blog → vanilla)")
 	s.logRaw("  \033[33m1/2/3\033[0m   Switch to docs/blog/vanilla theme")
+	s.logRaw("  \033[33m4/c\033[0m     Use custom CSS file")
 	s.logRaw("  \033[33mn\033[0m       Toggle top navigation")
 	s.logRaw("  \033[33mp\033[0m       Toggle page navigation")
 	s.logRaw("  \033[33mr\033[0m       Force reload all browsers")
@@ -813,7 +921,15 @@ func (s *DynamicServer) printDevModeHelp() {
 func (s *DynamicServer) printCurrentSettings() {
 	s.logRaw("")
 	s.logRaw("\033[1mCurrent Settings:\033[0m")
-	s.logRaw("  theme:     \033[36m%s\033[0m", s.config.Theme)
+	if s.config.CSSPath != "" {
+		relPath, _ := filepath.Rel(s.config.SourceDir, s.config.CSSPath)
+		if relPath == "" {
+			relPath = filepath.Base(s.config.CSSPath)
+		}
+		s.logRaw("  css:       \033[36m%s\033[0m", relPath)
+	} else {
+		s.logRaw("  theme:     \033[36m%s\033[0m", s.config.Theme)
+	}
 	s.logRaw("  top-nav:   %s", s.formatBool(s.config.TopNav))
 	s.logRaw("  page-nav:  %s", s.formatBool(s.config.ShowPageNav))
 }
