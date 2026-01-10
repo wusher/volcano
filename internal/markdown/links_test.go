@@ -191,6 +191,36 @@ func TestPrefixInternalLinks(t *testing.T) {
 			baseURL:  "https://example.com/volcano/",
 			expected: `<img src="/volcano/logo.png"><img src="https://cdn.com/icon.png"><a href="/volcano/docs/">Docs</a>`,
 		},
+		{
+			name:     "prefix data-* attributes",
+			input:    `<div data-url="/api/endpoint" data-image="/img.png">Content</div>`,
+			baseURL:  "https://example.com/volcano/",
+			expected: `<div data-url="/volcano/api/endpoint" data-image="/volcano/img.png">Content</div>`,
+		},
+		{
+			name:     "srcset with single URL",
+			input:    `<img srcset="/img.png">`,
+			baseURL:  "https://example.com/volcano/",
+			expected: `<img srcset="/volcano/img.png">`,
+		},
+		{
+			name:     "srcset with width descriptors",
+			input:    `<img srcset="/img-sm.png 400w, /img-lg.png 800w">`,
+			baseURL:  "https://example.com/volcano/",
+			expected: `<img srcset="/volcano/img-sm.png 400w, /volcano/img-lg.png 800w">`,
+		},
+		{
+			name:     "skip data-* with external URLs",
+			input:    `<div data-url="https://example.com/api">Content</div>`,
+			baseURL:  "https://example.com/volcano/",
+			expected: `<div data-url="https://example.com/api">Content</div>`,
+		},
+		{
+			name:     "complex mixed content",
+			input:    `<a href="/page/">Link</a><img src="/img.png" srcset="/img-1x.png 1x, /img-2x.png 2x"><video poster="/poster.jpg" src="/video.mp4"></video><div data-path="/data">Text</div>`,
+			baseURL:  "https://example.com/volcano/",
+			expected: `<a href="/volcano/page/">Link</a><img src="/volcano/img.png" srcset="/volcano/img-1x.png 1x, /volcano/img-2x.png 2x"><video poster="/volcano/poster.jpg" src="/volcano/video.mp4"></video><div data-path="/volcano/data">Text</div>`,
+		},
 	}
 
 	for _, tc := range tests {
