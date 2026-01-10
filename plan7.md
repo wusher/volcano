@@ -489,30 +489,313 @@
 
 **Feature**: Add `--accent-color` flag to customize theme colors with HSL-based tint/shade generation
 
-**Requirements**:
-- Add `--accent-color="#hexcolor"` CLI flag
-- Implement hex → HSL → hex conversion utilities
-- Generate 3 CSS variables from input color:
-  - `--accent`: Original color (normalized to 50% lightness)
-  - `--accent-dark`: 10% lightness (dark mode backgrounds)
-  - `--accent-light`: 95% lightness (light mode backgrounds)
-- Inject CSS variables into template when flag provided
-- Update themes to use accent variables for:
-  - Active navigation items
-  - TOC active border
-  - Link hover states
-  - Scroll progress bar
-  - Breadcrumbs (optional)
-  - Admonitions (optional)
-- No variables injected if flag not provided (backward compatible)
+**Technical Specification**:
+
+**1. Add CLI Flag**
+- **File**: `cmd/config.go`
+- **Change**: Add field to Config struct:
+  ```go
+  AccentColor string // Custom accent color in hex format (e.g., "#ff6600")
+  ```
+- **File**: `cmd/root.go` (or wherever flags are defined)
+- **Change**: Add CLI flag:
+  ```go
+  rootCmd.Flags().StringVar(&cfg.AccentColor, "accent-color", "", "Custom accent color (hex format, e.g., '#ff6600')")
+  ```
+
+**2. Create Color Utilities Package**
+- **New File**: `internal/color/hsl.go`
+- **Functions to implement**:
+  ```go
+  package color
+
+  // HSL represents a color in HSL color space
+  type HSL struct {
+      H float64 // Hue: 0-360
+      S float64 // Saturation: 0-100
+      L float64 // Lightness: 0-100
+  }
+
+  // HexToRGB converts hex string to RGB values (0-255)
+  func HexToRGB(hex string) (r, g, b uint8, err error)
+
+  // RGBToHSL converts RGB (0-255) to HSL
+  func RGBToHSL(r, g, b uint8) HSL
+
+  // HSLToRGB converts HSL to RGB (0-255)
+  func HSLToRGB(hsl HSL) (r, g, b uint8)
+
+  // RGBToHex converts RGB to hex string
+  func RGBToHex(r, g, b uint8) string
+
+  // GenerateAccentVariants creates accent, accent-dark, accent-light
+  // Returns: (accent at 50% L, dark at 10% L, light at 95% L)
+  func GenerateAccentVariants(hexColor string) (accent, dark, light string, err error)
+  ```
+
+**3. HSL Conversion Algorithm**
+- **RGB to HSL** (reference implementation):
+  ```go
+  func RGBToHSL(r, g, b uint8) HSL {
+      rf := float64(r) / 255.0
+      gf := float64(g) / 255.0
+      bf := float64(b) / 255.0
+
+      max := math.Max(math.Max(rf, gf), bf)
+      min := math.Min(math.Min(rf, gf), bf)
+      delta := max - min
+
+      var h, s, l float64
+      l = (max + min) / 2.0
+
+      if delta == 0 {
+          h, s = 0, 0
+      } else {
+          if l < 0.5 {
+              s = delta / (max + min)
+          } else {
+              s = delta / (2.0 - max - min)
+          }
+
+          switch max {
+          case rf:
+              h = ((gf - bf) / delta)
+              if gf < bf {
+                  h += 6
+              }
+          case gf:
+              h = ((bf - rf) / delta) + 2
+          case bf:
+              h = ((rf - gf) / delta) + 4
+          }
+          h /= 6
+      }
+
+      return HSL{H: h * 360, S: s * 100, L: l * 100}
+  }
+  ```
+
+- **HSL to RGB** (reference implementation):
+  ```go
+  func HSLToRGB(hsl HSL) (r, g, b uint8) {
+      h := hsl.H / 360.0
+      s := hsl.S / 100.0
+      l := hsl.L / 100.0
+
+      if s == 0 {
+          gray := uint8(l * 255)
+          return gray, gray, gray
+      }
+
+      var q float64
+      if l < 0.5 {
+          q = l * (1 + s)
+      } else {
+          q = l + s - l*s
+      }
+      p := 2*l - q
+
+      r = uint8(hueToRGB(p, q, h+1.0/3.0) * 255)
+      g = uint8(hueToRGB(p, q, h) * 255)
+      b = uint8(hueToRGB(p, q, h-1.0/3.0) * 255)
+      return
+  }
+
+  func hueToRGB(p, q, t float64) float64 {
+      if t < 0 {
+          t += 1
+      }
+      if t > 1 {
+          t -= 1
+      }
+      if t < 1.0/6.0 {
+          return p + (q-p)*6*t
+      }
+      if t < 1.0/2.0 {
+          return q
+      }
+      if t < 2.0/3.0 {
+          return p + (q-p)*(2.0/3.0-t)*6
+      }
+      return p
+  }
+  ```
+
+**4. Inject CSS Variables**
+- **File**: `internal/templates/renderer.go`
+- **Modify**: `PageData` struct to include:
+  ```go
+  AccentColorCSS template.CSS // CSS variables for accent colors
+  ```
+- **Modify**: `NewRenderer()` or add new function:
+  ```go
+  func GenerateAccentColorCSS(accentColor string) (template.CSS, error) {
+      if accentColor == "" {
+          return "", nil
+      }
+
+      accent, dark, light, err := color.GenerateAccentVariants(accentColor)
+      if err != nil {
+          return "", err
+      }
+
+      css := fmt.Sprintf(`
+  :root {
+    --accent: %s;
+    --accent-dark: %s;
+    --accent-light: %s;
+  }`, accent, dark, light)
+
+      return template.CSS(css), nil
+  }
+  ```
+- **File**: `internal/templates/layout.html`
+- **Change**: Add accent color CSS in `<style>` block after main CSS:
+  ```html
+  <style>
+  {{.CSS}}
+  {{if .AccentColorCSS}}{{.AccentColorCSS}}{{end}}
+  </style>
+  ```
+
+**5. Update Theme CSS Files**
+- **Files**: All theme CSS files in `internal/styles/themes/`
+  - `docs.css`
+  - `blog.css`
+  - `vanilla.css`
+
+- **Changes**: Replace hardcoded colors with `var(--accent, fallback)`:
+
+  **Active Navigation**:
+  ```css
+  /* Before */
+  .tree-nav a.active {
+      color: #0066cc;
+      font-weight: 500;
+  }
+
+  /* After */
+  .tree-nav a.active {
+      color: var(--accent, #0066cc);
+      font-weight: 500;
+  }
+  ```
+
+  **TOC Active Border**:
+  ```css
+  /* Before */
+  .toc a.active {
+      border-left: 2px solid #0066cc;
+  }
+
+  /* After */
+  .toc a.active {
+      border-left: 2px solid var(--accent, #0066cc);
+  }
+  ```
+
+  **Link Hover States**:
+  ```css
+  /* Before */
+  .prose a:hover {
+      color: #0066cc;
+  }
+
+  /* After */
+  .prose a:hover {
+      color: var(--accent, #0066cc);
+  }
+  ```
+
+  **Scroll Progress Bar**:
+  ```css
+  /* Before */
+  .scroll-progress-bar {
+      background: #0066cc;
+  }
+
+  /* After */
+  .scroll-progress-bar {
+      background: var(--accent, #0066cc);
+  }
+  ```
+
+**6. Update Generator**
+- **File**: `internal/generator/generator.go`
+- **Modify**: Where `PageData` is populated:
+  ```go
+  accentColorCSS, err := templates.GenerateAccentColorCSS(g.config.AccentColor)
+  if err != nil {
+      log.Printf("Warning: failed to generate accent color CSS: %v", err)
+      accentColorCSS = ""
+  }
+
+  pageData := templates.PageData{
+      // ... existing fields ...
+      AccentColorCSS: accentColorCSS,
+  }
+  ```
+
+**Testing**:
+
+**Unit Tests** (`internal/color/hsl_test.go`):
+```go
+func TestHexToRGB(t *testing.T) {
+    tests := []struct {
+        hex string
+        r, g, b uint8
+        wantErr bool
+    }{
+        {"#ff6600", 255, 102, 0, false},
+        {"#000000", 0, 0, 0, false},
+        {"#ffffff", 255, 255, 255, false},
+        {"invalid", 0, 0, 0, true},
+    }
+    // ... test implementation
+}
+
+func TestGenerateAccentVariants(t *testing.T) {
+    accent, dark, light, err := GenerateAccentVariants("#ff6600")
+    assert.NoError(t, err)
+    assert.NotEmpty(t, accent)
+    assert.NotEmpty(t, dark)
+    assert.NotEmpty(t, light)
+    // Verify lightness values are correct
+}
+```
+
+**Integration Tests**:
+1. Generate site with `--accent-color="#ff6600"`
+2. Verify generated HTML contains CSS variables
+3. Verify all themes display correctly with accent color
+4. Test with various colors: `#0066cc`, `#ff0000`, `#00ff00`, `#8b00ff`
+5. Verify no accent variables present when flag not provided
+
+**Manual Testing**:
+1. Generate site with accent color
+2. Open in browser, verify:
+   - Active nav items use accent color
+   - TOC active border uses accent color
+   - Link hover uses accent color
+   - Scroll progress bar uses accent color
+3. Toggle light/dark mode, verify colors work in both
+4. Test with extreme colors (very dark, very light, saturated)
 
 **Acceptance Criteria**:
-- Works with various brand colors
-- Colors look good in both light/dark modes
-- No visual change when flag not provided
-- Documentation with examples
+- ✅ Works with various brand colors (#ff6600, #0066cc, #8b00ff, etc.)
+- ✅ Colors look good in both light/dark modes
+- ✅ No visual change when flag not provided (backward compatible)
+- ✅ Generated CSS variables have correct lightness values (50%, 10%, 95%)
+- ✅ All themes (docs, blog, vanilla) use accent color when provided
+- ✅ Invalid hex colors show error message
+- ✅ Color conversion is accurate (HSL ↔ RGB ↔ Hex round-trip)
 
-**Estimated Effort**: Medium (~200-300 lines Go code for color conversion + CSS variable injection + theme updates)
+**Documentation Updates**:
+- Update CLAUDE.md with `--accent-color` flag usage
+- Add examples with common brand colors
+- Document that colors should have reasonable contrast in both modes
+
+**Estimated Effort**: Medium (200-300 lines: ~100 color utils, ~50 integration, ~50 CSS updates, 100 tests)
 
 ---
 
@@ -520,20 +803,265 @@
 
 **Feature**: Simplify code block copy buttons to show only icons (no text)
 
-**Requirements**:
-- Remove "Copy" and "Copied!" text from copy buttons
-- Keep icon swap functionality (📋 → ✓)
-- Add proper `aria-label` attributes for accessibility:
-  - `aria-label="Copy code"` (initial state)
-  - `aria-label="Copied!"` (success state)
-- Update JavaScript to change aria-label on state change
+**Technical Specification**:
+
+**1. Update HTML Template**
+- **File**: `internal/markdown/codeblock.go` (or wherever copy button HTML is generated)
+- **Current Code** (approximate):
+  ```html
+  <button class="copy-button" aria-label="Copy code">
+    <svg class="copy-icon">...</svg>
+    <span class="copy-text">Copy</span>
+    <svg class="check-icon">...</svg>
+  </button>
+  ```
+- **New Code**:
+  ```html
+  <button class="copy-button" aria-label="Copy code">
+    <svg class="copy-icon" aria-hidden="true">...</svg>
+    <svg class="check-icon" aria-hidden="true">...</svg>
+  </button>
+  ```
+- **Changes**:
+  1. Remove `<span class="copy-text">Copy</span>` element
+  2. Add `aria-label="Copy code"` to button
+  3. Add `aria-hidden="true"` to SVG icons (accessibility best practice)
+
+**2. Update JavaScript**
+- **File**: `internal/templates/layout.html` (in the `<script>` section)
+- **Current JavaScript** (lines 349-364):
+  ```javascript
+  // Copy code button
+  document.querySelectorAll('.copy-button').forEach(function(button) {
+      button.addEventListener('click', async function() {
+          const code = this.parentElement.querySelector('code').textContent;
+          try {
+              await navigator.clipboard.writeText(code);
+              this.classList.add('copied');
+              this.querySelector('.copy-text').textContent = 'Copied!';  // REMOVE THIS LINE
+              setTimeout(function() {
+                  button.classList.remove('copied');
+                  button.querySelector('.copy-text').textContent = 'Copy';  // REMOVE THIS LINE
+              }, 2000);
+          } catch (err) {
+              console.error('Failed to copy:', err);
+          }
+      });
+  });
+  ```
+- **New JavaScript**:
+  ```javascript
+  // Copy code button
+  document.querySelectorAll('.copy-button').forEach(function(button) {
+      button.addEventListener('click', async function() {
+          const code = this.parentElement.querySelector('code').textContent;
+          try {
+              await navigator.clipboard.writeText(code);
+              this.classList.add('copied');
+              this.setAttribute('aria-label', 'Copied!');
+              setTimeout(function() {
+                  button.classList.remove('copied');
+                  button.setAttribute('aria-label', 'Copy code');
+              }, 2000);
+          } catch (err) {
+              console.error('Failed to copy:', err);
+          }
+      });
+  });
+  ```
+- **Changes**:
+  1. Replace `.querySelector('.copy-text').textContent = 'Copied!'` with `.setAttribute('aria-label', 'Copied!')`
+  2. Replace `.querySelector('.copy-text').textContent = 'Copy'` with `.setAttribute('aria-label', 'Copy code')`
+
+**3. Update CSS (Optional - Cleanup)**
+- **File**: `internal/styles/themes/*.css` (all theme files if needed)
+- **Remove** (if present):
+  ```css
+  .copy-text {
+      font-size: 14px;
+      margin-left: 4px;
+  }
+  ```
+- **Note**: CSS for `.copy-button` icon styling should remain unchanged
+
+**Testing**:
+
+**Manual Testing**:
+1. Generate a site with code blocks
+2. Open in browser
+3. Verify copy buttons:
+   - ✅ Show only icon (clipboard icon)
+   - ✅ No text "Copy" visible
+   - ✅ Hover shows button is clickable
+   - ✅ Click button, icon changes to checkmark
+   - ✅ No text "Copied!" visible
+   - ✅ After 2 seconds, icon reverts to clipboard
+4. Test with screen reader (or browser's accessibility inspector):
+   - ✅ Initial state announces "Copy code"
+   - ✅ After click announces "Copied!"
+   - ✅ After 2 seconds announces "Copy code" again
+5. Test in multiple browsers:
+   - Chrome/Edge
+   - Firefox
+   - Safari
+6. Test on mobile devices:
+   - Android Chrome
+   - iOS Safari
+
+**Accessibility Testing**:
+- Use browser dev tools accessibility inspector
+- Verify `aria-label` is present and changes on click
+- Verify SVG icons have `aria-hidden="true"`
+- Test with NVDA (Windows) or VoiceOver (Mac/iOS)
+
+**Visual Regression**:
+- Compare before/after screenshots
+- Verify icon size and positioning unchanged
+- Verify button alignment in code blocks
+- Verify hover states work correctly
 
 **Acceptance Criteria**:
-- Buttons show only icons
-- Screen readers announce actions properly
-- Visual appearance matches modern patterns (GitHub, VS Code)
+- ✅ Buttons show only icons (no text)
+- ✅ Screen readers announce "Copy code" initially
+- ✅ Screen readers announce "Copied!" after click
+- ✅ Icon swaps from clipboard to checkmark on click
+- ✅ Icon reverts after 2 seconds
+- ✅ Visual appearance is clean and modern
+- ✅ Works in all major browsers
+- ✅ Works on mobile devices
+- ✅ Accessibility audit passes (no warnings)
 
-**Estimated Effort**: Trivial (~10 lines changed in template + JS)
+**Documentation Updates**:
+- No user-facing documentation needed (visual change only)
+- Update internal comments if needed
+
+**Estimated Effort**: Trivial (10-15 lines changed, 30 min testing)
+
+---
+
+### Story 3: Browser Theme Color Meta Tags
+
+**Feature**: Add `theme-color` and `color-scheme` meta tags for better mobile browser integration
+
+**Technical Specification**:
+
+**1. Update SEO Meta Package**
+- **File**: `internal/seo/meta.go`
+- **Modify**: `RenderMetaTags()` function
+
+**2. Add Theme Color Meta Tags**
+- **Location**: In `RenderMetaTags()` function, after existing meta tags
+- **Code to Add**:
+  ```go
+  // Theme color meta tags (after line ~167, after canonical link)
+  sb.WriteString("\n")
+  sb.WriteString(`  <!-- Browser Theme Colors -->`)
+  sb.WriteString("\n")
+
+  // Light mode theme color
+  sb.WriteString(`  <meta name="theme-color" content="#ffffff">`)
+  sb.WriteString("\n")
+
+  // Dark mode theme color
+  sb.WriteString(`  <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">`)
+  sb.WriteString("\n")
+
+  // Color scheme support
+  sb.WriteString(`  <meta name="color-scheme" content="light dark">`)
+  sb.WriteString("\n")
+  ```
+
+**3. Theme Color Values**
+- **Light Mode**: `#ffffff` (white background)
+  - Matches light mode background in all themes
+- **Dark Mode**: `#1a1a1a` (dark gray background)
+  - Matches dark mode background in docs/blog themes
+  - Alternative: `#0d1117` (GitHub dark), `#1e1e1e` (VS Code dark)
+- **Recommendation**: Use `#1a1a1a` for consistency with existing themes
+
+**4. Verify Theme Background Colors**
+- **Check Files**: `internal/styles/themes/docs.css`, `blog.css`, `vanilla.css`
+- **Light Mode Background**: Should be `#ffffff` or close
+- **Dark Mode Background**: Check `[data-theme="dark"] body` selector
+- **Adjust if needed**: Update theme-color values to match actual theme backgrounds
+
+**Example**: If `docs.css` has:
+```css
+body {
+    background: #ffffff;
+}
+
+[data-theme="dark"] body {
+    background: #1a1a1a;
+}
+```
+Then use those exact values in theme-color meta tags.
+
+**5. Optional: Make Theme Colors Configurable**
+- **If needed**: Add to `Config` struct:
+  ```go
+  ThemeColorLight string // Default: "#ffffff"
+  ThemeColorDark  string // Default: "#1a1a1a"
+  ```
+- **Use in meta generation**:
+  ```go
+  lightColor := "#ffffff"
+  if meta.Config.ThemeColorLight != "" {
+      lightColor = meta.Config.ThemeColorLight
+  }
+  // similar for dark
+  ```
+- **Note**: Probably not needed initially, can add later if requested
+
+**Testing**:
+
+**Manual Testing**:
+1. Generate a site
+2. View generated HTML source
+3. Verify meta tags present in `<head>`:
+   ```html
+   <meta name="theme-color" content="#ffffff">
+   <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
+   <meta name="color-scheme" content="light dark">
+   ```
+
+**Mobile Browser Testing**:
+1. **Android Chrome**:
+   - Open site on Android phone
+   - Verify address bar is white in light mode
+   - Switch system to dark mode
+   - Verify address bar is dark gray (`#1a1a1a`)
+2. **iOS Safari**:
+   - Open site on iPhone
+   - Verify status bar/UI chrome matches theme
+   - Toggle Appearance (Settings > Display & Brightness)
+   - Verify colors update
+3. **Samsung Internet**:
+   - Test on Samsung device
+   - Verify theme color works
+
+**Desktop Browser Testing**:
+1. Some desktop browsers use theme-color for UI elements
+2. Test in Chrome/Edge with custom themes
+3. Verify no negative impact
+
+**Acceptance Criteria**:
+- ✅ Meta tags present in all generated HTML pages
+- ✅ Light mode theme-color is `#ffffff`
+- ✅ Dark mode theme-color is `#1a1a1a`
+- ✅ color-scheme meta tag set to `light dark`
+- ✅ Mobile browser chrome colors match site theme on:
+  - Android Chrome
+  - iOS Safari
+  - Samsung Internet
+- ✅ Colors update when user switches system light/dark mode
+- ✅ No visual regressions on desktop browsers
+
+**Documentation Updates**:
+- Update CLAUDE.md to mention theme-color support
+- Note that mobile browsers will show branded colors
+
+**Estimated Effort**: Trivial (20 lines of code, 1 hour testing on mobile devices)
 
 ---
 
