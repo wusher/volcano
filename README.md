@@ -1,16 +1,10 @@
 # Volcano
 
-<p align="center">
-  <img src="docs/logo.png" alt="Volcano Logo" width="200">
-</p>
+![Volcano Logo](docs/logo.png)
 
-<p align="center">
-  <strong>Turn your markdown folders into websites. No config required.</strong>
-</p>
+**Turn your markdown folders into websites. No config required.**
 
-<p align="center">
-  <a href="https://github.com/wusher/volcano/actions/workflows/ci.yml"><img src="https://github.com/wusher/volcano/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-</p>
+[![CI](https://github.com/wusher/volcano/actions/workflows/ci.yml/badge.svg)](https://github.com/wusher/volcano/actions/workflows/ci.yml)
 
 ---
 
