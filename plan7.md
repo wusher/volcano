@@ -605,3 +605,136 @@
 **Estimated Effort**: Large (~100-150 lines integration code + testing + documentation)
 
 ---
+
+### 6. JavaScript Minification
+
+**Concept**: Minify inline JavaScript in generated HTML to reduce page size and improve performance
+
+**Current Situation**:
+- Current inline JS in `layout.html`: ~10.9KB unminified
+  - Theme detection script: ~415 bytes
+  - Main script block: ~10.5KB
+- All JavaScript is inline (embedded in HTML template)
+- No minification currently applied
+
+**Benefits of Minification**:
+
+**Size Reduction**:
+- Typical savings: 70-80% of JavaScript file size
+- For Volcano: ~11KB → ~2-3KB (saves ~8KB per page)
+- Combined with Brotli/gzip: up to 90% total size reduction
+- With instant nav feature: additional ~4-5KB → ~1-1.5KB minified
+
+**Performance Impact**:
+- Faster page load times (smaller download)
+- Improved Core Web Vitals (LCP, FID, CLS)
+- Better mobile performance (critical on slow connections)
+- Reduced bandwidth costs for users
+
+**SEO Benefits**:
+- Page speed is a Google ranking factor
+- Better Core Web Vitals scores improve SEO
+- Faster sites = better user experience = better engagement metrics
+
+**Available Tools (Go-based)**:
+
+**Option A: tdewolff/minify** (Pure Go)
+- GitHub: `github.com/tdewolff/minify`
+- Pure Go library, no external dependencies
+- Supports JS, CSS, HTML, SVG, XML, JSON
+- Very fast: 8.63 KB output in 3ms (fastest in benchmarks)
+- Used by many Go projects
+- Active maintenance
+- Pros: Pure Go, zero build dependencies, fast, comprehensive
+- Cons: Adds Go module dependency (~100KB)
+
+**Option B: esbuild** (Go + external binary)
+- Written in Go but needs external esbuild binary
+- Extremely fast (10x+ faster than alternatives)
+- Best-in-class minification quality
+- Modern ES6+ support
+- Pros: Fastest, best compression, modern syntax support
+- Cons: Requires external binary, more setup complexity
+
+**Option C: Call external tools** (Node/terser)
+- Use exec.Command to call terser/uglify
+- Best compression ratios
+- Pros: Industry-standard tools, proven quality
+- Cons: Requires Node.js installed, slow, adds build dependency
+
+**Recommendation**: **Option A (tdewolff/minify)**
+- Pure Go, fits Volcano's zero-dependency philosophy (Go module only)
+- Very fast (3ms for typical JS)
+- Good compression (70-80% reduction)
+- No external tools needed
+- Simple integration
+
+**Implementation Approach**:
+
+**Option 1: Always-On Minification**
+- Minify all JS during template preparation
+- Embed minified JS in binary
+- Always serve minified JS
+- Pros: Best performance for all users, no flags needed
+- Cons: Harder to debug generated HTML (but users rarely need to)
+
+**Option 2: CLI Flag** (`--minify-js` or `--production`)
+- Only minify when flag is enabled
+- Keep readable JS by default
+- Pros: Easier debugging during development
+- Cons: Users might forget to enable it, two code paths to maintain
+
+**Option 3: Automatic based on output**
+- Minify when generating to filesystem
+- Don't minify in serve mode (for debugging)
+- Pros: Smart default, best of both worlds
+- Cons: Inconsistent behavior between modes
+
+**Recommended Approach**: **Option 1 (Always-On)**
+- Users rarely inspect generated HTML source
+- Browser dev tools show formatted code anyway
+- Best performance by default
+- Simpler implementation (one code path)
+- Can add `--no-minify` flag if debugging needed
+
+**Integration Points**:
+1. Add `github.com/tdewolff/minify/v2` as Go module dependency
+2. Minify JS in `NewRenderer()` when loading template:
+   - Extract `<script>` blocks
+   - Minify each block with `js.Minify()`
+   - Replace in template
+3. For instant-nav feature: minify idiomorph + instant.page before embedding
+4. Update CLAUDE.md with new dependency
+
+**Edge Cases & Considerations**:
+- Preserve template variables (e.g., `{{.BaseURL}}`) - minify around them
+- Test that minified JS works correctly (no syntax errors)
+- Consider source maps (probably overkill for inline scripts)
+- Error handling: if minification fails, fall back to unminified
+
+**Estimated Savings**:
+- Current JS: ~11KB → ~2-3KB minified (**saves ~8KB**)
+- With instant-nav: ~15KB → ~4-5KB minified (**saves ~10KB**)
+- Per-page savings scales with every page view
+- For site with 1000 views/day: saves ~10MB/day bandwidth
+
+**Complexity**: Low-Medium (~50-100 lines Go code + dependency)
+
+**Trade-offs**:
+- **Pro**: Significant performance improvement (70-80% JS size reduction)
+- **Pro**: Better SEO and Core Web Vitals scores
+- **Pro**: Minimal implementation effort with tdewolff/minify
+- **Con**: Adds Go module dependency (goes against "zero dependency" slightly)
+- **Con**: Minified output harder to read (but users rarely inspect)
+- **Con**: Adds ~50ms to build time (negligible)
+
+**Zero-Dependency Philosophy**:
+- This is a **build-time** dependency (Go module), not runtime
+- No external binaries required (pure Go)
+- Still ships as single binary to users
+- Alternative: skip minification, accept larger page sizes
+- Middle ground: make it opt-in with flag
+
+**Verdict**: TBD - worth adding Go module dependency for 70-80% JS size reduction?
+
+---
