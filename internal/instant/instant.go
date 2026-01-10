@@ -1,14 +1,16 @@
 // Package instant provides instant navigation with hover prefetching.
 package instant
 
-// InstantNavJS is the JavaScript code for instant navigation.
+import "github.com/wusher/volcano/internal/minify"
+
+// instantNavJSRaw is the unminified JavaScript code for instant navigation.
 // It provides:
 // - Hover-based link prefetching
 // - Click interception for internal links
 // - AJAX page loading with content replacement
 // - History API integration
 // - Theme state preservation
-const InstantNavJS = `
+const instantNavJSRaw = `
 (function() {
     'use strict';
 
@@ -202,3 +204,11 @@ const InstantNavJS = `
     }
 })();
 `
+
+// InstantNavJS is the minified JavaScript code for instant navigation.
+// It is initialized in init() to ensure proper package initialization order.
+var InstantNavJS string
+
+func init() {
+	InstantNavJS = minify.JS(instantNavJSRaw)
+}
