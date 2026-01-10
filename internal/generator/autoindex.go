@@ -63,7 +63,7 @@ func BuildAutoIndex(node *tree.Node) AutoIndex {
 		url := tree.GetURLPath(child)
 		// For folders, construct the URL from the path
 		if child.IsFolder {
-			url = "/" + filepath.ToSlash(child.Path) + "/"
+			url = "/" + tree.SlugifyPath(child.Path) + "/"
 		}
 		items = append(items, IndexItem{
 			Title:    child.Name,
@@ -72,24 +72,28 @@ func BuildAutoIndex(node *tree.Node) AutoIndex {
 		})
 	}
 
-	// Sort: folders first, then alphabetically
+	// Sort: files first, then folders, then alphabetically
+	// (matches the tree navigation sort order)
 	sort.Slice(items, func(i, j int) bool {
 		if items[i].IsFolder != items[j].IsFolder {
-			return items[i].IsFolder
+			return !items[i].IsFolder // files first
 		}
 		return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
 	})
 
-	urlPath := "/" + node.Path + "/"
+	slugPath := tree.SlugifyPath(node.Path)
+	urlPath := "/" + slugPath + "/"
+	outputPath := filepath.Join(slugPath, "index.html")
 	if node.Path == "" || node.Path == "." {
 		urlPath = "/"
+		outputPath = "index.html"
 	}
 
 	return AutoIndex{
 		FolderNode: node,
 		Title:      node.Name,
 		Children:   items,
-		OutputPath: filepath.Join(node.Path, "index.html"),
+		OutputPath: outputPath,
 		URLPath:    urlPath,
 	}
 }

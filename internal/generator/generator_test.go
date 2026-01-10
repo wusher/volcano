@@ -340,9 +340,10 @@ func TestGenerateNavigationLinks(t *testing.T) {
 
 	var buf bytes.Buffer
 	config := Config{
-		InputDir:  inputDir,
-		OutputDir: outputDir,
-		Title:     "Test",
+		InputDir:    inputDir,
+		OutputDir:   outputDir,
+		Title:       "Test",
+		ShowPageNav: true, // Enable page navigation for this test
 	}
 
 	g, err := New(config, &buf)
@@ -358,13 +359,13 @@ func TestGenerateNavigationLinks(t *testing.T) {
 	// Check that pages contain navigation links
 	indexContent, _ := os.ReadFile(filepath.Join(outputDir, "index.html"))
 	if !strings.Contains(string(indexContent), "About") {
-		t.Error("Index page should contain link to About")
+		t.Error("Index page should contain link to About (in page navigation)")
 	}
 
 	aboutContent, _ := os.ReadFile(filepath.Join(outputDir, "about", "index.html"))
-	// The navigation now uses H1 titles, so index.md with "# Home" shows as "Home"
+	// The page navigation uses H1 titles, so index.md with "# Home" shows as "Home"
 	if !strings.Contains(string(aboutContent), "Home") {
-		t.Error("About page should contain link to Home")
+		t.Error("About page should contain link to Home (in page navigation)")
 	}
 }
 

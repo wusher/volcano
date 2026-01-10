@@ -155,7 +155,7 @@ func TestRenderNavigationEmpty(t *testing.T) {
 func TestRenderNavigationFolderWithoutIndex(t *testing.T) {
 	root := tree.NewNode("", "", true)
 
-	// Folder without index
+	// Folder without index - now all folders are clickable (auto-index)
 	docs := tree.NewNode("Docs", "docs", true)
 	docs.HasIndex = false
 	page := tree.NewNode("Page", "docs/page.md", false)
@@ -165,12 +165,13 @@ func TestRenderNavigationFolderWithoutIndex(t *testing.T) {
 	html := RenderNavigation(root, "/")
 	htmlStr := string(html)
 
-	// Should have folder-label instead of folder-link
-	if !strings.Contains(htmlStr, "folder-label") {
-		t.Error("Folder without index should have folder-label")
+	// All folders should have folder-link now (for auto-generated indexes)
+	if !strings.Contains(htmlStr, "folder-link") {
+		t.Error("All folders should have folder-link for auto-index")
 	}
-	if strings.Contains(htmlStr, "folder-link") {
-		t.Error("Folder without index should not have folder-link")
+	// Should link to the slugified folder path
+	if !strings.Contains(htmlStr, "href=\"/docs/\"") {
+		t.Error("Folder link should point to /docs/")
 	}
 }
 

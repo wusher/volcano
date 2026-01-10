@@ -11,17 +11,19 @@ import (
 )
 
 var (
-	// datePrefix matches YYYY-MM-DD- prefix
-	datePrefixRegex = regexp.MustCompile(`^(\d{4})-(\d{2})-(\d{2})-(.+)$`)
-	// numberPrefix matches leading digits like 01-
-	numberPrefixRegex = regexp.MustCompile(`^(\d+)-(.+)$`)
+	// datePrefix matches YYYY-MM-DD followed by separator (-, _, or space)
+	// Supports: 2024-01-15-title, 2024_01_15_title, "2024-01-15 title"
+	datePrefixRegex = regexp.MustCompile(`^(\d{4})[-_](\d{2})[-_](\d{2})[-_\s](.+)$`)
+	// numberPrefix matches leading digits followed by separator (-, _, ., or space)
+	// Supports: 01-title, 01_title, "01 title", "0. title"
+	numberPrefixRegex = regexp.MustCompile(`^(\d+)[-_.\s]\s*(.+)$`)
 )
 
 // FileMetadata holds parsed metadata from a filename
 type FileMetadata struct {
 	OriginalName string    // "2024-01-15-01-hello-world.md"
-	Date         time.Time // Parsed from filename or file mtime
-	DateSource   string    // "filename" or "mtime"
+	Date         time.Time // Parsed from filename prefix (zero if none)
+	HasDate      bool      // true if date was extracted from filename
 	Number       *int      // nil if no number prefix
 	Slug         string    // "hello-world"
 	DisplayName  string    // "Hello World"
@@ -29,8 +31,17 @@ type FileMetadata struct {
 }
 
 // ExtractFileMetadata parses date/number prefixes from filename
+// Only extracts date from filename prefix - does not use file modification time
 func ExtractFileMetadata(filename string, modTime time.Time) FileMetadata {
-	stem := strings.TrimSuffix(filename, filepath.Ext(filename))
+	// Only strip known markdown extensions, not arbitrary "extensions"
+	// This prevents "0. Inbox" from being trimmed to "0"
+	stem := filename
+	lower := strings.ToLower(filename)
+	if strings.HasSuffix(lower, ".md") {
+		stem = filename[:len(filename)-3]
+	} else if strings.HasSuffix(lower, ".markdown") {
+		stem = filename[:len(filename)-9]
+	}
 	meta := FileMetadata{
 		OriginalName: filename,
 		IsDraft:      strings.HasPrefix(stem, "_"),
@@ -43,23 +54,17 @@ func ExtractFileMetadata(filename string, modTime time.Time) FileMetadata {
 
 	remaining := stem
 
-	// Try to extract date prefix (YYYY-MM-DD-)
+	// Try to extract date prefix (YYYY-MM-DD with various separators)
 	if matches := datePrefixRegex.FindStringSubmatch(stem); len(matches) == 5 {
 		year, _ := strconv.Atoi(matches[1])
 		month, _ := strconv.Atoi(matches[2])
 		day, _ := strconv.Atoi(matches[3])
 
-		date := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-		meta.Date = date
-		meta.DateSource = "filename"
+		meta.Date = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+		meta.HasDate = true
 		remaining = matches[4]
 	}
-
-	// If no date from filename, use file mtime
-	if meta.DateSource == "" {
-		meta.Date = modTime
-		meta.DateSource = "mtime"
-	}
+	// Note: If no date prefix found, HasDate stays false and Date is zero time
 
 	// Try to extract number prefix from remaining
 	if matches := numberPrefixRegex.FindStringSubmatch(remaining); len(matches) == 3 {
@@ -68,7 +73,7 @@ func ExtractFileMetadata(filename string, modTime time.Time) FileMetadata {
 		remaining = matches[2]
 	}
 
-	meta.Slug = remaining
+	meta.Slug = Slugify(remaining)
 	meta.DisplayName = titleize(remaining)
 
 	return meta
@@ -90,29 +95,35 @@ func titleize(slug string) string {
 }
 
 // SortNodes sorts tree nodes by date, number, then name
+// Sorting order: files first, then folders, each sorted by date/number/name
 func SortNodes(nodes []*Node, newestFirst bool) {
 	sort.Slice(nodes, func(i, j int) bool {
 		a, b := nodes[i], nodes[j]
 
-		// Folders always before files
+		// Files before folders
 		if a.IsFolder != b.IsFolder {
-			return a.IsFolder
+			return !a.IsFolder
 		}
 
-		// For files, get metadata
+		// For files, get metadata and sort by date/number/name
 		if !a.IsFolder && !b.IsFolder {
-			aMeta := getNodeMetadata(a)
-			bMeta := getNodeMetadata(b)
+			aMeta := GetNodeMetadata(a)
+			bMeta := GetNodeMetadata(b)
 
-			// Primary: Date
-			if !aMeta.Date.Equal(bMeta.Date) {
+			// Primary: Date (from filename only)
+			// Files with dates come before files without dates
+			if aMeta.HasDate != bMeta.HasDate {
+				return aMeta.HasDate // files with dates first
+			}
+			// Both have dates - sort by date
+			if aMeta.HasDate && bMeta.HasDate && !aMeta.Date.Equal(bMeta.Date) {
 				if newestFirst {
 					return aMeta.Date.After(bMeta.Date)
 				}
 				return aMeta.Date.Before(bMeta.Date)
 			}
 
-			// Secondary: Number (nil treated as infinity when newestFirst)
+			// Secondary: Number (lower numbers first, nil sorted last)
 			aNum := getNumberForSort(aMeta.Number, newestFirst)
 			bNum := getNumberForSort(bMeta.Number, newestFirst)
 			if aNum != bNum {
@@ -131,8 +142,8 @@ func SortNodes(nodes []*Node, newestFirst bool) {
 	})
 }
 
-// getNodeMetadata extracts metadata from a node's filename
-func getNodeMetadata(node *Node) FileMetadata {
+// GetNodeMetadata extracts metadata from a node's filename
+func GetNodeMetadata(node *Node) FileMetadata {
 	var modTime time.Time
 	if info, err := os.Stat(node.SourcePath); err == nil {
 		modTime = info.ModTime()

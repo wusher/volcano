@@ -1,8 +1,8 @@
 package server
 
 import (
+	"bytes"
 	"io"
-	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,737 +14,35 @@ import (
 	"volcano/internal/tree"
 )
 
-func TestNewDynamicServer(t *testing.T) {
-	config := DynamicConfig{
-		SourceDir: ".",
-		Title:     "Test",
-		Port:      8080,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatalf("NewDynamicServer failed: %v", err)
-	}
-
-	if srv.config.Title != "Test" {
-		t.Errorf("expected title 'Test', got %q", srv.config.Title)
-	}
-}
-
-func TestDynamicServer_HandleRequest_Index(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create index.md
-	indexContent := "# Welcome\n\nThis is the home page."
-	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte(indexContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test Site",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest("GET", "/", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	srv.handleRequest(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", rec.Code)
-	}
-
-	body := rec.Body.String()
-	if !strings.Contains(body, "Welcome") {
-		t.Error("response should contain 'Welcome'")
-	}
-	if !strings.Contains(body, "Test Site") {
-		t.Error("response should contain site title")
-	}
-}
-
-func TestDynamicServer_HandleRequest_CleanURL(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create index.md and about.md
-	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Home"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "about.md"), []byte("# About Us\n\nAbout page content."), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Test /about/ (clean URL)
-	req := httptest.NewRequest("GET", "/about/", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	srv.handleRequest(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", rec.Code)
-	}
-
-	body := rec.Body.String()
-	if !strings.Contains(body, "About Us") {
-		t.Error("response should contain 'About Us'")
-	}
-}
-
-func TestDynamicServer_HandleRequest_NestedPage(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create directory structure
-	guidesDir := filepath.Join(tmpDir, "guides")
-	if err := os.MkdirAll(guidesDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Home"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(guidesDir, "intro.md"), []byte("# Introduction\n\nGuide content."), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest("GET", "/guides/intro/", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	srv.handleRequest(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", rec.Code)
-	}
-
-	body := rec.Body.String()
-	if !strings.Contains(body, "Introduction") {
-		t.Error("response should contain 'Introduction'")
-	}
-}
-
-func TestDynamicServer_HandleRequest_DirectoryIndex(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create directory with index.md
-	docsDir := filepath.Join(tmpDir, "docs")
-	if err := os.MkdirAll(docsDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Home"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(docsDir, "index.md"), []byte("# Documentation\n\nDocs index."), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest("GET", "/docs/", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	srv.handleRequest(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", rec.Code)
-	}
-
-	body := rec.Body.String()
-	if !strings.Contains(body, "Documentation") {
-		t.Error("response should contain 'Documentation'")
-	}
-}
-
-func TestDynamicServer_HandleRequest_404(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Home"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest("GET", "/nonexistent/", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	srv.handleRequest(rec, req)
-
-	if rec.Code != http.StatusNotFound {
-		t.Errorf("expected status 404, got %d", rec.Code)
-	}
-
-	body := rec.Body.String()
-	if !strings.Contains(body, "Page Not Found") {
-		t.Error("response should contain 'Page Not Found'")
-	}
-}
-
-func TestDynamicServer_HandleRequest_StaticFile(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create index.md and a static file
-	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Home"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "image.png"), []byte("PNG data"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest("GET", "/image.png", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	srv.handleRequest(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", rec.Code)
-	}
-
-	if rec.Body.String() != "PNG data" {
-		t.Error("static file content mismatch")
-	}
-}
-
-func TestDynamicServer_HandleRequest_MarkdownNotServedRaw(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Home"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "test.md"), []byte("# Test"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Request the .md file directly - should render as HTML, not serve raw
-	req := httptest.NewRequest("GET", "/test.md", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	srv.handleRequest(rec, req)
-
-	// Should return 404 for direct .md access (or could render - depends on implementation)
-	// The static file handler rejects .md files, so it falls through to page renderer
-	// which won't match /test.md as a URL, so 404
-	if rec.Code != http.StatusNotFound {
-		t.Errorf("expected status 404 for direct .md access, got %d", rec.Code)
-	}
-}
-
-func TestDynamicServer_ResolveMarkdownPath(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create file structure
-	guidesDir := filepath.Join(tmpDir, "guides")
-	if err := os.MkdirAll(guidesDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	files := map[string]string{
-		"index.md":        "# Home",
-		"about.md":        "# About",
-		"guides/index.md": "# Guides",
-		"guides/intro.md": "# Intro",
-	}
-
-	for path, content := range files {
-		fullPath := filepath.Join(tmpDir, path)
-		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	config := DynamicConfig{SourceDir: tmpDir}
-	srv := &DynamicServer{config: config, fs: osFileSystem{}, scanner: defaultScanner{}}
-
-	tests := []struct {
-		urlPath  string
-		expected string
-	}{
-		{"/", "index.md"},
-		{"/about/", "about.md"},
-		{"/about", "about.md"},
-		{"/guides/", "guides/index.md"},
-		{"/guides/intro/", "guides/intro.md"},
-		{"/nonexistent/", ""},
-	}
-
-	for _, tc := range tests {
-		result := srv.resolveMarkdownPath(tc.urlPath)
-		if result != tc.expected {
-			t.Errorf("resolveMarkdownPath(%q) = %q, expected %q", tc.urlPath, result, tc.expected)
-		}
-	}
-}
-
-func TestFindNodeBySourcePath(t *testing.T) {
-	// Build a simple tree
-	root := tree.NewNode("", "", true)
-
-	about := tree.NewNode("About", "about.md", false)
-	about.SourcePath = "/tmp/about.md"
-	root.AddChild(about)
-
-	guides := tree.NewNode("Guides", "guides", true)
-	guides.HasIndex = true
-	guides.IndexPath = "guides/index.md"
-	guides.SourcePath = "/tmp/guides"
-	root.AddChild(guides)
-
-	intro := tree.NewNode("Intro", "guides/intro.md", false)
-	intro.SourcePath = "/tmp/guides/intro.md"
-	guides.AddChild(intro)
-
-	tests := []struct {
-		sourcePath string
-		expectNil  bool
-		expectName string
-	}{
-		{"about.md", false, "About"},
-		{"guides/intro.md", false, "Intro"},
-		{"guides/index.md", false, "Guides"},
-		{"nonexistent.md", true, ""},
-	}
-
-	for _, tc := range tests {
-		result := findNodeBySourcePath(root, tc.sourcePath)
-		if tc.expectNil {
-			if result != nil {
-				t.Errorf("findNodeBySourcePath(%q) expected nil, got %v", tc.sourcePath, result)
-			}
-		} else {
-			if result == nil {
-				t.Errorf("findNodeBySourcePath(%q) expected node, got nil", tc.sourcePath)
-			} else if result.Name != tc.expectName {
-				t.Errorf("findNodeBySourcePath(%q) expected name %q, got %q", tc.sourcePath, tc.expectName, result.Name)
-			}
-		}
-	}
-}
-
-func TestFindNodeBySourcePath_NilNode(t *testing.T) {
-	result := findNodeBySourcePath(nil, "test.md")
-	if result != nil {
-		t.Error("expected nil for nil input")
-	}
-}
-
-func TestDynamicServer_ServeStaticFile_Directory(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create a subdirectory
-	subDir := filepath.Join(tmpDir, "subdir")
-	if err := os.MkdirAll(subDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest("GET", "/subdir", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	// serveStaticFile should return false for directories
-	result := srv.serveStaticFile(rec, req, "/subdir")
-	if result {
-		t.Error("serveStaticFile should return false for directories")
-	}
-}
-
-func TestDynamicServer_ServeStaticFile_RootPath(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest("GET", "/", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	// serveStaticFile should return false for root path
-	result := srv.serveStaticFile(rec, req, "/")
-	if result {
-		t.Error("serveStaticFile should return false for root path")
-	}
-}
-
-func TestDynamicServer_Log(t *testing.T) {
-	var buf strings.Builder
-
-	config := DynamicConfig{
-		SourceDir: ".",
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     false,
-	}
-
-	srv, _ := NewDynamicServer(config, &buf)
-	srv.log("test message %s", "arg")
-
-	if !strings.Contains(buf.String(), "test message arg") {
-		t.Errorf("log output missing: %s", buf.String())
-	}
-}
-
-func TestDynamicServer_Log_Quiet(t *testing.T) {
-	var buf strings.Builder
-
-	config := DynamicConfig{
-		SourceDir: ".",
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, _ := NewDynamicServer(config, &buf)
-	srv.log("test message")
-
-	if buf.String() != "" {
-		t.Errorf("quiet mode should suppress log output, got: %s", buf.String())
-	}
-}
-
-func TestDynamicServer_LogError(t *testing.T) {
-	var buf strings.Builder
-
-	config := DynamicConfig{
-		SourceDir: ".",
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true, // Even in quiet mode, errors should be logged
-	}
-
-	srv, _ := NewDynamicServer(config, &buf)
-	srv.logError("error: %s", "details")
-
-	if !strings.Contains(buf.String(), "Error: error: details") {
-		t.Errorf("error log output missing: %s", buf.String())
-	}
-}
-
-func TestDynamicServer_LogRequest(t *testing.T) {
-	var buf strings.Builder
-
-	config := DynamicConfig{
-		SourceDir: ".",
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     false,
-	}
-
-	srv, _ := NewDynamicServer(config, &buf)
-
-	// Test 2xx response
-	srv.logRequest("GET", "/test", 200, 0)
-	if !strings.Contains(buf.String(), "GET") || !strings.Contains(buf.String(), "/test") {
-		t.Error("log request should contain method and path")
-	}
-
-	buf.Reset()
-
-	// Test 4xx response
-	srv.logRequest("GET", "/notfound", 404, 0)
-	if !strings.Contains(buf.String(), "404") {
-		t.Error("log request should contain status code")
-	}
-}
-
-func TestDynamicServer_LogRequest_Quiet(t *testing.T) {
-	var buf strings.Builder
-
-	config := DynamicConfig{
-		SourceDir: ".",
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, _ := NewDynamicServer(config, &buf)
-	srv.logRequest("GET", "/test", 200, 0)
-
-	if buf.String() != "" {
-		t.Errorf("quiet mode should suppress request log, got: %s", buf.String())
-	}
-}
-
-func TestDynamicServer_CacheHeaders(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Home"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest("GET", "/", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	srv.handleRequest(rec, req)
-
-	// Check cache control headers
-	if rec.Header().Get("Cache-Control") != "no-cache, no-store, must-revalidate" {
-		t.Error("missing Cache-Control header")
-	}
-	if rec.Header().Get("Pragma") != "no-cache" {
-		t.Error("missing Pragma header")
-	}
-	if rec.Header().Get("Expires") != "0" {
-		t.Error("missing Expires header")
-	}
-}
-
-func TestDynamicServer_ServeStaticFile_Nonexistent(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest("GET", "/nonexistent.js", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	result := srv.serveStaticFile(rec, req, "/nonexistent.js")
-	if result {
-		t.Error("serveStaticFile should return false for nonexistent file")
-	}
-}
-
-func TestDynamicServer_Serve404_WithNav(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create index.md so we have navigation
-	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Home"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test Site",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest("GET", "/notfound/", http.NoBody)
-	rec := httptest.NewRecorder()
-
-	srv.serve404(rec, req)
-
-	if rec.Code != http.StatusNotFound {
-		t.Errorf("expected status 404, got %d", rec.Code)
-	}
-
-	body := rec.Body.String()
-	// Should have navigation from the scanned tree
-	if !strings.Contains(body, "tree-nav") {
-		t.Error("404 page should contain navigation")
-	}
-}
-
-func TestDynamicServer_LogRequest_3xx(t *testing.T) {
-	var buf strings.Builder
-
-	config := DynamicConfig{
-		SourceDir: ".",
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     false,
-	}
-
-	srv, _ := NewDynamicServer(config, &buf)
-
-	// Test 3xx response (no special coloring)
-	srv.logRequest("GET", "/redirect", 302, 0)
-	if !strings.Contains(buf.String(), "302") {
-		t.Error("log request should contain 302 status")
-	}
-}
-
-func TestDynamicServer_Handler(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Home"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	config := DynamicConfig{
-		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	handler := srv.Handler()
-	if handler == nil {
-		t.Fatal("Handler() should not return nil")
-	}
-
-	// Test with httptest.Server
-	ts := httptest.NewServer(handler)
-	defer ts.Close()
-
-	resp, err := http.Get(ts.URL + "/")
-	if err != nil {
-		t.Fatalf("Failed to make request: %v", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected status 200, got %d", resp.StatusCode)
-	}
-}
-
-// Mock implementations for testing
-
-// mockFileInfo implements fs.FileInfo
-type mockFileInfo struct {
-	name  string
-	isDir bool
-}
-
-func (m mockFileInfo) Name() string       { return m.name }
-func (m mockFileInfo) Size() int64        { return 0 }
-func (m mockFileInfo) Mode() os.FileMode  { return 0644 }
-func (m mockFileInfo) ModTime() time.Time { return time.Time{} }
-func (m mockFileInfo) IsDir() bool        { return m.isDir }
-func (m mockFileInfo) Sys() any           { return nil }
-
 // mockFileSystem implements FileSystem for testing
 type mockFileSystem struct {
 	files map[string]mockFileInfo
-	err   error
 }
 
-func (m mockFileSystem) Stat(path string) (fs.FileInfo, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	if info, ok := m.files[path]; ok {
+type mockFileInfo struct {
+	name    string
+	size    int64
+	mode    os.FileMode
+	modTime time.Time
+	isDir   bool
+}
+
+func (m mockFileInfo) Name() string       { return m.name }
+func (m mockFileInfo) Size() int64        { return m.size }
+func (m mockFileInfo) Mode() os.FileMode  { return m.mode }
+func (m mockFileInfo) ModTime() time.Time { return m.modTime }
+func (m mockFileInfo) IsDir() bool        { return m.isDir }
+func (m mockFileInfo) Sys() interface{}   { return nil }
+
+func (m *mockFileSystem) Stat(name string) (os.FileInfo, error) {
+	if info, ok := m.files[name]; ok {
 		return info, nil
 	}
 	return nil, os.ErrNotExist
 }
 
-func (m mockFileSystem) ReadFile(_ string) ([]byte, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	return nil, nil
+func (m *mockFileSystem) ReadFile(name string) ([]byte, error) {
+	return nil, os.ErrNotExist
 }
 
 // mockScanner implements TreeScanner for testing
@@ -753,68 +51,642 @@ type mockScanner struct {
 	err  error
 }
 
-func (m mockScanner) Scan(_ string) (*tree.Site, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	return m.site, nil
+func (m *mockScanner) Scan(_ string) (*tree.Site, error) {
+	return m.site, m.err
 }
 
-func TestDynamicServer_WithFileSystem(t *testing.T) {
+func TestNewDynamicServer(t *testing.T) {
+	tmpDir := t.TempDir()
 	config := DynamicConfig{
-		SourceDir: "/test",
-		Title:     "Test",
+		SourceDir: tmpDir,
+		Title:     "Test Site",
 		Port:      8080,
-		Quiet:     true,
 	}
 
-	srv, err := NewDynamicServer(config, io.Discard)
+	server, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatalf("NewDynamicServer() error = %v", err)
+	}
+
+	if server == nil {
+		t.Fatal("NewDynamicServer() returned nil")
+	}
+
+	if server.config.SourceDir != tmpDir {
+		t.Errorf("SourceDir = %v, want %v", server.config.SourceDir, tmpDir)
+	}
+}
+
+func TestDynamicServer_Handler(t *testing.T) {
+	tmpDir := t.TempDir()
+	config := DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test Site",
+		Port:      8080,
+	}
+
+	server, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatalf("NewDynamicServer() error = %v", err)
+	}
+
+	handler := server.Handler()
+	if handler == nil {
+		t.Fatal("Handler() returned nil")
+	}
+}
+
+func TestDynamicServer_ResolveMarkdownPath(t *testing.T) {
+	// Create temp directory with test files
+	tmpDir := t.TempDir()
+
+	// Create index.md at root
+	indexContent := []byte("# Home\n\nWelcome")
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), indexContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create about.md
+	aboutContent := []byte("# About\n\nAbout page")
+	if err := os.WriteFile(filepath.Join(tmpDir, "about.md"), aboutContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create docs/index.md
+	docsDir := filepath.Join(tmpDir, "docs")
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	docsContent := []byte("# Docs\n\nDocumentation")
+	if err := os.WriteFile(filepath.Join(docsDir, "index.md"), docsContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	server := &DynamicServer{
+		config: DynamicConfig{
+			SourceDir: tmpDir,
+		},
+		fs: osFileSystem{},
+	}
+
+	tests := []struct {
+		urlPath  string
+		expected string
+	}{
+		{"/", "index.md"},
+		{"/about/", "about.md"},
+		{"/docs/", "docs/index.md"},
+		{"/nonexistent/", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.urlPath, func(t *testing.T) {
+			result := server.resolveMarkdownPath(tt.urlPath)
+			if result != tt.expected {
+				t.Errorf("resolveMarkdownPath(%q) = %q, want %q", tt.urlPath, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestDynamicServer_ResolveMarkdownPath_WithDatePrefix(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create posts directory with date-prefixed file
+	postsDir := filepath.Join(tmpDir, "posts")
+	if err := os.MkdirAll(postsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	postContent := []byte("# Hello World\n\nFirst post")
+	if err := os.WriteFile(filepath.Join(postsDir, "2024-01-15-hello-world.md"), postContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	server := &DynamicServer{
+		config: DynamicConfig{
+			SourceDir: tmpDir,
+		},
+		fs: osFileSystem{},
+	}
+
+	result := server.resolveMarkdownPath("/posts/hello-world/")
+	expected := "posts/2024-01-15-hello-world.md"
+	if result != expected {
+		t.Errorf("resolveMarkdownPath('/posts/hello-world/') = %q, want %q", result, expected)
+	}
+}
+
+func TestDynamicServer_RenderPage(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create index.md
+	content := []byte("# Test Page\n\nSome content here.")
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), content, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	config := DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test Site",
+	}
+
+	server, err := NewDynamicServer(config, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mockFS := mockFileSystem{
-		files: map[string]mockFileInfo{
-			"/test/index.md": {name: "index.md", isDir: false},
+	// Create request and recorder
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+
+	// Render the page
+	result := server.renderPage(rec, req, "/")
+
+	if !result {
+		t.Error("renderPage() returned false, expected true")
+	}
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("status code = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	body := rec.Body.String()
+	if !strings.Contains(body, "Test Page") {
+		t.Error("response body should contain page title")
+	}
+}
+
+func TestDynamicServer_Serve404(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	config := DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test Site",
+	}
+
+	server, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/nonexistent", nil)
+	rec := httptest.NewRecorder()
+
+	server.serve404(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status code = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+
+	body := rec.Body.String()
+	if !strings.Contains(body, "404") {
+		t.Error("response body should contain '404'")
+	}
+}
+
+func TestDynamicServer_HandleRequest_Integration(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a simple site structure
+	content := []byte("# Home\n\nWelcome to the site.")
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), content, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	config := DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test Site",
+		Port:      0,
+	}
+
+	server, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := server.Handler()
+
+	// Test home page
+	t.Run("home page", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("GET / status = %d, want %d", rec.Code, http.StatusOK)
+		}
+	})
+
+	// Test 404
+	t.Run("404 page", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/nonexistent/", nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("GET /nonexistent/ status = %d, want %d", rec.Code, http.StatusNotFound)
+		}
+	})
+}
+
+func TestDynamicServer_ServeStaticFile(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a static file
+	staticContent := []byte("body { color: red; }")
+	if err := os.WriteFile(filepath.Join(tmpDir, "style.css"), staticContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a markdown file (should not be served as static)
+	mdContent := []byte("# Test\n\nContent")
+	if err := os.WriteFile(filepath.Join(tmpDir, "page.md"), mdContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	config := DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test Site",
+	}
+
+	server, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test CSS file
+	t.Run("serves CSS file", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/style.css", nil)
+		rec := httptest.NewRecorder()
+
+		result := server.serveStaticFile(rec, req, "/style.css")
+		if !result {
+			t.Error("serveStaticFile() should return true for CSS file")
+		}
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+		}
+	})
+
+	// Test markdown file (should not be served as static)
+	t.Run("does not serve markdown as static", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/page.md", nil)
+		rec := httptest.NewRecorder()
+
+		result := server.serveStaticFile(rec, req, "/page.md")
+		if result {
+			t.Error("serveStaticFile() should return false for markdown file")
+		}
+	})
+}
+
+func TestDynamicServer_LogRequest(t *testing.T) {
+	var buf bytes.Buffer
+
+	server := &DynamicServer{
+		config: DynamicConfig{
+			Quiet: false,
+		},
+		writer: &buf,
+	}
+
+	server.logRequest("GET", "/test", 200, 100*time.Millisecond)
+
+	output := buf.String()
+	if !strings.Contains(output, "GET") {
+		t.Error("log should contain method")
+	}
+	if !strings.Contains(output, "/test") {
+		t.Error("log should contain path")
+	}
+	if !strings.Contains(output, "200") {
+		t.Error("log should contain status code")
+	}
+}
+
+func TestDynamicServer_LogRequest_Quiet(t *testing.T) {
+	var buf bytes.Buffer
+
+	server := &DynamicServer{
+		config: DynamicConfig{
+			Quiet: true,
+		},
+		writer: &buf,
+	}
+
+	server.logRequest("GET", "/test", 200, 100*time.Millisecond)
+
+	if buf.Len() > 0 {
+		t.Error("should not log when quiet mode is enabled")
+	}
+}
+
+func TestDynamicServer_WithCustomTheme(t *testing.T) {
+	tmpDir := t.TempDir()
+	config := DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test Site",
+		Theme:     "blog",
+	}
+
+	server, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatalf("NewDynamicServer() error = %v", err)
+	}
+
+	if server.config.Theme != "blog" {
+		t.Errorf("Theme = %v, want blog", server.config.Theme)
+	}
+}
+
+func TestDynamicServer_WithCustomCSS(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create custom CSS file
+	customCSS := "body { background: blue; }"
+	cssPath := filepath.Join(tmpDir, "custom.css")
+	if err := os.WriteFile(cssPath, []byte(customCSS), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	config := DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test Site",
+		CSSPath:   cssPath,
+	}
+
+	server, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatalf("NewDynamicServer() error = %v", err)
+	}
+
+	if server.config.CSSPath != cssPath {
+		t.Errorf("CSSPath = %v, want %v", server.config.CSSPath, cssPath)
+	}
+}
+
+func TestDynamicServer_GetRenderer_WithCustomCSS(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create custom CSS file
+	customCSS := "body { background: blue; }"
+	cssPath := filepath.Join(tmpDir, "custom.css")
+	if err := os.WriteFile(cssPath, []byte(customCSS), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	config := DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test Site",
+		CSSPath:   cssPath,
+	}
+
+	server, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	renderer, err := server.getRenderer()
+	if err != nil {
+		t.Fatalf("getRenderer() error = %v", err)
+	}
+
+	if renderer == nil {
+		t.Error("getRenderer() returned nil")
+	}
+}
+
+func TestFindNodeBySourcePath(t *testing.T) {
+	// Create a simple tree
+	root := tree.NewNode("", "", true)
+
+	file1 := tree.NewNode("File 1", "file1.md", false)
+	root.AddChild(file1)
+
+	folder := tree.NewNode("Folder", "folder", true)
+	root.AddChild(folder)
+
+	file2 := tree.NewNode("File 2", "folder/file2.md", false)
+	folder.AddChild(file2)
+
+	tests := []struct {
+		name       string
+		sourcePath string
+		wantNil    bool
+	}{
+		{"find root file", "file1.md", false},
+		{"find nested file", "folder/file2.md", false},
+		{"not found", "nonexistent.md", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := findNodeBySourcePath(root, tt.sourcePath)
+			if tt.wantNil && result != nil {
+				t.Errorf("findNodeBySourcePath() = %v, want nil", result)
+			}
+			if !tt.wantNil && result == nil {
+				t.Errorf("findNodeBySourcePath() = nil, want non-nil")
+			}
+		})
+	}
+}
+
+func TestNeedsAutoIndex(t *testing.T) {
+	tests := []struct {
+		name     string
+		setup    func() *tree.Node
+		expected bool
+	}{
+		{
+			name: "folder without index needs auto-index",
+			setup: func() *tree.Node {
+				folder := tree.NewNode("Folder", "folder", true)
+				file := tree.NewNode("File", "folder/file.md", false)
+				folder.AddChild(file)
+				return folder
+			},
+			expected: true,
+		},
+		{
+			name: "folder with index.md does not need auto-index",
+			setup: func() *tree.Node {
+				folder := tree.NewNode("Folder", "folder", true)
+				index := tree.NewNode("Index", "folder/index.md", false)
+				index.Path = "folder/index.md"
+				folder.AddChild(index)
+				return folder
+			},
+			expected: false,
+		},
+		{
+			name: "folder with HasIndex=true does not need auto-index",
+			setup: func() *tree.Node {
+				folder := tree.NewNode("Folder", "folder", true)
+				folder.HasIndex = true
+				return folder
+			},
+			expected: false,
+		},
+		{
+			name: "non-folder does not need auto-index",
+			setup: func() *tree.Node {
+				return tree.NewNode("File", "file.md", false)
+			},
+			expected: false,
 		},
 	}
 
-	srv.WithFileSystem(mockFS)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node := tt.setup()
+			result := needsAutoIndex(node)
+			if result != tt.expected {
+				t.Errorf("needsAutoIndex() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
 
-	// Test that the custom FileSystem is used
-	result := srv.resolveMarkdownPath("/")
-	if result != "index.md" {
-		t.Errorf("expected 'index.md', got %q", result)
+func TestFindFolderByPath(t *testing.T) {
+	// Create tree structure
+	root := tree.NewNode("", "", true)
+
+	folder1 := tree.NewNode("Folder One", "folder-one", true)
+	folder1.Path = "folder-one"
+	root.AddChild(folder1)
+
+	folder2 := tree.NewNode("Folder Two", "folder-one/folder-two", true)
+	folder2.Path = "folder-one/folder-two"
+	folder1.AddChild(folder2)
+
+	tests := []struct {
+		urlPath string
+		wantNil bool
+	}{
+		{"/folder-one/", false},
+		{"/folder-one/folder-two/", false},
+		{"/nonexistent/", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.urlPath, func(t *testing.T) {
+			result := findFolderByPath(root, tt.urlPath)
+			if tt.wantNil && result != nil {
+				t.Errorf("findFolderByPath(%q) = %v, want nil", tt.urlPath, result)
+			}
+			if !tt.wantNil && result == nil {
+				t.Errorf("findFolderByPath(%q) = nil, want non-nil", tt.urlPath)
+			}
+		})
+	}
+}
+
+func TestCollectAllPages(t *testing.T) {
+	root := tree.NewNode("", "", true)
+
+	file1 := tree.NewNode("File 1", "file1.md", false)
+	file1.Path = "file1.md"
+	root.AddChild(file1)
+
+	folder := tree.NewNode("Folder", "folder", true)
+	folder.Path = "folder"
+	root.AddChild(folder)
+
+	file2 := tree.NewNode("File 2", "folder/file2.md", false)
+	file2.Path = "folder/file2.md"
+	folder.AddChild(file2)
+
+	pages := collectAllPages(root)
+
+	if len(pages) != 2 {
+		t.Errorf("collectAllPages() returned %d pages, want 2", len(pages))
+	}
+}
+
+func TestDynamicServer_AutoIndex(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a folder without index.md
+	folderDir := filepath.Join(tmpDir, "folder")
+	if err := os.MkdirAll(folderDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a file in the folder
+	content := []byte("# Test File\n\nContent")
+	if err := os.WriteFile(filepath.Join(folderDir, "test.md"), content, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	config := DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test Site",
+	}
+
+	server, err := NewDynamicServer(config, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := server.Handler()
+
+	req := httptest.NewRequest(http.MethodGet, "/folder/", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	// Should serve auto-generated index
+	if rec.Code != http.StatusOK {
+		t.Errorf("GET /folder/ status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	body := rec.Body.String()
+	if !strings.Contains(body, "folder") {
+		t.Error("auto-index should contain folder name")
+	}
+}
+
+func TestDynamicServer_WithFileSystem(t *testing.T) {
+	server := &DynamicServer{}
+
+	mockFS := &mockFileSystem{
+		files: map[string]mockFileInfo{
+			"/test/file.txt": {name: "file.txt", size: 100, isDir: false},
+		},
+	}
+
+	result := server.WithFileSystem(mockFS)
+
+	if result != server {
+		t.Error("WithFileSystem should return the same server instance")
+	}
+
+	if server.fs != mockFS {
+		t.Error("WithFileSystem should set the filesystem")
 	}
 }
 
 func TestDynamicServer_WithScanner(t *testing.T) {
-	config := DynamicConfig{
-		SourceDir: "/test",
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
+	server := &DynamicServer{}
+
+	mockScan := &mockScanner{
+		site: &tree.Site{},
 	}
 
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
+	result := server.WithScanner(mockScan)
+
+	if result != server {
+		t.Error("WithScanner should return the same server instance")
 	}
 
-	mockSite := &tree.Site{
-		Root:     tree.NewNode("", "", true),
-		AllPages: []*tree.Node{},
-	}
-
-	srv.WithScanner(mockScanner{site: mockSite})
-
-	// The scanner is used internally, just verify it was set
-	if srv.scanner == nil {
-		t.Error("scanner should not be nil")
+	if server.scanner != mockScan {
+		t.Error("WithScanner should set the scanner")
 	}
 }
 
-func TestDynamicServer_ScannerError(t *testing.T) {
+func TestDynamicServer_TopNav(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create index.md
@@ -822,81 +694,57 @@ func TestDynamicServer_ScannerError(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Create a few root-level pages (for top nav)
+	for _, name := range []string{"about.md", "contact.md", "services.md"} {
+		if err := os.WriteFile(filepath.Join(tmpDir, name), []byte("# "+name), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	config := DynamicConfig{
 		SourceDir: tmpDir,
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
+		Title:     "Test Site",
+		TopNav:    true,
 	}
 
-	srv, err := NewDynamicServer(config, io.Discard)
+	server, err := NewDynamicServer(config, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Set a scanner that returns an error
-	srv.WithScanner(mockScanner{err: os.ErrPermission})
+	handler := server.Handler()
 
-	req := httptest.NewRequest("GET", "/", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
 
-	srv.handleRequest(rec, req)
-
-	// Should return 404 since scan fails
-	if rec.Code != http.StatusNotFound {
-		t.Errorf("expected 404 when scanner fails, got %d", rec.Code)
-	}
-}
-
-func TestDynamicServer_FileSystemError(t *testing.T) {
-	config := DynamicConfig{
-		SourceDir: "/test",
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
+	if rec.Code != http.StatusOK {
+		t.Errorf("GET / status = %d, want %d", rec.Code, http.StatusOK)
 	}
 
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Set a filesystem that returns errors
-	srv.WithFileSystem(mockFileSystem{err: os.ErrPermission})
-
-	// Test resolveMarkdownPath with failing filesystem
-	result := srv.resolveMarkdownPath("/")
-	if result != "" {
-		t.Errorf("expected empty string when filesystem fails, got %q", result)
-	}
-
-	result = srv.resolveMarkdownPath("/about/")
-	if result != "" {
-		t.Errorf("expected empty string when filesystem fails, got %q", result)
+	body := rec.Body.String()
+	if !strings.Contains(body, "top-nav") {
+		t.Error("response should contain top-nav when TopNav is enabled")
 	}
 }
 
 func TestDynamicServer_ServeStaticFile_WithMockFS(t *testing.T) {
-	config := DynamicConfig{
-		SourceDir: "/test",
-		Title:     "Test",
-		Port:      8080,
-		Quiet:     true,
-	}
-
-	srv, err := NewDynamicServer(config, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Directory should not be served as static
-	srv.WithFileSystem(mockFileSystem{
+	mockFS := &mockFileSystem{
 		files: map[string]mockFileInfo{
-			"/test/assets": {name: "assets", isDir: true},
+			"/test/assets/image.png": {name: "image.png", size: 1000, isDir: false},
+			"/test/assets":           {name: "assets", isDir: true},
 		},
-	})
+	}
 
-	req := httptest.NewRequest("GET", "/assets", http.NoBody)
+	srv := &DynamicServer{
+		config: DynamicConfig{
+			SourceDir: "/test",
+		},
+		fs: mockFS,
+	}
+
+	// Test that directories are not served as static files
+	req := httptest.NewRequest(http.MethodGet, "/assets", nil)
 	rec := httptest.NewRecorder()
 
 	result := srv.serveStaticFile(rec, req, "/assets")

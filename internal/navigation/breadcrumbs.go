@@ -3,7 +3,6 @@ package navigation
 
 import (
 	"html/template"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -52,12 +51,10 @@ func BuildBreadcrumbs(node *tree.Node, siteTitle string) []Breadcrumb {
 	// Add ancestor folders
 	for _, ancestor := range ancestors {
 		if ancestor.IsFolder {
-			url := ""
-			if ancestor.HasIndex {
-				url = "/" + filepath.ToSlash(filepath.Dir(ancestor.IndexPath)) + "/"
-				if url == "/./" {
-					url = "/"
-				}
+			// All folders get a slugified URL (they either have an index or auto-index)
+			url := "/" + tree.SlugifyPath(ancestor.Path) + "/"
+			if url == "/./" {
+				url = "/"
 			}
 			crumbs = append(crumbs, Breadcrumb{
 				Label:   ancestor.Name,

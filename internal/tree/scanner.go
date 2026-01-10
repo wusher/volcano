@@ -84,7 +84,12 @@ func scanDirectory(basePath, currentPath string, parent *Node, allPages *[]*Node
 				parent.IndexPath = relPath
 			}
 
-			parent.AddChild(fileNode)
+			// Skip adding root-level index/readme files to the tree
+			// (site title already links to home page)
+			isRootIndex := IsIndexFile(name) && filepath.Dir(relPath) == "."
+			if !isRootIndex {
+				parent.AddChild(fileNode)
+			}
 			*allPages = append(*allPages, fileNode)
 		}
 	}
@@ -92,7 +97,7 @@ func scanDirectory(basePath, currentPath string, parent *Node, allPages *[]*Node
 	return nil
 }
 
-// sortAndPrune sorts children (folders first, then alphabetically) and removes empty folders
+// sortAndPrune sorts children (files first, then folders, by date/number/name) and removes empty folders
 func sortAndPrune(node *Node) {
 	if !node.IsFolder {
 		return
@@ -113,24 +118,55 @@ func sortAndPrune(node *Node) {
 	}
 	node.Children = filtered
 
-	// Sort: folders first, then files, alphabetically by name
+	// Sort: files first, then folders
+	// Within each category: by date (from filename), then number, then alphabetically
 	sort.Slice(node.Children, func(i, j int) bool {
 		a, b := node.Children[i], node.Children[j]
 
-		// Folders come before files
+		// Files come before folders
 		if a.IsFolder != b.IsFolder {
-			return a.IsFolder
+			return !a.IsFolder
 		}
 
-		// Alphabetical by name (case-insensitive)
+		// Both are same type - sort by date/number/name
+		aMeta := GetNodeMetadata(a)
+		bMeta := GetNodeMetadata(b)
+
+		// Primary: Date (from filename only)
+		// Items with dates come before items without dates
+		if aMeta.HasDate != bMeta.HasDate {
+			return aMeta.HasDate
+		}
+		// Both have dates - sort by date (newest first)
+		if aMeta.HasDate && bMeta.HasDate && !aMeta.Date.Equal(bMeta.Date) {
+			return aMeta.Date.After(bMeta.Date)
+		}
+
+		// Secondary: Number (lower numbers first, nil sorted last)
+		aNum := numberForSort(aMeta.Number)
+		bNum := numberForSort(bMeta.Number)
+		if aNum != bNum {
+			return aNum < bNum
+		}
+
+		// Tertiary: Name (alphabetical, case-insensitive)
 		return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 	})
+}
+
+// numberForSort returns the number for sorting, with nil treated as max
+func numberForSort(n *int) int {
+	if n == nil {
+		return 999999
+	}
+	return *n
 }
 
 // GetOutputPath returns the output path for a file node
 // Converts: guides/intro.md → guides/intro/index.html (clean URLs)
 // Converts: index.md → index.html (root index)
 // Converts: posts/2024-01-15-hello.md → posts/hello/index.html (strips date prefix)
+// Converts: "0. Inbox/notes.md" → inbox/notes/index.html (slugified paths)
 func GetOutputPath(node *Node) string {
 	if node.IsFolder {
 		return ""
@@ -140,13 +176,16 @@ func GetOutputPath(node *Node) string {
 	dir := filepath.Dir(node.Path)
 	filename := filepath.Base(node.Path)
 
+	// Slugify the directory path to match URL paths
+	slugDir := SlugifyPath(dir)
+
 	// Handle index files - they stay as index.html
 	stem := strings.TrimSuffix(filename, filepath.Ext(filename))
 	if strings.ToLower(stem) == "index" || strings.ToLower(stem) == "readme" {
-		if dir == "." {
+		if slugDir == "" {
 			return "index.html"
 		}
-		return filepath.Join(dir, "index.html")
+		return filepath.Join(slugDir, "index.html")
 	}
 
 	// Extract metadata to get slug (strips date/number prefixes)
@@ -154,32 +193,41 @@ func GetOutputPath(node *Node) string {
 	slug := meta.Slug
 
 	// For non-index files, create clean URLs: file.md → file/index.html
-	if dir == "." {
+	if slugDir == "" {
 		return filepath.Join(slug, "index.html")
 	}
-	return filepath.Join(dir, slug, "index.html")
+	return filepath.Join(slugDir, slug, "index.html")
 }
 
 // GetURLPath returns the URL path for a file node
 // Converts: guides/intro.md → /guides/intro/
 // Converts: index.md → /
 // Converts: posts/2024-01-15-hello.md → /posts/hello/ (strips date prefix)
+// Converts: "0. Inbox/notes.md" → /inbox/notes/
 func GetURLPath(node *Node) string {
 	if node.IsFolder {
-		return ""
+		// For folders, return the slugified path
+		slugPath := SlugifyPath(node.Path)
+		if slugPath == "" {
+			return "/"
+		}
+		return "/" + slugPath + "/"
 	}
 
 	// Get directory and filename
 	dir := filepath.Dir(node.Path)
 	filename := filepath.Base(node.Path)
 
+	// Slugify the directory path
+	slugDir := SlugifyPath(dir)
+
 	// Handle index files
 	stem := strings.TrimSuffix(filename, filepath.Ext(filename))
 	if strings.ToLower(stem) == "index" || strings.ToLower(stem) == "readme" {
-		if dir == "." {
+		if slugDir == "" {
 			return "/"
 		}
-		return "/" + filepath.ToSlash(dir) + "/"
+		return "/" + slugDir + "/"
 	}
 
 	// Extract metadata to get slug (strips date/number prefixes)
@@ -187,8 +235,29 @@ func GetURLPath(node *Node) string {
 	slug := meta.Slug
 
 	// For non-index files, return the path with slug as directory
-	if dir == "." {
+	if slugDir == "" {
 		return "/" + slug + "/"
 	}
-	return "/" + filepath.ToSlash(dir) + "/" + slug + "/"
+	return "/" + slugDir + "/" + slug + "/"
+}
+
+// SlugifyPath slugifies each segment of a path
+// Converts: "0. Inbox/1. Health" → "inbox/health"
+func SlugifyPath(path string) string {
+	if path == "." || path == "" {
+		return ""
+	}
+
+	// Split path into segments
+	segments := strings.Split(filepath.ToSlash(path), "/")
+	slugged := make([]string, 0, len(segments))
+
+	for _, seg := range segments {
+		if seg == "" || seg == "." {
+			continue
+		}
+		slugged = append(slugged, Slugify(seg))
+	}
+
+	return strings.Join(slugged, "/")
 }

@@ -16,19 +16,27 @@ type Page struct {
 }
 
 // ParseFile reads and parses a markdown file, returning a Page
-func ParseFile(sourcePath string, outputPath string, urlPath string, fallbackTitle string) (*Page, error) {
+func ParseFile(sourcePath string, outputPath string, urlPath string, sourceDir string, fallbackTitle string) (*Page, error) {
 	// Read the file
 	content, err := os.ReadFile(sourcePath)
 	if err != nil {
 		return nil, err
 	}
 
-	return ParseContent(content, sourcePath, outputPath, urlPath, fallbackTitle)
+	return ParseContent(content, sourcePath, outputPath, urlPath, sourceDir, fallbackTitle)
 }
 
 // ParseContent parses pre-read markdown content, returning a Page.
 // This allows preprocessing (e.g., admonitions) before parsing.
-func ParseContent(content []byte, sourcePath string, outputPath string, urlPath string, fallbackTitle string) (*Page, error) {
+// sourceDir is the slugified source file directory (e.g., "/guides/") for wikilink resolution.
+func ParseContent(content []byte, sourcePath string, outputPath string, urlPath string, sourceDir string, fallbackTitle string) (*Page, error) {
+	// Strip YAML front matter if present
+	content = StripFrontMatter(content)
+
+	// Convert Obsidian-style wiki links to standard markdown links
+	// Pass the source file's directory for sibling resolution
+	content = ConvertWikiLinks(content, sourceDir)
+
 	// Extract title from markdown
 	title := ExtractTitle(content)
 	if title == "" {

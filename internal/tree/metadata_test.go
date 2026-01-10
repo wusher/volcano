@@ -14,41 +14,90 @@ func TestExtractFileMetadata(t *testing.T) {
 		wantDate    string
 		wantSlug    string
 		wantNumber  *int
-		wantDateSrc string
+		wantHasDate bool
 	}{
 		{
 			name:        "simple filename",
 			filename:    "hello-world.md",
 			wantSlug:    "hello-world",
-			wantDateSrc: "mtime",
+			wantHasDate: false,
 		},
 		{
-			name:        "date prefix",
+			name:        "date prefix with dash",
 			filename:    "2024-01-15-hello-world.md",
 			wantDate:    "2024-01-15",
 			wantSlug:    "hello-world",
-			wantDateSrc: "filename",
+			wantHasDate: true,
 		},
 		{
-			name:        "number prefix",
+			name:        "date prefix with underscore",
+			filename:    "2024_01_15_hello-world.md",
+			wantDate:    "2024-01-15",
+			wantSlug:    "hello-world",
+			wantHasDate: true,
+		},
+		{
+			name:        "date prefix with space",
+			filename:    "2024-01-15 hello-world.md",
+			wantDate:    "2024-01-15",
+			wantSlug:    "hello-world",
+			wantHasDate: true,
+		},
+		{
+			name:        "number prefix with dash",
 			filename:    "01-getting-started.md",
 			wantSlug:    "getting-started",
 			wantNumber:  intPtr(1),
-			wantDateSrc: "mtime",
+			wantHasDate: false,
+		},
+		{
+			name:        "number prefix with underscore",
+			filename:    "01_getting-started.md",
+			wantSlug:    "getting-started",
+			wantNumber:  intPtr(1),
+			wantHasDate: false,
+		},
+		{
+			name:        "number prefix with space",
+			filename:    "01 getting-started.md",
+			wantSlug:    "getting-started",
+			wantNumber:  intPtr(1),
+			wantHasDate: false,
 		},
 		{
 			name:        "date and number prefix",
 			filename:    "2024-01-15-01-intro.md",
 			wantDate:    "2024-01-15",
-			wantSlug:    "intro", // number is also extracted
+			wantSlug:    "intro",
 			wantNumber:  intPtr(1),
-			wantDateSrc: "filename",
+			wantHasDate: true,
 		},
 		{
 			name:        "draft prefix",
 			filename:    "_draft-post.md",
 			wantSlug:    "draft-post",
-			wantDateSrc: "mtime",
+			wantHasDate: false,
+		},
+		{
+			name:        "number prefix with dot (folder style)",
+			filename:    "0. Inbox",
+			wantSlug:    "inbox",
+			wantNumber:  intPtr(0),
+			wantHasDate: false,
+		},
+		{
+			name:        "number prefix with dot and space",
+			filename:    "1. Projects",
+			wantSlug:    "projects",
+			wantNumber:  intPtr(1),
+			wantHasDate: false,
+		},
+		{
+			name:        "number prefix with dot no space",
+			filename:    "8.Archive",
+			wantSlug:    "archive",
+			wantNumber:  intPtr(8),
+			wantHasDate: false,
 		},
 	}
 
@@ -60,8 +109,15 @@ func TestExtractFileMetadata(t *testing.T) {
 				t.Errorf("Slug = %q, want %q", meta.Slug, tc.wantSlug)
 			}
 
-			if tc.wantDateSrc != "" && meta.DateSource != tc.wantDateSrc {
-				t.Errorf("DateSource = %q, want %q", meta.DateSource, tc.wantDateSrc)
+			if meta.HasDate != tc.wantHasDate {
+				t.Errorf("HasDate = %v, want %v", meta.HasDate, tc.wantHasDate)
+			}
+
+			if tc.wantHasDate && tc.wantDate != "" {
+				gotDate := meta.Date.Format("2006-01-02")
+				if gotDate != tc.wantDate {
+					t.Errorf("Date = %q, want %q", gotDate, tc.wantDate)
+				}
 			}
 
 			if tc.wantNumber != nil {
@@ -130,9 +186,13 @@ func TestSortNodes(t *testing.T) {
 	// Sort newest first
 	SortNodes(nodes, true)
 
-	// Folders should come first
-	if !nodes[0].IsFolder {
-		t.Error("Folder should be first after sorting")
+	// Files should come first, then folders
+	if nodes[0].IsFolder {
+		t.Error("Files should come before folders after sorting")
+	}
+	// Last item should be the folder
+	if !nodes[2].IsFolder {
+		t.Error("Folder should be last after sorting")
 	}
 }
 

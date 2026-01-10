@@ -92,13 +92,13 @@ func TestBuildAutoIndex(t *testing.T) {
 		t.Errorf("URLPath = %q, want %q", index.URLPath, "/guides/")
 	}
 
-	// Folders should come first
+	// Files should come first
 	if len(index.Children) != 3 {
 		t.Fatalf("expected 3 children, got %d", len(index.Children))
 	}
 
-	if !index.Children[0].IsFolder {
-		t.Error("first child should be folder (sorted)")
+	if index.Children[0].IsFolder {
+		t.Error("first child should be file, not folder (files sorted first)")
 	}
 }
 

@@ -47,6 +47,22 @@
             </li>
 {{end}}
         </ul>
+        <button class="top-nav-theme-toggle" aria-label="Toggle dark mode" onclick="toggleTheme()">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
     </nav>
 {{end}}
 
@@ -107,7 +123,7 @@
 
     <!-- Back to top button -->
     <button class="back-to-top" aria-label="Scroll to top" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
     </button>
 
     <!-- Dark mode toggle -->
@@ -347,6 +363,39 @@
             }, { rootMargin: '-80px 0px -80% 0px' });
 
             headings.forEach(function(h) { observer.observe(h); });
+        })();
+
+        // TOC smooth scroll with proper positioning
+        (function() {
+            const toc = document.querySelector('.toc');
+            if (!toc) return;
+
+            const headerOffset = 80;
+
+            // Use event delegation for TOC links
+            toc.addEventListener('click', function(e) {
+                const link = e.target.closest('a[href^="#"]');
+                if (!link) return;
+
+                e.preventDefault();
+                const targetId = link.getAttribute('href').slice(1);
+                const target = document.getElementById(targetId);
+                if (!target) return;
+
+                // Calculate position to put heading near top of viewport
+                const targetPosition = target.getBoundingClientRect().top + window.scrollY - headerOffset;
+
+                // Update active state immediately
+                toc.querySelectorAll('a').forEach(function(a) { a.classList.remove('active'); });
+                link.classList.add('active');
+
+                // Use native smooth scroll (same as back-to-top button)
+                // CSS handles prefers-reduced-motion via scroll-behavior: auto
+                window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+
+                // Update URL hash
+                history.pushState(null, null, '#' + targetId);
+            });
         })();
 
         // Keyboard shortcuts

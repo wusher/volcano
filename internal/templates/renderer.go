@@ -6,6 +6,7 @@ import (
 	"embed"
 	"html/template"
 	"io"
+	"sort"
 	"strings"
 
 	"volcano/internal/tree"
@@ -117,17 +118,17 @@ func renderFolderNode(buf *bytes.Buffer, node *tree.Node, currentPath string, de
 	buf.WriteString("<svg class=\"chevron\" xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"9 18 15 12 9 6\"></polyline></svg>\n")
 	buf.WriteString("</button>\n")
 
-	// Folder link (if has index) or just label
+	// Folder link - either has an index.md OR will have auto-generated index
+	// All folders with children are clickable (auto-index will be generated)
+	folderURL := "/" + tree.SlugifyPath(node.Path) + "/"
 	if node.HasIndex {
-		urlPath := tree.GetURLPath(&tree.Node{Path: node.IndexPath})
-		active := ""
-		if urlPath == currentPath {
-			active = " active"
-		}
-		buf.WriteString("<a href=\"" + template.HTMLEscapeString(urlPath) + "\" class=\"folder-link" + active + "\">" + template.HTMLEscapeString(node.Name) + "</a>\n")
-	} else {
-		buf.WriteString("<span class=\"folder-label\">" + template.HTMLEscapeString(node.Name) + "</span>\n")
+		folderURL = tree.GetURLPath(&tree.Node{Path: node.IndexPath})
 	}
+	active := ""
+	if folderURL == currentPath {
+		active = " active"
+	}
+	buf.WriteString("<a href=\"" + template.HTMLEscapeString(folderURL) + "\" class=\"folder-link" + active + "\">" + template.HTMLEscapeString(node.Name) + "</a>\n")
 
 	buf.WriteString("</div>\n")
 
@@ -156,35 +157,72 @@ func renderFileNode(buf *bytes.Buffer, node *tree.Node, currentPath string) {
 	buf.WriteString("</li>\n")
 }
 
-// BuildTopNavItems extracts root-level files for top navigation bar
-// Returns nil if topNav is disabled or there are more than 5 root files
+// BuildTopNavItems extracts root-level items for top navigation bar
+// Returns nil if topNav is disabled or there are no eligible items
+// Items are sorted: files first, then folders, each sorted by date/number/name
 func BuildTopNavItems(root *tree.Node, topNav bool) []TopNavItem {
 	if !topNav || root == nil {
 		return nil
 	}
 
-	// Count root files (excluding index/readme files)
-	var rootFiles []*tree.Node
+	// Collect root items (excluding index/readme files)
+	var rootItems []*tree.Node
 	for _, child := range root.Children {
-		if child.IsFolder {
-			continue
-		}
 		// Skip index files using the same logic as tree package
-		filename := strings.ToLower(child.FileName)
-		if filename == "index.md" || filename == "readme.md" {
-			continue
+		if !child.IsFolder {
+			filename := strings.ToLower(child.FileName)
+			if filename == "index.md" || filename == "readme.md" {
+				continue
+			}
 		}
-		rootFiles = append(rootFiles, child)
+		rootItems = append(rootItems, child)
 	}
 
-	// Only use top nav if between 1 and 5 root files
-	if len(rootFiles) == 0 || len(rootFiles) > 5 {
+	// Only use top nav if between 1 and 8 root items
+	// (increased from 5 to accommodate both files and folders)
+	if len(rootItems) == 0 || len(rootItems) > 8 {
 		return nil
 	}
 
+	// Sort: files first, then folders
+	// Within each category: by date (newest first), then number, then name alphabetically
+	// Date is extracted from filename prefix only (e.g., 2024-01-15-title.md)
+	sort.Slice(rootItems, func(i, j int) bool {
+		a, b := rootItems[i], rootItems[j]
+
+		// Files before folders
+		if a.IsFolder != b.IsFolder {
+			return !a.IsFolder // files (false) before folders (true)
+		}
+
+		// Both are same type - sort by date/number/name using tree metadata
+		aMeta := tree.GetNodeMetadata(a)
+		bMeta := tree.GetNodeMetadata(b)
+
+		// Primary: Date (from filename only)
+		// Items with dates come before items without dates
+		if aMeta.HasDate != bMeta.HasDate {
+			return aMeta.HasDate // items with dates first
+		}
+		// Both have dates - sort by date (newest first)
+		if aMeta.HasDate && bMeta.HasDate && !aMeta.Date.Equal(bMeta.Date) {
+			return aMeta.Date.After(bMeta.Date)
+		}
+
+		// Secondary: Number (lower numbers first, nil sorted last)
+		aNum := topNavNumberForSort(aMeta.Number)
+		bNum := topNavNumberForSort(bMeta.Number)
+		if aNum != bNum {
+			return aNum < bNum
+		}
+
+		// Tertiary: Name (alphabetical)
+		return strings.ToLower(a.Name) < strings.ToLower(b.Name)
+	})
+
 	// Build top nav items
 	var items []TopNavItem
-	for _, node := range rootFiles {
+	for _, node := range rootItems {
 		items = append(items, TopNavItem{
 			Name: node.Name,
 			URL:  tree.GetURLPath(node),
@@ -192,6 +230,14 @@ func BuildTopNavItems(root *tree.Node, topNav bool) []TopNavItem {
 	}
 
 	return items
+}
+
+// topNavNumberForSort returns the number for sorting, with nil treated as max
+func topNavNumberForSort(n *int) int {
+	if n == nil {
+		return 999999 // Sort after numbered items
+	}
+	return *n
 }
 
 // RenderNavigationWithTopNav renders navigation excluding root files when top nav is enabled

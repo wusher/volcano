@@ -63,15 +63,16 @@ func TestScan(t *testing.T) {
 		t.Errorf("AllPages length = %d, want 5", len(tree.AllPages))
 	}
 
-	// Verify root children (should be: api, guides, About, Index - sorted with folders first)
-	if len(tree.Root.Children) != 4 {
-		t.Errorf("Root children = %d, want 4", len(tree.Root.Children))
+	// Verify root children (should be: About, api, guides - sorted with files first)
+	// Note: root index.md is NOT added to Children (site title links to home page)
+	if len(tree.Root.Children) != 3 {
+		t.Errorf("Root children = %d, want 3 (root index.md excluded from tree)", len(tree.Root.Children))
 	}
 
-	// Verify folders come before files
+	// Verify files come before folders
 	if len(tree.Root.Children) >= 2 {
-		if !tree.Root.Children[0].IsFolder {
-			t.Error("First child should be a folder")
+		if tree.Root.Children[0].IsFolder {
+			t.Error("First child should be a file, not a folder")
 		}
 	}
 
@@ -212,7 +213,7 @@ func TestGetURLPath(t *testing.T) {
 			name:     "folder",
 			path:     "guides",
 			isFolder: true,
-			expected: "",
+			expected: "/guides/",
 		},
 		{
 			name:     "date prefix file",
@@ -249,7 +250,7 @@ func TestSortAndPrune(t *testing.T) {
 	// Create a root with unsorted children
 	root := NewNode("Root", "", true)
 
-	// Add children in wrong order (files before folders, unsorted)
+	// Add children in wrong order
 	fileZ := NewNode("Zebra", "zebra.md", false)
 	fileA := NewNode("Alpha", "alpha.md", false)
 	folderM := NewNode("Middle", "middle", true)
@@ -270,13 +271,13 @@ func TestSortAndPrune(t *testing.T) {
 
 	sortAndPrune(root)
 
-	// Verify order: folders first (Apple, Middle), then files (Alpha, Zebra)
+	// Verify order: files first (Alpha, Zebra), then folders (Apple, Middle)
 	// Empty folder should be removed
 	if len(root.Children) != 4 {
 		t.Errorf("Children count = %d, want 4 (empty folder should be pruned)", len(root.Children))
 	}
 
-	expectedOrder := []string{"Apple", "Middle", "Alpha", "Zebra"}
+	expectedOrder := []string{"Alpha", "Zebra", "Apple", "Middle"}
 	for i, expected := range expectedOrder {
 		if i >= len(root.Children) {
 			break

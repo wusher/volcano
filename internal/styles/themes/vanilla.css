@@ -1,0 +1,1597 @@
+/* =============================================================================
+   VOLCANO VANILLA THEME - Customization Skeleton
+   =============================================================================
+
+   This is a structural CSS skeleton with no colors, decorations, or visual styling.
+   Use this as a starting point for creating your own custom theme.
+
+   To customize:
+   1. Export this file:    volcano css -o custom.css
+   2. Add your styling:    Colors, fonts, borders, backgrounds, etc.
+   3. Use your theme:      volcano ./docs -o ./public --css ./custom.css
+
+   ============================================================================= */
+
+
+/* =============================================================================
+   RESET & BASE
+   =============================================================================
+   Foundation styles that normalize browser defaults.
+   ============================================================================= */
+
+/* Box-sizing border-box makes padding/border included in element width/height */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Base font size - all rem units are relative to this (1rem = 16px) */
+html {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+
+/* =============================================================================
+   CSS CUSTOM PROPERTIES (Variables)
+   =============================================================================
+   Layout dimensions that can be adjusted. Add your own color variables here.
+
+   Example additions for theming:
+   --color-bg: #ffffff;
+   --color-text: #1a1a1a;
+   --color-link: #2563eb;
+   --color-border: #e5e5e5;
+   --font-sans: system-ui, sans-serif;
+   --font-mono: "SF Mono", monospace;
+   ============================================================================= */
+
+:root {
+  /* Layout dimensions */
+  --sidebar-width: 280px;      /* Left navigation panel width */
+  --toc-width: 220px;          /* Right table-of-contents width */
+  --content-max-width: 800px;  /* Maximum width of main content area */
+}
+
+
+/* =============================================================================
+   SCROLL PROGRESS INDICATOR
+   =============================================================================
+   Shows reading progress as a thin bar at the bottom of the viewport.
+   The bar width is controlled via JavaScript based on scroll position.
+
+   Styling suggestions:
+   - Add background color to .scroll-progress-bar
+   - Consider using a gradient for visual interest
+   ============================================================================= */
+
+.scroll-progress {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 1000;
+}
+
+/* Width is dynamically set via JavaScript (0% to 100%) */
+.scroll-progress-bar {
+  height: 100%;
+  width: 0;
+}
+
+
+/* =============================================================================
+   SIDEBAR (Left Navigation Panel)
+   =============================================================================
+   Fixed panel containing site title, search, and tree navigation.
+
+   Structure:
+   .sidebar
+   ├── .sidebar-header (site title + close button for mobile)
+   ├── .nav-search (search input)
+   └── .tree-nav (folder/file navigation tree)
+
+   Styling suggestions:
+   - Add background-color
+   - Add border-right for separation from content
+   - Consider box-shadow for depth
+   ============================================================================= */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header contains site title and mobile close button */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  flex-shrink: 0;  /* Don't compress when sidebar content is tall */
+}
+
+/* Close button - only visible on mobile (see @media section) */
+.close-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+
+/* =============================================================================
+   NAVIGATION SEARCH
+   =============================================================================
+   Search input in the sidebar for filtering the navigation tree.
+   JavaScript handles the filtering logic.
+
+   Structure:
+   .nav-search
+   └── .search-input-wrapper
+       ├── .search-icon (magnifying glass SVG)
+       ├── .search-input (text input)
+       └── .search-clear (X button to clear)
+
+   Styling suggestions:
+   - Add border/border-radius to .search-input
+   - Add background-color to .search-input
+   - Style focus state with outline or border-color change
+   ============================================================================= */
+
+.nav-search {
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Search icon positioned inside the input */
+.search-icon {
+  position: absolute;
+  left: 10px;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;  /* Click passes through to input */
+}
+
+/* Input field - padding accounts for icon on left, clear button on right */
+.search-input {
+  width: 100%;
+  padding: 8px 32px 8px 36px;
+  font-size: 14px;
+}
+
+/* Clear button appears when search has text */
+.search-clear {
+  position: absolute;
+  right: 8px;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Message shown when search returns no results */
+.search-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+
+/* =============================================================================
+   MAIN CONTENT WRAPPER
+   =============================================================================
+   Container for main page content. Offset from sidebar on left.
+   When table of contents is present, also offset from right.
+   ============================================================================= */
+
+.main-wrapper {
+  margin-left: var(--sidebar-width);
+}
+
+/* Extra right margin when TOC sidebar is present */
+.main-wrapper.has-toc {
+  margin-right: 200px;
+}
+
+/* Inner content container */
+.content {
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+/* Prose container constrains text width for readability */
+.prose {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  /* Extra bottom padding ensures headings near page end can scroll to top */
+  padding-bottom: calc(100vh - 200px);
+}
+
+
+/* =============================================================================
+   MOBILE MENU BUTTON
+   =============================================================================
+   Hamburger button shown on mobile to open the sidebar drawer.
+   Hidden on desktop (see @media section for visibility toggle).
+
+   Styling suggestions:
+   - Add background-color and border
+   - Add border-radius for rounded appearance
+   ============================================================================= */
+
+.mobile-menu-btn {
+  display: none;  /* Shown via media query on mobile */
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 200;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+
+/* =============================================================================
+   DRAWER BACKDROP
+   =============================================================================
+   Semi-transparent overlay behind the mobile sidebar drawer.
+   Clicking it closes the drawer. Only visible on mobile when drawer is open.
+
+   Styling suggestions:
+   - Add background-color: rgba(0, 0, 0, 0.5)
+   ============================================================================= */
+
+.drawer-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 90;
+  opacity: 0;
+}
+
+
+/* =============================================================================
+   THEME TOGGLE (Light/Dark Mode)
+   =============================================================================
+   Button to switch between light and dark themes.
+   Contains two icons - sun and moon - toggled via [data-theme] attribute.
+
+   Styling suggestions:
+   - Add background-color and border
+   - Add border-radius for rounded appearance
+   - Style icon colors via fill or color property
+   ============================================================================= */
+
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 200;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+/* Icon visibility toggles based on current theme */
+.sun-icon {
+  display: none;  /* Hidden in light mode */
+}
+
+.moon-icon {
+  display: block;  /* Visible in light mode */
+}
+
+/* Dark mode: swap which icon is visible */
+[data-theme="dark"] .sun-icon {
+  display: block;
+}
+
+[data-theme="dark"] .moon-icon {
+  display: none;
+}
+
+
+/* =============================================================================
+   TOP NAVIGATION BAR
+   =============================================================================
+   Horizontal navigation bar at the top of the page.
+   Only present when --top-nav flag is used during generation.
+   Contains links to root-level pages/folders.
+
+   Structure:
+   .top-nav
+   ├── .top-nav-list (horizontal link list)
+   │   └── li > a (navigation links)
+   └── .top-nav-theme-toggle (theme switch button)
+
+   Styling suggestions:
+   - Add background-color
+   - Add border-bottom for separation
+   - Style link hover/active states
+   ============================================================================= */
+
+.top-nav {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);  /* Starts after sidebar */
+  right: 0;
+  padding: 0 16px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+}
+
+.top-nav-list {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;  /* Horizontal scroll if too many items */
+}
+
+/* Theme toggle in top nav (alternative position) */
+.top-nav-theme-toggle {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Icon visibility for top nav theme toggle */
+.top-nav-theme-toggle .sun-icon {
+  display: none;
+}
+
+.top-nav-theme-toggle .moon-icon {
+  display: block;
+}
+
+[data-theme="dark"] .top-nav-theme-toggle .sun-icon {
+  display: block;
+}
+
+[data-theme="dark"] .top-nav-theme-toggle .moon-icon {
+  display: none;
+}
+
+/* Navigation link styling */
+.top-nav-list li a {
+  display: block;
+  padding: 12px 16px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Adjust layout when top nav is present */
+.has-top-nav .main-wrapper {
+  padding-top: 48px;  /* Push content below fixed nav */
+}
+
+.has-top-nav .theme-toggle {
+  display: none;  /* Hide corner toggle when nav has its own */
+}
+
+.has-top-nav .toc-sidebar {
+  top: 6rem;  /* Push TOC down below nav */
+}
+
+
+/* =============================================================================
+   TREE NAVIGATION
+   =============================================================================
+   Hierarchical folder/file navigation in the sidebar.
+
+   Structure:
+   .tree-nav
+   └── ul
+       ├── li.folder
+       │   ├── .folder-header
+       │   │   ├── .folder-toggle (expand/collapse button)
+       │   │   └── .folder-link or .folder-label
+       │   └── .folder-children (nested ul)
+       └── li > a (file links)
+
+   Styling suggestions:
+   - Style active/current page link differently
+   - Add hover states for links
+   - Style folder toggle icon (chevron)
+   - Add indentation guides for nested items
+   ============================================================================= */
+
+.tree-nav {
+  padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tree-nav ul {
+  list-style: none;
+}
+
+.tree-nav > ul {
+  padding: 0;
+}
+
+.tree-nav li {
+  margin: 0;
+}
+
+/* Hidden items (filtered out by search) */
+.tree-nav li[hidden] {
+  display: none;
+}
+
+/* File links */
+.tree-nav a {
+  display: block;
+  padding: 0.375rem 0.5rem;
+}
+
+/* Folder header contains toggle button and label/link */
+.folder-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Expand/collapse button */
+.folder-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+/* Chevron icon rotates when folder is expanded */
+.folder-toggle .chevron {
+  transition: transform 0.2s;
+}
+
+.folder.expanded > .folder-header .folder-toggle .chevron {
+  transform: rotate(90deg);
+}
+
+/* Folder link (clickable) or label (non-clickable) */
+.folder-link,
+.folder-label {
+  flex: 1;
+  padding: 0.375rem 0.5rem;
+}
+
+.folder-label {
+  cursor: default;  /* Non-clickable folders */
+}
+
+/* Nested children container - hidden until expanded */
+.folder-children {
+  display: none;
+  padding-left: 1rem;  /* Indentation for hierarchy */
+}
+
+.folder.expanded > .folder-children {
+  display: block;
+}
+
+
+/* =============================================================================
+   BREADCRUMBS
+   =============================================================================
+   Shows the current page location in the site hierarchy.
+   Displayed above the main content.
+
+   Structure:
+   .breadcrumbs
+   └── ol
+       └── li > a (ancestor links) + li (current page)
+
+   Styling suggestions:
+   - Style separator (::after pseudo-element)
+   - Differentiate current page from clickable ancestors
+   - Consider making sticky for long pages
+   ============================================================================= */
+
+.breadcrumbs {
+  margin-bottom: 1.5rem;
+}
+
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+}
+
+.breadcrumbs li {
+  display: flex;
+  align-items: center;
+}
+
+/* Separator between breadcrumb items */
+.breadcrumbs li:not(:last-child)::after {
+  content: ">";
+  margin: 0 0.5rem;
+}
+
+
+/* =============================================================================
+   PAGE META (Reading Time)
+   =============================================================================
+   Displays metadata about the page, such as estimated reading time.
+   Shown when --reading-time flag is used during generation.
+
+   Structure:
+   .page-meta
+   └── .reading-time
+       ├── .clock-icon (SVG)
+       └── span (text)
+
+   Styling suggestions:
+   - Use a muted/secondary text color
+   ============================================================================= */
+
+.page-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 14px;
+}
+
+.reading-time {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.clock-icon {
+  flex-shrink: 0;
+}
+
+
+/* =============================================================================
+   TABLE OF CONTENTS (Right Sidebar)
+   =============================================================================
+   Shows page headings for quick navigation. Fixed on right side.
+   Only displayed when page has enough headings (configurable threshold).
+
+   Structure:
+   .toc-sidebar
+   └── .toc
+       └── ul
+           └── li > a (heading links)
+               └── ul (nested subheadings)
+
+   Styling suggestions:
+   - Add border-left or background to distinguish from content
+   - Style active/current heading differently (via JavaScript)
+   - Use smaller, muted text
+   ============================================================================= */
+
+.toc-sidebar {
+  position: fixed;
+  top: 5rem;
+  right: 1.5rem;
+  width: 180px;
+  max-height: calc(100vh - 8rem);
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.toc {
+  position: relative;
+}
+
+/* "On this page" title (if present) */
+.toc-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.toc ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.toc li {
+  margin: 0;
+}
+
+/* Indentation for nested headings (h3, h4) */
+.toc ul ul {
+  padding-left: 0.75rem;
+}
+
+/* TOC links */
+.toc a {
+  display: block;
+  padding: 0.2rem 0;
+  font-size: 12px;
+  padding-left: 0.5rem;
+  margin-left: -0.5rem;
+  line-height: 1.4;
+}
+
+
+/* =============================================================================
+   PAGE NAVIGATION (Previous/Next Links)
+   =============================================================================
+   Shows links to previous and next pages at the bottom of content.
+   Helps users navigate sequentially through documentation.
+
+   Structure:
+   .page-nav
+   ├── .page-nav-prev
+   │   ├── .page-nav-label ("Previous")
+   │   └── a (page link)
+   ├── .page-nav-placeholder (spacer when one side is empty)
+   └── .page-nav-next
+       ├── .page-nav-label ("Next")
+       └── a (page link)
+
+   Styling suggestions:
+   - Add borders or cards around prev/next boxes
+   - Style hover states
+   ============================================================================= */
+
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  gap: 1rem;
+}
+
+.page-nav-prev,
+.page-nav-next {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  max-width: 45%;
+}
+
+.page-nav-next {
+  text-align: right;
+  margin-left: auto;
+}
+
+.page-nav-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+/* Spacer when only one nav link exists */
+.page-nav-placeholder {
+  flex: 1;
+}
+
+
+/* =============================================================================
+   BACK TO TOP BUTTON
+   =============================================================================
+   Floating button that appears after scrolling down.
+   Clicking returns user to top of page.
+   Visibility controlled via JavaScript (.visible class).
+
+   Styling suggestions:
+   - Add background-color and border
+   - Add border-radius for circular appearance
+   - Add box-shadow for floating effect
+   - Style the arrow icon
+   ============================================================================= */
+
+.back-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  cursor: pointer;
+  opacity: 0;  /* Hidden by default */
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Visible state (added via JavaScript after scrolling) */
+.back-to-top.visible {
+  opacity: 1;
+}
+
+
+/* =============================================================================
+   HEADING ANCHORS
+   =============================================================================
+   Clickable link icons that appear next to headings on hover.
+   Allow users to copy a direct link to a specific section.
+
+   Styling suggestions:
+   - Style the anchor icon color
+   - Consider a subtle hover effect
+   ============================================================================= */
+
+/* Hidden by default, shown on heading hover */
+.heading-anchor {
+  opacity: 0;
+  margin-left: -24px;  /* Positioned to left of heading */
+  padding-right: 8px;
+}
+
+/* Show anchor when heading is hovered or anchor is focused */
+.prose h1:hover .heading-anchor,
+.prose h2:hover .heading-anchor,
+.prose h3:hover .heading-anchor,
+.prose h4:hover .heading-anchor,
+.prose h5:hover .heading-anchor,
+.prose h6:hover .heading-anchor,
+.heading-anchor:focus {
+  opacity: 1;
+}
+
+.anchor-icon {
+  vertical-align: middle;
+}
+
+/* Scroll margin ensures headings aren't hidden under fixed headers */
+h1, h2, h3, h4, h5, h6 {
+  scroll-margin-top: 80px;
+}
+
+
+/* =============================================================================
+   EXTERNAL LINK ICON
+   =============================================================================
+   Small icon shown after links that open external sites.
+   Indicates the link will leave the current site.
+
+   Styling suggestions:
+   - Match the link color or use a muted color
+   ============================================================================= */
+
+.external-icon {
+  display: inline-block;
+  margin-left: 4px;
+  vertical-align: baseline;
+}
+
+
+/* =============================================================================
+   SCREEN READER ONLY
+   =============================================================================
+   Utility class for content that should be accessible to screen readers
+   but hidden visually. Used for accessibility labels.
+   ============================================================================= */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* =============================================================================
+   CODE BLOCKS
+   =============================================================================
+   Styled code blocks with copy-to-clipboard functionality.
+
+   Structure:
+   .code-block
+   ├── .copy-button
+   │   ├── .copy-icon (clipboard SVG)
+   │   ├── .check-icon (checkmark SVG, shown after copy)
+   │   └── span ("Copy" / "Copied" text)
+   └── pre > code
+       └── .line (individual code lines, for line highlighting)
+
+   Styling suggestions:
+   - Add background-color to pre
+   - Add border-radius
+   - Style copy button with background and border
+   - Add syntax highlighting colors (see Syntax Highlighting section)
+   ============================================================================= */
+
+.code-block {
+  position: relative;
+  margin: 1em 0;
+}
+
+/* Copy button - hidden until code block is hovered */
+.copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.code-block:hover .copy-button {
+  opacity: 1;
+}
+
+/* Icon swap after copying */
+.copy-button .check-icon {
+  display: none;
+}
+
+.copy-button.copied .copy-icon {
+  display: none;
+}
+
+.copy-button.copied .check-icon {
+  display: block;
+}
+
+/* Individual code lines (for line highlighting feature) */
+.code-block .line {
+  display: block;
+}
+
+
+/* =============================================================================
+   ADMONITIONS (Callouts)
+   =============================================================================
+   Highlighted boxes for notes, warnings, tips, etc.
+   Created from markdown blockquote syntax:
+   > [!NOTE]
+   > Content here
+
+   Types: note, tip, important, warning, caution
+
+   Structure:
+   .admonition.admonition-{type}
+   ├── .admonition-heading
+   │   ├── .admonition-icon (SVG)
+   │   └── .admonition-title (e.g., "Note", "Warning")
+   └── .admonition-content
+       └── p (content paragraphs)
+
+   Styling suggestions:
+   - Different background colors for each type
+   - Different border colors (left border is common)
+   - Different icon colors matching the type severity
+
+   Example colors:
+   - note: blue (#dbeafe border, #eff6ff bg)
+   - tip: green (#d1fae5 border, #ecfdf5 bg)
+   - warning: yellow (#fef3c7 border, #fffbeb bg)
+   - caution: red (#fee2e2 border, #fef2f2 bg)
+   ============================================================================= */
+
+.admonition {
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.admonition-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.admonition-icon {
+  flex-shrink: 0;
+}
+
+/* Remove default paragraph margins inside admonitions */
+.admonition-content p:first-child {
+  margin-top: 0;
+}
+
+.admonition-content p:last-child {
+  margin-bottom: 0;
+}
+
+
+/* =============================================================================
+   KEYBOARD SHORTCUTS MODAL
+   =============================================================================
+   Modal dialog showing available keyboard shortcuts.
+   Opened by pressing "?" key.
+
+   Structure:
+   .shortcuts-modal
+   ├── h2 (title)
+   ├── .shortcuts-list
+   │   └── .shortcut-group (dl)
+   │       ├── dt (description)
+   │       └── dd > kbd (key)
+   └── .close-modal (button)
+
+   Styling suggestions:
+   - Add background-color and border-radius
+   - Add box-shadow for modal effect
+   - Style kbd elements distinctively
+   ============================================================================= */
+
+.shortcuts-modal {
+  padding: 2rem;
+  max-width: 400px;
+}
+
+.shortcuts-modal h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+}
+
+.shortcuts-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.shortcut-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Swap visual order: key on left, description on right */
+.shortcut-group dt {
+  order: 1;
+}
+
+.shortcut-group dd {
+  order: 0;
+}
+
+/* Keyboard key styling */
+kbd {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.close-modal {
+  width: 100%;
+  padding: 0.75rem;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+
+/* =============================================================================
+   TYPOGRAPHY (Prose Content)
+   =============================================================================
+   Styles for the main content area. All user-written content appears
+   inside .prose container.
+
+   Styling suggestions:
+   - Set font-family
+   - Adjust heading sizes and colors
+   - Style links with color and hover states
+   - Add border-left to blockquotes
+   - Style horizontal rules
+   - Add table borders and backgrounds
+   ============================================================================= */
+
+/* Headings */
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  line-height: 1.3;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose h1 {
+  font-size: 2rem;
+  margin-top: 0;  /* First heading shouldn't have top margin */
+}
+
+.prose h2 {
+  font-size: 1.5rem;
+}
+
+.prose h3 {
+  font-size: 1.25rem;
+}
+
+.prose h4 {
+  font-size: 1.125rem;
+}
+
+.prose h5, .prose h6 {
+  font-size: 1rem;
+}
+
+/* Paragraphs */
+.prose p {
+  margin: 1em 0;
+}
+
+/* Lists */
+.prose ul, .prose ol {
+  margin: 1em 0;
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin: 0.25em 0;
+}
+
+/* Nested lists have reduced margin */
+.prose li > ul, .prose li > ol {
+  margin: 0.25em 0;
+}
+
+/* Inline code */
+.prose code {
+  font-family: "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+  padding: 0.125em 0.25em;
+}
+
+/* Code blocks */
+.prose pre {
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+/* Code inside pre blocks (reset inline code styling) */
+.prose pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Blockquotes */
+.prose blockquote {
+  padding-left: 1rem;
+  margin: 1em 0;
+  font-style: italic;
+}
+
+/* Horizontal rules */
+.prose hr {
+  border: none;
+  margin: 2em 0;
+}
+
+/* Tables */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+
+.prose th, .prose td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+/* Images */
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+
+/* =============================================================================
+   SYNTAX HIGHLIGHTING
+   =============================================================================
+   Colors for code syntax highlighting. These classes are applied by
+   the syntax highlighter (Chroma) during markdown processing.
+
+   Token classes (partial list):
+   .chroma .k   - Keyword (if, else, for, function, etc.)
+   .chroma .kd  - Keyword Declaration (var, let, const, func)
+   .chroma .kt  - Keyword Type (int, string, bool)
+   .chroma .n   - Name (general identifiers)
+   .chroma .na  - Name Attribute
+   .chroma .nf  - Name Function
+   .chroma .nc  - Name Class
+   .chroma .s   - String
+   .chroma .s1  - String Single-quoted
+   .chroma .s2  - String Double-quoted
+   .chroma .c   - Comment
+   .chroma .c1  - Comment Single-line
+   .chroma .cm  - Comment Multiline
+   .chroma .m   - Number
+   .chroma .mi  - Number Integer
+   .chroma .mf  - Number Float
+   .chroma .o   - Operator (+, -, *, /)
+   .chroma .p   - Punctuation
+   .chroma .err - Error
+
+   Example styling:
+   .chroma .k  { color: #d73a49; }  /* Keywords in red */
+   .chroma .s  { color: #032f62; }  /* Strings in blue */
+   .chroma .c  { color: #6a737d; }  /* Comments in gray */
+   .chroma .nf { color: #6f42c1; }  /* Functions in purple */
+   .chroma .m  { color: #005cc5; }  /* Numbers in blue */
+   ============================================================================= */
+
+/* Add your syntax highlighting colors here */
+
+
+/* =============================================================================
+   RESPONSIVE: TABLET (max-width: 1280px)
+   =============================================================================
+   Adjustments for medium-sized screens.
+   - Hides the right-side table of contents
+   - Removes the right margin that made space for TOC
+   ============================================================================= */
+
+@media (max-width: 1280px) {
+  /* Remove right margin since TOC is hidden */
+  .main-wrapper.has-toc {
+    margin-right: 0;
+  }
+
+  /* Hide table of contents sidebar */
+  .toc-sidebar {
+    display: none;
+  }
+}
+
+
+/* =============================================================================
+   RESPONSIVE: MOBILE (max-width: 768px)
+   =============================================================================
+   Major layout changes for mobile devices:
+   - Sidebar becomes a slide-out drawer
+   - Mobile menu button appears
+   - Content takes full width
+   - Navigation flows vertically
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  /* Show mobile menu (hamburger) button */
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  /* Show close button in sidebar header */
+  .close-btn {
+    display: flex;
+  }
+
+  /* Sidebar slides in from left (hidden by default) */
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  /* Content takes full width (no sidebar offset) */
+  .main-wrapper {
+    margin-left: 0;
+  }
+
+  /* Adjust content padding for mobile */
+  .content {
+    padding: 4rem 1rem 2rem;  /* Extra top padding for menu button */
+  }
+
+  /* Reposition theme toggle */
+  .theme-toggle {
+    top: 1rem;
+    right: 1rem;
+  }
+
+  /* Smaller back-to-top button on mobile */
+  .back-to-top {
+    bottom: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Stack prev/next navigation vertically */
+  .page-nav {
+    flex-direction: column;
+  }
+
+  .page-nav-prev,
+  .page-nav-next {
+    max-width: 100%;
+  }
+
+  .page-nav-next {
+    text-align: left;
+    margin-left: 0;
+  }
+
+  /* Top nav spans full width on mobile */
+  .top-nav {
+    left: 0;
+    padding: 0 16px;
+  }
+
+  /* =========================================================================
+     DRAWER OPEN STATE
+     =========================================================================
+     When body has .drawer-open class (added via JavaScript):
+     - Sidebar slides into view
+     - Backdrop becomes visible
+     - Body scroll is disabled
+     ========================================================================= */
+
+  body.drawer-open .sidebar {
+    transform: translateX(0);
+  }
+
+  body.drawer-open .drawer-backdrop {
+    display: block;
+    opacity: 1;
+  }
+
+  body.drawer-open {
+    overflow: hidden;  /* Prevent background scrolling */
+  }
+}
+
+/* Hide mobile menu button when drawer is open (close button takes over) */
+body.drawer-open .mobile-menu-btn {
+  display: none !important;
+}
+
+
+/* =============================================================================
+   PRINT STYLESHEET
+   =============================================================================
+   Optimizations for printing or PDF export.
+   Hides interactive elements and adjusts layout for paper.
+   ============================================================================= */
+
+@media print {
+  /* Hide all interactive/navigation elements */
+  .sidebar,
+  .toc-sidebar,
+  .theme-toggle,
+  .mobile-menu-btn,
+  .copy-button,
+  .page-nav,
+  .heading-anchor,
+  .back-to-top,
+  .scroll-progress,
+  .nav-search,
+  .drawer-backdrop {
+    display: none !important;
+  }
+
+  /* Remove margins - content fills the page */
+  .main-wrapper {
+    margin: 0 !important;
+  }
+
+  .content {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .prose {
+    max-width: none !important;
+  }
+}
+
+
+/* =============================================================================
+   THEMING: LIGHT & DARK MODE
+   =============================================================================
+   Volcano supports automatic light/dark mode switching via the theme toggle
+   button. The current theme is stored in localStorage and applied via the
+   [data-theme] attribute on the <html> element.
+
+   Theme values:
+   - [data-theme="light"] or no attribute = Light mode
+   - [data-theme="dark"] = Dark mode
+
+   RECOMMENDED APPROACH: Use CSS custom properties (variables) defined in :root
+   for light mode, then override them in [data-theme="dark"] for dark mode.
+   This makes theming consistent and maintainable.
+   ============================================================================= */
+
+
+/* =============================================================================
+   LIGHT MODE (Default)
+   =============================================================================
+   Define your base/light theme colors here. These are the defaults when
+   no data-theme attribute is set or when data-theme="light".
+
+   Color naming conventions:
+   - bg-*: Background colors (primary, secondary, tertiary for depth levels)
+   - text-*: Text colors (primary for body, secondary for less emphasis, muted for subtle)
+   - border-*: Border colors
+   - link-*: Link colors (default and hover states)
+   - code-*: Code block colors
+
+   Recommended light mode palette (neutral/professional):
+   ============================================================================= */
+
+/*
+:root {
+  /* === Background Colors ===
+   * bg-primary:   Main page background (white or near-white)
+   * bg-secondary: Sidebar, cards, elevated surfaces (light gray)
+   * bg-tertiary:  Hover states, subtle highlights (darker gray)
+   */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e5e5e5;
+
+  /* === Text Colors ===
+   * text-primary:   Main body text, headings (near-black for contrast)
+   * text-secondary: Subheadings, less important text (dark gray)
+   * text-muted:     Captions, timestamps, hints (medium gray)
+   */
+  --text-primary: #1a1a1a;
+  --text-secondary: #333333;
+  --text-muted: #666666;
+
+  /* === Border Colors ===
+   * Used for dividers, card borders, input borders
+   */
+  --border-color: #e5e5e5;
+
+  /* === Link Colors ===
+   * link-color: Default link color
+   * link-hover: Link color on hover/focus
+   */
+  --link-color: #2563eb;
+  --link-hover: #1d4ed8;
+
+  /* === Code Colors ===
+   * code-bg: Background for inline code and code blocks
+   */
+  --code-bg: #f5f5f5;
+
+  /* === Accent Colors (optional) ===
+   * For buttons, active states, highlights
+   */
+  --accent-color: #2563eb;
+  --accent-hover: #1d4ed8;
+
+  /* === Admonition Colors ===
+   * Each type has border and background variants
+   */
+  --admonition-note-border: #3b82f6;
+  --admonition-note-bg: #eff6ff;
+  --admonition-tip-border: #10b981;
+  --admonition-tip-bg: #ecfdf5;
+  --admonition-warning-border: #f59e0b;
+  --admonition-warning-bg: #fffbeb;
+  --admonition-caution-border: #ef4444;
+  --admonition-caution-bg: #fef2f2;
+
+  /* === Animation ===
+   * transition-speed: Duration for hover/focus transitions
+   */
+  --transition-speed: 0.2s;
+}
+*/
+
+
+/* =============================================================================
+   DARK MODE
+   =============================================================================
+   Override the light mode variables for dark theme. Applied when
+   [data-theme="dark"] is set on the <html> element.
+
+   Dark mode design principles:
+   - Don't use pure black (#000) - it's too harsh. Use dark grays (#0a0a0a - #1a1a1a)
+   - Don't use pure white (#fff) for text - use off-white (#e5e5e5 - #f5f5f5)
+   - Reduce contrast slightly compared to light mode to reduce eye strain
+   - Desaturate colors slightly - vibrant colors look garish on dark backgrounds
+   - Elevate surfaces with lighter shades (opposite of light mode shadows)
+
+   Recommended dark mode palette:
+   ============================================================================= */
+
+/*
+[data-theme="dark"] {
+  /* === Background Colors ===
+   * Inverted depth: deeper = darker (opposite of light mode)
+   * bg-primary is the darkest, bg-tertiary is lighter for emphasis
+   */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-tertiary: #1f1f1f;
+
+  /* === Text Colors ===
+   * Softer than pure white to reduce glare
+   */
+  --text-primary: #e5e5e5;
+  --text-secondary: #b3b3b3;
+  --text-muted: #808080;
+
+  /* === Border Colors ===
+   * Subtle, low-contrast borders
+   */
+  --border-color: #2a2a2a;
+
+  /* === Link Colors ===
+   * Slightly desaturated, lighter versions of light mode links
+   */
+  --link-color: #60a5fa;
+  --link-hover: #93c5fd;
+
+  /* === Code Colors ===
+   * Darker than primary background for visual distinction
+   */
+  --code-bg: #1a1a1a;
+
+  /* === Accent Colors ===
+   * Lighter/desaturated versions for dark backgrounds
+   */
+  --accent-color: #3b82f6;
+  --accent-hover: #60a5fa;
+
+  /* === Admonition Colors (Dark Mode) ===
+   * Darker backgrounds, muted borders
+   */
+  --admonition-note-border: #2563eb;
+  --admonition-note-bg: #1e3a5f;
+  --admonition-tip-border: #059669;
+  --admonition-tip-bg: #14332a;
+  --admonition-warning-border: #d97706;
+  --admonition-warning-bg: #422006;
+  --admonition-caution-border: #dc2626;
+  --admonition-caution-bg: #450a0a;
+}
+*/
+
+
+/* =============================================================================
+   APPLYING THEME VARIABLES
+   =============================================================================
+   Once you've defined your variables above, apply them to elements.
+   Below are examples for common elements. Uncomment and customize.
+   ============================================================================= */
+
+/*
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+a {
+  color: var(--link-color);
+}
+
+a:hover {
+  color: var(--link-hover);
+}
+
+.sidebar {
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+}
+
+.tree-nav a:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.tree-nav a.active {
+  background-color: var(--bg-tertiary);
+  font-weight: 600;
+}
+
+.prose code {
+  background-color: var(--code-bg);
+}
+
+.prose pre {
+  background-color: var(--code-bg);
+  border: 1px solid var(--border-color);
+}
+
+.prose blockquote {
+  border-left: 4px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.prose table th,
+.prose table td {
+  border: 1px solid var(--border-color);
+}
+
+.prose table th {
+  background-color: var(--bg-secondary);
+}
+
+.breadcrumbs a {
+  color: var(--text-muted);
+}
+
+.toc a {
+  color: var(--text-muted);
+}
+
+.toc a:hover,
+.toc a.active {
+  color: var(--text-primary);
+}
+
+/* Admonitions with theme colors */
+.admonition-note {
+  border-left: 4px solid var(--admonition-note-border);
+  background-color: var(--admonition-note-bg);
+}
+
+.admonition-tip {
+  border-left: 4px solid var(--admonition-tip-border);
+  background-color: var(--admonition-tip-bg);
+}
+
+.admonition-warning {
+  border-left: 4px solid var(--admonition-warning-border);
+  background-color: var(--admonition-warning-bg);
+}
+
+.admonition-caution {
+  border-left: 4px solid var(--admonition-caution-border);
+  background-color: var(--admonition-caution-bg);
+}
+*/
+
+
+/* =============================================================================
+   SYSTEM PREFERENCE DETECTION (Optional)
+   =============================================================================
+   Automatically apply dark mode based on user's OS preference.
+   This is IN ADDITION to the manual toggle. The toggle overrides this.
+
+   Note: Volcano's JavaScript handles this automatically. This CSS is only
+   needed if you want pure CSS fallback without JavaScript.
+   ============================================================================= */
+
+/*
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #141414;
+    --text-primary: #e5e5e5;
+    /* ... copy other dark mode variables here ... */
+  }
+}
+*/

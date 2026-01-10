@@ -11,23 +11,66 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
 
+	"volcano/internal/content"
 	"volcano/internal/markdown"
+	"volcano/internal/navigation"
 	"volcano/internal/styles"
 	"volcano/internal/templates"
+	"volcano/internal/toc"
 	"volcano/internal/tree"
 )
 
+// buildValidURLMap creates a map of all valid URLs from the site
+func buildValidURLMap(site *tree.Site) map[string]bool {
+	validURLs := make(map[string]bool)
+	validURLs["/"] = true
+
+	// Add all page URLs
+	for _, node := range site.AllPages {
+		urlPath := tree.GetURLPath(node)
+		if urlPath != "" {
+			validURLs[urlPath] = true
+		}
+	}
+
+	// Add folder URLs (for auto-index)
+	addFolderURLs(site.Root, validURLs)
+
+	return validURLs
+}
+
+// addFolderURLs recursively adds folder URLs to the map
+func addFolderURLs(node *tree.Node, validURLs map[string]bool) {
+	if node == nil {
+		return
+	}
+
+	if node.IsFolder && node.Path != "" {
+		urlPath := "/" + tree.SlugifyPath(node.Path) + "/"
+		validURLs[urlPath] = true
+	}
+
+	for _, child := range node.Children {
+		addFolderURLs(child, validURLs)
+	}
+}
+
 // DynamicConfig holds configuration for the dynamic server
 type DynamicConfig struct {
-	SourceDir string
-	Title     string
-	Port      int
-	Quiet     bool
-	Verbose   bool
+	SourceDir   string
+	Title       string
+	Port        int
+	Quiet       bool
+	Verbose     bool
+	TopNav      bool
+	ShowPageNav bool
+	Theme       string
+	CSSPath     string
 }
 
 // DynamicServer serves markdown files with live rendering
@@ -42,7 +85,12 @@ type DynamicServer struct {
 
 // NewDynamicServer creates a new dynamic server
 func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, error) {
-	renderer, err := templates.NewRenderer(styles.GetCSS())
+	css, err := getCSSContent(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load CSS: %w", err)
+	}
+
+	renderer, err := templates.NewRenderer(css)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create renderer: %w", err)
 	}
@@ -54,6 +102,37 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 		fs:       osFileSystem{},
 		scanner:  defaultScanner{},
 	}, nil
+}
+
+// getCSSContent returns minified CSS from custom file or embedded theme
+func getCSSContent(config DynamicConfig) (string, error) {
+	var css string
+	if config.CSSPath != "" {
+		content, err := os.ReadFile(config.CSSPath)
+		if err != nil {
+			return "", err
+		}
+		css = string(content)
+	} else {
+		css = styles.GetCSS(config.Theme)
+	}
+	return styles.MinifyCSS(css)
+}
+
+// getRenderer returns a renderer, re-reading CSS file if using custom CSS
+func (s *DynamicServer) getRenderer() (*templates.Renderer, error) {
+	// If using custom CSS, re-read on each request for live reload
+	if s.config.CSSPath != "" {
+		css, err := getCSSContent(s.config)
+		if err != nil {
+			// Fall back to cached renderer if file read fails
+			s.logError("Failed to read CSS file, using cached: %v", err)
+			return s.renderer, nil
+		}
+		return templates.NewRenderer(css)
+	}
+	// Use cached renderer for embedded themes
+	return s.renderer, nil
 }
 
 // WithFileSystem sets a custom FileSystem (for testing)
@@ -136,9 +215,43 @@ func (s *DynamicServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Try to render an auto-generated folder index
+	if s.tryAutoIndex(rec, urlPath) {
+		s.logRequest(r.Method, urlPath, rec.statusCode, time.Since(start))
+		return
+	}
+
 	// Serve 404
 	s.serve404(rec, r)
 	s.logRequest(r.Method, urlPath, rec.statusCode, time.Since(start))
+}
+
+// tryAutoIndex tries to render an auto-generated index for a folder
+func (s *DynamicServer) tryAutoIndex(w http.ResponseWriter, urlPath string) bool {
+	// Only handle paths that look like directories (ending with /)
+	if !strings.HasSuffix(urlPath, "/") && urlPath != "" {
+		return false
+	}
+
+	// Scan the tree
+	site, err := s.scanner.Scan(s.config.SourceDir)
+	if err != nil {
+		return false
+	}
+
+	// Find the folder
+	folderNode := findFolderByPath(site.Root, urlPath)
+	if folderNode == nil {
+		return false
+	}
+
+	// Check if it needs auto-index
+	if !needsAutoIndex(folderNode) {
+		return false
+	}
+
+	// Render the auto-index
+	return s.renderAutoIndex(w, urlPath, folderNode, site)
 }
 
 // serveStaticFile tries to serve a static file (non-markdown)
@@ -199,11 +312,19 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 	outputPath := tree.GetOutputPath(node)
 	nodeURLPath := tree.GetURLPath(node)
 
+	// Compute source directory for wikilink resolution
+	relDir := filepath.Dir(node.Path)
+	sourceDir := "/"
+	if relDir != "." && relDir != "" {
+		sourceDir = "/" + tree.SlugifyPath(relDir) + "/"
+	}
+
 	// Parse the markdown file
 	page, err := markdown.ParseFile(
 		fullMdPath,
 		outputPath,
 		nodeURLPath,
+		sourceDir,
 		node.Name,
 	)
 	if err != nil {
@@ -211,21 +332,73 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 		return false
 	}
 
-	// Render navigation
-	nav := templates.RenderNavigation(site.Root, nodeURLPath)
+	// Process the HTML content
+	htmlContent := page.Content
+
+	// Wrap code blocks with copy button
+	htmlContent = markdown.WrapCodeBlocks(htmlContent)
+
+	// Validate internal links
+	validURLs := buildValidURLMap(site)
+	brokenLinks := markdown.ValidateLinks(htmlContent, nodeURLPath, validURLs)
+	if len(brokenLinks) > 0 {
+		s.serveBrokenLinksError(w, nodeURLPath, brokenLinks, site)
+		return true // We handled the request (with an error page)
+	}
+
+	// Calculate reading time
+	rt := content.CalculateReadingTime(htmlContent)
+	readingTime := content.FormatReadingTime(rt)
+
+	// Build breadcrumbs
+	breadcrumbs := navigation.BuildBreadcrumbs(node, s.config.Title)
+	breadcrumbsHTML := navigation.RenderBreadcrumbs(breadcrumbs)
+
+	// Build page navigation (only if enabled)
+	var pageNavHTML template.HTML
+	if s.config.ShowPageNav {
+		allPages := collectAllPages(site.Root)
+		pageNav := navigation.BuildPageNavigation(node, allPages)
+		pageNavHTML = navigation.RenderPageNavigation(pageNav)
+	}
+
+	// Extract TOC
+	pageTOC := toc.ExtractTOC(htmlContent, 3)
+	tocHTML := toc.RenderTOC(pageTOC)
+	hasTOC := pageTOC != nil && len(pageTOC.Items) > 0
+
+	// Build top nav items if enabled
+	topNavItems := templates.BuildTopNavItems(site.Root, s.config.TopNav)
+
+	// Render navigation (filtered when top nav is enabled)
+	nav := templates.RenderNavigationWithTopNav(site.Root, nodeURLPath, topNavItems)
 
 	// Prepare template data
 	data := templates.PageData{
 		SiteTitle:   s.config.Title,
 		PageTitle:   page.Title,
-		Content:     template.HTML(page.Content),
+		Content:     template.HTML(htmlContent),
 		Navigation:  nav,
 		CurrentPath: nodeURLPath,
+		Breadcrumbs: breadcrumbsHTML,
+		PageNav:     pageNavHTML,
+		TOC:         tocHTML,
+		ReadingTime: readingTime,
+		HasTOC:      hasTOC,
+		ShowSearch:  true,
+		TopNavItems: topNavItems,
+	}
+
+	// Get renderer (re-reads CSS if using custom CSS file)
+	renderer, err := s.getRenderer()
+	if err != nil {
+		s.logError("Failed to get renderer: %v", err)
+		return false
 	}
 
 	// Render the page
 	var buf bytes.Buffer
-	if err := s.renderer.Render(&buf, data); err != nil {
+	if err := renderer.Render(&buf, data); err != nil {
 		s.logError("Failed to render page: %v", err)
 		return false
 	}
@@ -253,21 +426,135 @@ func (s *DynamicServer) resolveMarkdownPath(urlPath string) string {
 		return ""
 	}
 
+	// Find the actual filesystem path from the slugified URL
+	actualDir := s.findActualDir(urlPath)
+
 	// Try as a file with .md extension (clean URLs: /about/ -> about.md)
+	// First try the URL path directly (for non-prefixed files)
 	mdPath := urlPath + ".md"
 	fullPath := filepath.Join(s.config.SourceDir, mdPath)
 	if _, err := s.fs.Stat(fullPath); err == nil {
 		return mdPath
 	}
 
-	// Try as directory with index.md
-	indexPath := filepath.Join(urlPath, "index.md")
-	fullPath = filepath.Join(s.config.SourceDir, indexPath)
-	if _, err := s.fs.Stat(fullPath); err == nil {
-		return indexPath
+	// Try as directory with index.md using actual filesystem path
+	if actualDir != "" {
+		// Search for any index file (case-insensitive)
+		dirPath := filepath.Join(s.config.SourceDir, actualDir)
+		if entries, err := os.ReadDir(dirPath); err == nil {
+			for _, entry := range entries {
+				if entry.IsDir() {
+					continue
+				}
+				name := entry.Name()
+				baseName := strings.TrimSuffix(name, filepath.Ext(name))
+				if strings.EqualFold(baseName, "index") || strings.EqualFold(baseName, "readme") {
+					return filepath.Join(actualDir, name)
+				}
+			}
+		}
+	}
+
+	// Try to find a file with date/number prefix
+	// e.g., /posts/asset-helpers/ might map to posts/2024-01-09-asset-helpers.md
+	dir := filepath.Dir(urlPath)
+	slug := filepath.Base(urlPath)
+	if found := s.findPrefixedFile(dir, slug); found != "" {
+		return found
 	}
 
 	return ""
+}
+
+// findPrefixedFile searches for a markdown file with date/number prefixes
+// that matches the given slug in the directory (dir is a slugified URL path)
+func (s *DynamicServer) findPrefixedFile(slugDir, slug string) string {
+	// Find the actual filesystem directory from the slugified path
+	actualDir := s.findActualDir(slugDir)
+	if actualDir == "" && slugDir != "." && slugDir != "" {
+		return ""
+	}
+
+	searchDir := s.config.SourceDir
+	if actualDir != "" {
+		searchDir = filepath.Join(s.config.SourceDir, actualDir)
+	}
+
+	entries, err := os.ReadDir(searchDir)
+	if err != nil {
+		return ""
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		name := entry.Name()
+		if !strings.HasSuffix(strings.ToLower(name), ".md") {
+			continue
+		}
+
+		// Extract metadata to get the slug
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		meta := tree.ExtractFileMetadata(name, info.ModTime())
+
+		// Check if the slug matches
+		if meta.Slug == slug {
+			if actualDir == "" {
+				return name
+			}
+			return filepath.Join(actualDir, name)
+		}
+	}
+
+	return ""
+}
+
+// findActualDir finds the actual filesystem directory path from a slugified URL path
+// e.g., "inbox/health" → "0. Inbox/1. Health"
+func (s *DynamicServer) findActualDir(slugPath string) string {
+	if slugPath == "" || slugPath == "." {
+		return ""
+	}
+
+	segments := strings.Split(slugPath, "/")
+	currentPath := s.config.SourceDir
+	var actualSegments []string
+
+	for _, slugSeg := range segments {
+		if slugSeg == "" {
+			continue
+		}
+
+		entries, err := os.ReadDir(currentPath)
+		if err != nil {
+			return ""
+		}
+
+		found := false
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			// Check if this directory's slugified name matches
+			if tree.Slugify(entry.Name()) == slugSeg {
+				actualSegments = append(actualSegments, entry.Name())
+				currentPath = filepath.Join(currentPath, entry.Name())
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return ""
+		}
+	}
+
+	return filepath.Join(actualSegments...)
 }
 
 // findNodeBySourcePath finds a node in the tree by its source path
@@ -276,13 +563,13 @@ func findNodeBySourcePath(node *tree.Node, sourcePath string) *tree.Node {
 		return nil
 	}
 
-	// Check if this node matches
-	if node.Path == sourcePath {
+	// Check if this node matches (case-insensitive for cross-platform compatibility)
+	if strings.EqualFold(node.Path, sourcePath) {
 		return node
 	}
 
 	// For folders with index, check the index path
-	if node.IsFolder && node.HasIndex && node.IndexPath == sourcePath {
+	if node.IsFolder && node.HasIndex && strings.EqualFold(node.IndexPath, sourcePath) {
 		return &tree.Node{
 			Path:       node.IndexPath,
 			Name:       node.Name,
@@ -298,6 +585,66 @@ func findNodeBySourcePath(node *tree.Node, sourcePath string) *tree.Node {
 	}
 
 	return nil
+}
+
+// serveBrokenLinksError renders an error page showing broken internal links
+func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage string, brokenLinks []markdown.BrokenLink, site *tree.Site) {
+	// Log the error
+	s.logError("Page %s has %d broken internal links:", sourcePage, len(brokenLinks))
+	for _, bl := range brokenLinks {
+		s.logError("  -> %s", bl.LinkURL)
+	}
+
+	// Build error content
+	var sb strings.Builder
+	sb.WriteString(`<h1>Build Error: Broken Links</h1>`)
+	sb.WriteString("\n")
+	sb.WriteString(`<p>The page <code>`)
+	sb.WriteString(template.HTMLEscapeString(sourcePage))
+	sb.WriteString(`</code> contains broken internal links:</p>`)
+	sb.WriteString("\n")
+	sb.WriteString(`<ul class="broken-links-list">`)
+	sb.WriteString("\n")
+	for _, bl := range brokenLinks {
+		sb.WriteString(`<li><code>`)
+		sb.WriteString(template.HTMLEscapeString(bl.LinkURL))
+		sb.WriteString(`</code></li>`)
+		sb.WriteString("\n")
+	}
+	sb.WriteString(`</ul>`)
+	sb.WriteString("\n")
+	sb.WriteString(`<p>Please fix these links to continue.</p>`)
+
+	// Render navigation
+	var nav template.HTML
+	if site != nil {
+		nav = templates.RenderNavigation(site.Root, "")
+	}
+
+	data := templates.PageData{
+		SiteTitle:   s.config.Title,
+		PageTitle:   "Build Error",
+		Content:     template.HTML(sb.String()),
+		Navigation:  nav,
+		CurrentPath: "",
+	}
+
+	// Get renderer
+	renderer, err := s.getRenderer()
+	if err != nil {
+		http.Error(w, "Build Error: Broken Links", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusInternalServerError)
+	var buf bytes.Buffer
+	if err := renderer.Render(&buf, data); err != nil {
+		http.Error(w, "Build Error: Broken Links", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(buf.Bytes())
 }
 
 // serve404 renders a 404 error page
@@ -321,9 +668,16 @@ func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 		CurrentPath: "",
 	}
 
+	// Get renderer (re-reads CSS if using custom CSS file)
+	renderer, err := s.getRenderer()
+	if err != nil {
+		http.Error(w, "404 - Page Not Found", http.StatusNotFound)
+		return
+	}
+
 	w.WriteHeader(http.StatusNotFound)
 	var buf bytes.Buffer
-	if err := s.renderer.Render(&buf, data); err != nil {
+	if err := renderer.Render(&buf, data); err != nil {
 		http.Error(w, "404 - Page Not Found", http.StatusNotFound)
 		return
 	}
@@ -365,4 +719,201 @@ func (s *DynamicServer) logRequest(method, path string, status int, duration tim
 			duration.Round(time.Millisecond),
 		)
 	}
+}
+
+// collectAllPages collects all non-folder nodes from the tree for prev/next navigation
+func collectAllPages(node *tree.Node) []*tree.Node {
+	var pages []*tree.Node
+	collectPagesRecursive(node, &pages)
+	return pages
+}
+
+func collectPagesRecursive(node *tree.Node, pages *[]*tree.Node) {
+	if node == nil {
+		return
+	}
+
+	// Add non-folder nodes (but skip the root if it has no path)
+	if !node.IsFolder && node.Path != "" {
+		*pages = append(*pages, node)
+	}
+
+	// If folder has an index, add a virtual node for it
+	if node.IsFolder && node.HasIndex {
+		indexNode := &tree.Node{
+			Path:       node.IndexPath,
+			Name:       node.Name,
+			SourcePath: filepath.Join(node.SourcePath, "index.md"),
+		}
+		*pages = append(*pages, indexNode)
+	}
+
+	// Recurse into children
+	for _, child := range node.Children {
+		collectPagesRecursive(child, pages)
+	}
+}
+
+// AutoIndexItem represents an item in an auto-generated folder index
+type AutoIndexItem struct {
+	Title    string
+	URL      string
+	IsFolder bool
+}
+
+// renderAutoIndex renders an auto-generated index page for a folder
+func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, node *tree.Node, site *tree.Site) bool {
+	// Build list of children
+	var items []AutoIndexItem
+	for _, child := range node.Children {
+		url := tree.GetURLPath(child)
+		if child.IsFolder {
+			url = "/" + tree.SlugifyPath(child.Path) + "/"
+		}
+		items = append(items, AutoIndexItem{
+			Title:    child.Name,
+			URL:      url,
+			IsFolder: child.IsFolder,
+		})
+	}
+
+	// Sort: files first, then folders, then alphabetically
+	// (matches the tree navigation sort order)
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].IsFolder != items[j].IsFolder {
+			return !items[i].IsFolder // files first
+		}
+		return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
+	})
+
+	// Build HTML content
+	var sb strings.Builder
+	sb.WriteString(`<article class="auto-index-page">`)
+	sb.WriteString("\n")
+	sb.WriteString(`<h1>`)
+	sb.WriteString(template.HTMLEscapeString(node.Name))
+	sb.WriteString(`</h1>`)
+	sb.WriteString("\n")
+
+	if len(items) > 0 {
+		sb.WriteString(`<ul class="folder-index">`)
+		sb.WriteString("\n")
+		for _, item := range items {
+			itemClass := "page-item"
+			if item.IsFolder {
+				itemClass = "folder-item"
+			}
+			sb.WriteString(`<li class="`)
+			sb.WriteString(itemClass)
+			sb.WriteString(`">`)
+			sb.WriteString("\n")
+			sb.WriteString(`<a href="`)
+			sb.WriteString(item.URL)
+			sb.WriteString(`">`)
+			sb.WriteString(template.HTMLEscapeString(item.Title))
+			sb.WriteString(`</a>`)
+			sb.WriteString("\n")
+			sb.WriteString(`</li>`)
+			sb.WriteString("\n")
+		}
+		sb.WriteString(`</ul>`)
+		sb.WriteString("\n")
+	} else {
+		sb.WriteString(`<p class="empty-folder">This folder is empty.</p>`)
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString(`</article>`)
+	htmlContent := sb.String()
+
+	// Build breadcrumbs
+	breadcrumbs := navigation.BuildBreadcrumbs(node, s.config.Title)
+	breadcrumbsHTML := navigation.RenderBreadcrumbs(breadcrumbs)
+
+	// Build top nav items if enabled
+	topNavItems := templates.BuildTopNavItems(site.Root, s.config.TopNav)
+
+	// Render navigation (filtered when top nav is enabled)
+	nav := templates.RenderNavigationWithTopNav(site.Root, urlPath, topNavItems)
+
+	// Prepare template data
+	data := templates.PageData{
+		SiteTitle:   s.config.Title,
+		PageTitle:   node.Name,
+		Content:     template.HTML(htmlContent),
+		Navigation:  nav,
+		CurrentPath: urlPath,
+		Breadcrumbs: breadcrumbsHTML,
+		ShowSearch:  true,
+		TopNavItems: topNavItems,
+	}
+
+	// Get renderer (re-reads CSS if using custom CSS file)
+	renderer, err := s.getRenderer()
+	if err != nil {
+		s.logError("Failed to get renderer: %v", err)
+		return false
+	}
+
+	// Render the page
+	var buf bytes.Buffer
+	if err := renderer.Render(&buf, data); err != nil {
+		s.logError("Failed to render auto-index: %v", err)
+		return false
+	}
+
+	// Write response
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(buf.Bytes())
+	return true
+}
+
+// needsAutoIndex checks if a folder needs an auto-generated index
+func needsAutoIndex(node *tree.Node) bool {
+	if !node.IsFolder {
+		return false
+	}
+
+	// Already has an index
+	if node.HasIndex {
+		return false
+	}
+
+	// Check for index.md in children
+	for _, child := range node.Children {
+		if !child.IsFolder {
+			baseName := strings.TrimSuffix(filepath.Base(child.Path), filepath.Ext(child.Path))
+			lower := strings.ToLower(baseName)
+			if lower == "index" || lower == "readme" {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+// findFolderByPath finds a folder node by its URL path (slugified)
+func findFolderByPath(node *tree.Node, urlPath string) *tree.Node {
+	if node == nil {
+		return nil
+	}
+
+	// Normalize the URL path
+	urlPath = strings.TrimPrefix(urlPath, "/")
+	urlPath = strings.TrimSuffix(urlPath, "/")
+
+	// Check if this folder matches (compare slugified paths)
+	if node.IsFolder && tree.SlugifyPath(node.Path) == urlPath {
+		return node
+	}
+
+	// Search children
+	for _, child := range node.Children {
+		if found := findFolderByPath(child, urlPath); found != nil {
+			return found
+		}
+	}
+
+	return nil
 }

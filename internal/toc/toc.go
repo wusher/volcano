@@ -86,8 +86,6 @@ func RenderTOC(toc *PageTOC) template.HTML {
 	sb.WriteString("\n")
 	sb.WriteString(`  <nav class="toc">`)
 	sb.WriteString("\n")
-	sb.WriteString(`    <h2 class="toc-title">On this page</h2>`)
-	sb.WriteString("\n")
 
 	renderTOCItems(&sb, toc.Items, 2)
 

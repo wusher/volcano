@@ -21,6 +21,9 @@ func Generate(cfg *Config, w io.Writer) error {
 		FaviconPath: cfg.FaviconPath,
 		ShowLastMod: cfg.ShowLastMod,
 		TopNav:      cfg.TopNav,
+		ShowPageNav: cfg.ShowPageNav,
+		Theme:       cfg.Theme,
+		CSSPath:     cfg.CSSPath,
 	}
 
 	gen, err := generator.New(genConfig, w)

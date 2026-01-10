@@ -102,9 +102,6 @@ func TestRenderTOC(t *testing.T) {
 	if !strings.Contains(html, `href="#install"`) {
 		t.Error("should contain nested install link")
 	}
-	if !strings.Contains(html, "On this page") {
-		t.Error("should contain title")
-	}
 }
 
 func TestRenderTOCEmpty(t *testing.T) {

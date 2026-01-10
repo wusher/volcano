@@ -27,7 +27,7 @@ This is a test paragraph.
 		t.Fatal(err)
 	}
 
-	page, err := ParseFile(mdFile, "test/index.html", "/test/", "Fallback Title")
+	page, err := ParseFile(mdFile, "test/index.html", "/test/", "/", "Fallback Title")
 	if err != nil {
 		t.Fatalf("ParseFile() error = %v", err)
 	}
@@ -73,7 +73,7 @@ Just some paragraphs and text.`
 		t.Fatal(err)
 	}
 
-	page, err := ParseFile(mdFile, "output.html", "/path/", "Fallback Title")
+	page, err := ParseFile(mdFile, "output.html", "/path/", "/", "Fallback Title")
 	if err != nil {
 		t.Fatalf("ParseFile() error = %v", err)
 	}
@@ -85,7 +85,7 @@ Just some paragraphs and text.`
 }
 
 func TestParseFileNonExistent(t *testing.T) {
-	_, err := ParseFile("/nonexistent/file.md", "output.html", "/path/", "Title")
+	_, err := ParseFile("/nonexistent/file.md", "output.html", "/path/", "/", "Title")
 	if err == nil {
 		t.Error("ParseFile() should return error for non-existent file")
 	}

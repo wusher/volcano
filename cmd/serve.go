@@ -18,11 +18,15 @@ func Serve(cfg *Config, w io.Writer) error {
 	if isSourceDirectory(cfg.InputDir) {
 		// Use dynamic server for live rendering
 		dynamicCfg := server.DynamicConfig{
-			SourceDir: cfg.InputDir,
-			Title:     cfg.Title,
-			Port:      cfg.Port,
-			Quiet:     cfg.Quiet,
-			Verbose:   cfg.Verbose,
+			SourceDir:   cfg.InputDir,
+			Title:       cfg.Title,
+			Port:        cfg.Port,
+			Quiet:       cfg.Quiet,
+			Verbose:     cfg.Verbose,
+			TopNav:      cfg.TopNav,
+			ShowPageNav: cfg.ShowPageNav,
+			Theme:       cfg.Theme,
+			CSSPath:     cfg.CSSPath,
 		}
 
 		srv, err := server.NewDynamicServer(dynamicCfg, w)

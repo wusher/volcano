@@ -72,7 +72,7 @@ a:hover {
 /* Scroll Progress Indicator */
 .scroll-progress {
   position: fixed;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
   height: 3px;
@@ -194,7 +194,7 @@ a:hover {
 }
 
 .main-wrapper.has-toc {
-  margin-right: var(--toc-width);
+  margin-right: 200px; /* Space for floating TOC */
 }
 
 .content {
@@ -205,6 +205,8 @@ a:hover {
 .prose {
   max-width: var(--content-max-width);
   margin: 0 auto;
+  /* Extra padding so headings near page bottom can scroll to top */
+  padding-bottom: calc(100vh - 200px);
 }
 
 /* Mobile menu button */
@@ -277,9 +279,19 @@ a:hover {
   left: var(--sidebar-width);
   right: 0;
   border-bottom: 1px solid var(--border-color);
-  padding: 0 24px;
-  background: var(--bg-primary);
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+}
+
+[data-theme="dark"] .top-nav {
+  background: rgba(26, 26, 26, 0.8);
 }
 
 .top-nav-list {
@@ -289,6 +301,47 @@ a:hover {
   margin: 0;
   padding: 0;
   overflow-x: auto;
+}
+
+.top-nav-theme-toggle {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.top-nav-theme-toggle:hover {
+  color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+.top-nav-theme-toggle svg {
+  transition: transform 0.3s ease;
+}
+
+.top-nav-theme-toggle:active svg {
+  transform: rotate(20deg);
+}
+
+.top-nav-theme-toggle .sun-icon {
+  display: none;
+}
+
+.top-nav-theme-toggle .moon-icon {
+  display: block;
+}
+
+[data-theme="dark"] .top-nav-theme-toggle .sun-icon {
+  display: block;
+}
+
+[data-theme="dark"] .top-nav-theme-toggle .moon-icon {
+  display: none;
 }
 
 .top-nav-list li a {
@@ -312,6 +365,14 @@ a:hover {
 /* Adjust content when top nav is present */
 .has-top-nav .main-wrapper {
   padding-top: 48px;
+}
+
+.has-top-nav .theme-toggle {
+  display: none; /* Hidden when top nav has its own toggle */
+}
+
+.has-top-nav .toc-sidebar {
+  top: 6rem; /* Below top nav */
 }
 
 /* Mobile: top nav scrolls horizontally */
@@ -427,7 +488,22 @@ a:hover {
 
 /* Breadcrumbs */
 .breadcrumbs {
-  margin-bottom: 1.5rem;
+  position: sticky;
+  top: 0;
+  margin: -1rem -2rem 1.5rem;
+  padding: 0.75rem 2rem;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 50;
+}
+
+[data-theme="dark"] .breadcrumbs {
+  background: rgba(26, 26, 26, 0.8);
+}
+
+.has-top-nav .breadcrumbs {
+  top: 44px;
 }
 
 .breadcrumbs ol {
@@ -486,28 +562,29 @@ a:hover {
 /* Table of Contents */
 .toc-sidebar {
   position: fixed;
-  top: 0;
-  right: 0;
-  width: var(--toc-width);
-  height: 100vh;
-  padding: 2rem 1rem;
+  top: 5rem;
+  right: 1.5rem;
+  width: 180px;
+  max-height: calc(100vh - 8rem);
+  padding: 1rem;
   overflow-y: auto;
-  border-left: 1px solid var(--border-color);
   background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .toc {
-  position: sticky;
-  top: 2rem;
+  position: relative;
 }
 
 .toc-title {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .toc ul {
@@ -521,17 +598,18 @@ a:hover {
 }
 
 .toc ul ul {
-  padding-left: 1rem;
+  padding-left: 0.75rem;
 }
 
 .toc a {
   display: block;
-  padding: 0.25rem 0;
-  font-size: 14px;
+  padding: 0.2rem 0;
+  font-size: 12px;
   color: var(--text-muted);
   border-left: 2px solid transparent;
-  padding-left: 0.75rem;
-  margin-left: -0.75rem;
+  padding-left: 0.5rem;
+  margin-left: -0.5rem;
+  line-height: 1.4;
 }
 
 .toc a:hover {
@@ -600,8 +678,8 @@ a:hover {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -1012,8 +1090,8 @@ kbd {
   .back-to-top {
     bottom: 16px;
     right: 16px;
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
   }
 
   .page-nav {

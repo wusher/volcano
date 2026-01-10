@@ -17,6 +17,9 @@ type Config struct {
 	FaviconPath string // Path to favicon file
 	ShowLastMod bool   // Show last modified date
 	TopNav      bool   // Display root files in top navigation bar
+	ShowPageNav bool   // Show previous/next page navigation
+	Theme       string // Theme name (docs, blog, vanilla)
+	CSSPath     string // Path to custom CSS file
 }
 
 // DefaultConfig returns a Config with default values

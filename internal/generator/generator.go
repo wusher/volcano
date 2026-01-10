@@ -35,6 +35,9 @@ type Config struct {
 	FaviconPath string // Path to favicon file
 	ShowLastMod bool   // Show last modified date
 	TopNav      bool   // Display root files in top navigation bar
+	ShowPageNav bool   // Show previous/next page navigation
+	Theme       string // Theme name (docs, blog, vanilla)
+	CSSPath     string // Path to custom CSS file
 }
 
 // Result holds the result of generation
@@ -43,19 +46,32 @@ type Result struct {
 	Warnings       []string
 }
 
+// generatedPage tracks a page and its content for link validation
+type generatedPage struct {
+	urlPath     string
+	htmlContent string
+}
+
 // Generator handles static site generation
 type Generator struct {
-	config       Config
-	renderer     *templates.Renderer
-	parser       *markdown.Parser
-	logger       *output.Logger
-	faviconLinks template.HTML
-	topNavItems  []templates.TopNavItem
+	config         Config
+	renderer       *templates.Renderer
+	parser         *markdown.Parser
+	logger         *output.Logger
+	faviconLinks   template.HTML
+	topNavItems    []templates.TopNavItem
+	generatedPages []generatedPage // Track pages for link validation
 }
 
 // New creates a new Generator
 func New(config Config, writer io.Writer) (*Generator, error) {
-	renderer, err := templates.NewRenderer(styles.GetCSS())
+	// Get CSS content - from file if specified, otherwise from theme
+	css, err := getCSS(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load CSS: %w", err)
+	}
+
+	renderer, err := templates.NewRenderer(css)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create renderer: %w", err)
 	}
@@ -146,6 +162,31 @@ func (g *Generator) Generate() (*Result, error) {
 		return nil, fmt.Errorf("failed to generate 404 page: %w", err)
 	}
 
+	// Step 6: Verify all navigation links resolve
+	g.logger.Verbose("Verifying navigation links...")
+	brokenLinks := g.verifyLinks(site.AllPages)
+	if len(brokenLinks) > 0 {
+		g.logger.Println("")
+		g.logger.Error("Found %d broken navigation links:", len(brokenLinks))
+		for _, link := range brokenLinks {
+			g.logger.Error("  %s", link)
+		}
+		return nil, fmt.Errorf("build failed: %d broken navigation links found", len(brokenLinks))
+	}
+
+	// Step 7: Verify all internal links in content resolve
+	g.logger.Verbose("Verifying internal links in content...")
+	validURLs := g.buildValidURLMap(site.AllPages, foldersNeedingIndex)
+	brokenContentLinks := g.verifyContentLinks(validURLs)
+	if len(brokenContentLinks) > 0 {
+		g.logger.Println("")
+		g.logger.Error("Found %d broken internal links:", len(brokenContentLinks))
+		for _, bl := range brokenContentLinks {
+			g.logger.Error("  %s: link to %s", bl.SourcePage, bl.LinkURL)
+		}
+		return nil, fmt.Errorf("build failed: %d broken internal links found", len(brokenContentLinks))
+	}
+
 	// Print summary
 	g.logger.Println("")
 	g.logger.Success("Generated %d pages in %s", result.PagesGenerated, g.config.OutputDir)
@@ -166,6 +207,59 @@ func countFolders(node *tree.Node) int {
 		count += countFolders(child)
 	}
 	return count
+}
+
+// verifyLinks checks that all generated pages have corresponding output files
+func (g *Generator) verifyLinks(allPages []*tree.Node) []string {
+	var broken []string
+	for _, node := range allPages {
+		outputPath := tree.GetOutputPath(node)
+		if outputPath == "" {
+			continue
+		}
+		fullPath := filepath.Join(g.config.OutputDir, outputPath)
+		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+			urlPath := tree.GetURLPath(node)
+			broken = append(broken, fmt.Sprintf("%s -> %s (expected: %s)", node.Path, urlPath, outputPath))
+		}
+	}
+	return broken
+}
+
+// buildValidURLMap creates a map of all valid URLs in the site
+func (g *Generator) buildValidURLMap(allPages []*tree.Node, autoIndexFolders []*tree.Node) map[string]bool {
+	validURLs := make(map[string]bool)
+
+	// Add root URL
+	validURLs["/"] = true
+
+	// Add all page URLs
+	for _, node := range allPages {
+		urlPath := tree.GetURLPath(node)
+		if urlPath != "" {
+			validURLs[urlPath] = true
+		}
+	}
+
+	// Add auto-index folder URLs
+	for _, folder := range autoIndexFolders {
+		urlPath := "/" + tree.SlugifyPath(folder.Path) + "/"
+		validURLs[urlPath] = true
+	}
+
+	return validURLs
+}
+
+// verifyContentLinks checks all internal links in generated page content
+func (g *Generator) verifyContentLinks(validURLs map[string]bool) []markdown.BrokenLink {
+	var allBroken []markdown.BrokenLink
+
+	for _, page := range g.generatedPages {
+		broken := markdown.ValidateLinks(page.htmlContent, page.urlPath, validURLs)
+		allBroken = append(allBroken, broken...)
+	}
+
+	return allBroken
 }
 
 // prepareOutputDir creates or cleans the output directory
@@ -200,12 +294,21 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 	// Process admonitions before parsing
 	mdContent = []byte(markdown.ProcessAdmonitions(string(mdContent)))
 
+	// Compute source directory for wikilink resolution
+	// e.g., "guides/customizing-appearance.md" -> "/guides/"
+	relDir := filepath.Dir(node.Path)
+	sourceDir := "/"
+	if relDir != "." && relDir != "" {
+		sourceDir = "/" + tree.SlugifyPath(relDir) + "/"
+	}
+
 	// Parse the preprocessed content
 	page, err := markdown.ParseContent(
 		mdContent,
 		node.SourcePath,
 		outputPath,
 		urlPath,
+		sourceDir,
 		node.Name, // fallback title
 	)
 	if err != nil {
@@ -239,9 +342,12 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 	breadcrumbs := navigation.BuildBreadcrumbs(node, g.config.Title)
 	breadcrumbsHTML := navigation.RenderBreadcrumbs(breadcrumbs)
 
-	// Build page navigation
-	pageNav := navigation.BuildPageNavigation(node, allPages)
-	pageNavHTML := navigation.RenderPageNavigation(pageNav)
+	// Build page navigation (only if enabled)
+	var pageNavHTML template.HTML
+	if g.config.ShowPageNav {
+		pageNav := navigation.BuildPageNavigation(node, allPages)
+		pageNavHTML = navigation.RenderPageNavigation(pageNav)
+	}
 
 	// Extract TOC
 	pageTOC := toc.ExtractTOC(htmlContent, 3)
@@ -297,6 +403,12 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		return fmt.Errorf("failed to render page: %w", err)
 	}
 
+	// Track page for link validation
+	g.generatedPages = append(g.generatedPages, generatedPage{
+		urlPath:     urlPath,
+		htmlContent: htmlContent,
+	})
+
 	return nil
 }
 
@@ -324,4 +436,19 @@ func (g *Generator) generate404(root *tree.Node) error {
 	defer func() { _ = f.Close() }()
 
 	return g.renderer.Render(f, data)
+}
+
+// getCSS returns minified CSS content from custom file or embedded theme
+func getCSS(config Config) (string, error) {
+	var css string
+	if config.CSSPath != "" {
+		content, err := os.ReadFile(config.CSSPath)
+		if err != nil {
+			return "", err
+		}
+		css = string(content)
+	} else {
+		css = styles.GetCSS(config.Theme)
+	}
+	return styles.MinifyCSS(css)
 }

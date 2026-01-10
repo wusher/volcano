@@ -10,6 +10,7 @@ import (
 
 	"volcano/cmd"
 	"volcano/internal/output"
+	"volcano/internal/styles"
 )
 
 // Version is the CLI version
@@ -28,6 +29,16 @@ func Run(args []string, stdout, stderr io.Writer) int {
 
 // runWithConfig is the internal implementation that returns both exit code and error
 func runWithConfig(args []string, cfg *cmd.Config, stdout, stderr io.Writer) (int, error) {
+	// Check for subcommands before flag parsing
+	if len(args) > 0 && args[0] == "css" {
+		if err := cmd.CSS(args[1:], stdout); err != nil {
+			errLogger := output.NewLogger(stderr, output.IsStderrTTY(), false, false)
+			errLogger.Error("%v", err)
+			return 1, err
+		}
+		return 0, nil
+	}
+
 	// Create a new FlagSet to avoid issues with flag.Parse being called multiple times
 	fs := flag.NewFlagSet("volcano", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -49,6 +60,9 @@ func runWithConfig(args []string, cfg *cmd.Config, stdout, stderr io.Writer) (in
 	fs.StringVar(&cfg.FaviconPath, "favicon", "", "Path to favicon file")
 	fs.BoolVar(&cfg.ShowLastMod, "last-modified", false, "Show last modified date")
 	fs.BoolVar(&cfg.TopNav, "top-nav", false, "Display root files in top navigation bar")
+	fs.BoolVar(&cfg.ShowPageNav, "page-nav", false, "Show previous/next page navigation")
+	fs.StringVar(&cfg.Theme, "theme", "docs", "Theme name (docs, blog, vanilla)")
+	fs.StringVar(&cfg.CSSPath, "css", "", "Path to custom CSS file")
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Enable debug output")
@@ -101,6 +115,26 @@ func runWithConfig(args []string, cfg *cmd.Config, stdout, stderr io.Writer) (in
 		return 1, err
 	}
 
+	// Validate theme
+	if err := styles.ValidateTheme(cfg.Theme); err != nil {
+		errLogger.Error("%v", err)
+		return 1, err
+	}
+
+	// Validate custom CSS path if provided
+	if cfg.CSSPath != "" {
+		if _, err := os.Stat(cfg.CSSPath); err != nil {
+			if os.IsNotExist(err) {
+				errLogger.Error("CSS file not found: %s", cfg.CSSPath)
+				return 1, fmt.Errorf("CSS file not found: %s", cfg.CSSPath)
+			}
+			errLogger.Error("cannot access CSS file: %v", err)
+			return 1, err
+		}
+		// When using custom CSS, ignore the theme flag
+		cfg.Theme = ""
+	}
+
 	// Set colored output based on stdout TTY detection
 	cfg.Colored = output.IsStdoutTTY()
 
@@ -126,6 +160,7 @@ func printUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Usage:")
 	_, _ = fmt.Fprintln(w, "  volcano <input-folder> [flags]     Generate static site")
 	_, _ = fmt.Fprintln(w, "  volcano -s <folder> [flags]        Serve static site")
+	_, _ = fmt.Fprintln(w, "  volcano css [-o file]              Output vanilla CSS skeleton")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Flags:")
 	_, _ = fmt.Fprintln(w, "  -o, --output <dir>   Output directory (default: ./output)")
@@ -138,6 +173,9 @@ func printUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  --favicon <path>     Path to favicon file (.ico, .png, .svg)")
 	_, _ = fmt.Fprintln(w, "  --last-modified      Show last modified date on pages")
 	_, _ = fmt.Fprintln(w, "  --top-nav            Display root files in top navigation bar")
+	_, _ = fmt.Fprintln(w, "  --page-nav           Show previous/next page navigation")
+	_, _ = fmt.Fprintln(w, "  --theme <name>       Theme (docs, blog, vanilla; default: docs)")
+	_, _ = fmt.Fprintln(w, "  --css <path>         Path to custom CSS file (overrides theme)")
 	_, _ = fmt.Fprintln(w, "  -q, --quiet          Suppress non-error output")
 	_, _ = fmt.Fprintln(w, "  --verbose            Enable debug output")
 	_, _ = fmt.Fprintln(w, "  -v, --version        Show version")
@@ -207,6 +245,7 @@ func isValueFlag(flag string) bool {
 		"p": true, "port": true,
 		"title": true, "url": true, "author": true,
 		"og-image": true, "favicon": true,
+		"theme": true, "css": true,
 	}
 	return valueFlags[name]
 }
