@@ -377,6 +377,39 @@ body {
 }
 ```
 
+## Print Styles
+
+Built-in themes include print-optimized stylesheets that:
+
+- Hide navigation elements (sidebar, TOC, breadcrumbs)
+- Remove interactive elements (theme toggle, back-to-top button)
+- Optimize typography for paper
+- Ensure proper page breaks
+
+To customize print styles:
+
+```css
+@media print {
+  /* Hide elements you don't want printed */
+  .sidebar,
+  .toc-sidebar,
+  .page-nav {
+    display: none !important;
+  }
+
+  /* Adjust content width */
+  .content {
+    max-width: 100%;
+  }
+
+  /* Better link visibility */
+  .prose a::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+  }
+}
+```
+
 ## Related
 
 - [[guides/customizing-appearance]] — Quick customization guide

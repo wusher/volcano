@@ -57,7 +57,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.24'
 
       - name: Install Volcano
         run: go install github.com/wusher/volcano@latest
@@ -70,7 +70,7 @@ jobs:
             --url="https://username.github.io/repo"
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
@@ -107,7 +107,7 @@ Create `netlify.toml` in your repository root:
   publish = "public"
 
 [build.environment]
-  GO_VERSION = "1.21"
+  GO_VERSION = "1.24"
 ```
 
 ### Using Netlify CLI

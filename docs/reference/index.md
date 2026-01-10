@@ -11,6 +11,7 @@ Complete reference for all CLI flags and commands:
 - Generate and serve commands
 - Output and theming options
 - SEO and metadata flags
+- Link validation and error handling
 - The `css` subcommand
 
 ### [[url-structure|URL Structure]]

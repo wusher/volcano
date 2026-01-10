@@ -4,7 +4,7 @@ Get your first Volcano site running in under 5 minutes.
 
 ## Prerequisites
 
-You need [Go](https://go.dev/dl/) 1.21 or later installed on your system.
+You need [Go](https://go.dev/dl/) 1.24 or later installed on your system.
 
 Verify your Go installation:
 

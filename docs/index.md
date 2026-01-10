@@ -23,6 +23,8 @@ Volcano is built for developers and writers who want to turn a folder of markdow
 - **SEO Ready** — Auto-generated meta tags, Open Graph, and Twitter Cards
 - **Fast Dev Server** — Preview your site locally with live rendering
 - **Clean URLs** — `docs/guide.md` becomes `/guide/` automatically
+- **Link Validation** — Broken internal links detected during build
+- **Keyboard Shortcuts** — Navigate efficiently with keyboard shortcuts
 
 ## Quick Example
 
