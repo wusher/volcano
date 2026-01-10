@@ -8,6 +8,16 @@ import (
 	"github.com/tdewolff/minify/v2/js"
 )
 
+// jsMinifier is a cached minifier instance for JavaScript.
+// Creating a minifier once and reusing it is more efficient than
+// creating a new one on each call.
+var jsMinifier *minify.M
+
+func init() {
+	jsMinifier = minify.New()
+	jsMinifier.AddFunc("text/javascript", js.Minify)
+}
+
 // JS minifies JavaScript code.
 // Returns minified JS on success, or original JS if minification fails.
 func JS(input string) string {
@@ -15,11 +25,8 @@ func JS(input string) string {
 		return ""
 	}
 
-	m := minify.New()
-	m.AddFunc("text/javascript", js.Minify)
-
 	var buf bytes.Buffer
-	if err := m.Minify("text/javascript", &buf, bytes.NewReader([]byte(input))); err != nil {
+	if err := jsMinifier.Minify("text/javascript", &buf, bytes.NewReader([]byte(input))); err != nil {
 		// Return original input if minification fails
 		return input
 	}
