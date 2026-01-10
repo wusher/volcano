@@ -472,5 +472,10 @@
             if (modal && modal.close) modal.close();
         }
     </script>
+{{if .InstantNavJS}}
+    <script>
+{{.InstantNavJS}}
+    </script>
+{{end}}
 </body>
 </html>

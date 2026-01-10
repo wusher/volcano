@@ -32,6 +32,7 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 	fs.StringVar(&cfg.FaviconPath, "favicon", "", "Path to favicon file")
 	fs.BoolVar(&cfg.TopNav, "top-nav", false, "Display root files in top navigation bar")
 	fs.BoolVar(&cfg.ShowPageNav, "page-nav", false, "Show previous/next page navigation")
+	fs.BoolVar(&cfg.InstantNav, "instant-nav", false, "Enable instant navigation with hover prefetching")
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Enable debug output")
@@ -132,6 +133,7 @@ func Serve(cfg *Config, w io.Writer) error {
 			Theme:       cfg.Theme,
 			CSSPath:     cfg.CSSPath,
 			AccentColor: cfg.AccentColor,
+			InstantNav:  cfg.InstantNav,
 			FaviconPath: cfg.FaviconPath,
 		}
 
@@ -195,6 +197,7 @@ func printServeUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  --favicon <path>     Path to favicon file (ico, png, svg, gif)")
 	_, _ = fmt.Fprintln(w, "  --top-nav            Display root files in top navigation bar")
 	_, _ = fmt.Fprintln(w, "  --page-nav           Show previous/next page navigation")
+	_, _ = fmt.Fprintln(w, "  --instant-nav        Enable instant navigation with hover prefetching")
 	_, _ = fmt.Fprintln(w, "  -q, --quiet          Suppress non-error output")
 	_, _ = fmt.Fprintln(w, "  --verbose            Enable debug output")
 	_, _ = fmt.Fprintln(w, "  -h, --help           Show help")

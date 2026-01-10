@@ -18,6 +18,7 @@ import (
 	"github.com/wusher/volcano/internal/assets"
 	"github.com/wusher/volcano/internal/autoindex"
 	"github.com/wusher/volcano/internal/content"
+	"github.com/wusher/volcano/internal/instant"
 	"github.com/wusher/volcano/internal/markdown"
 	"github.com/wusher/volcano/internal/navigation"
 	"github.com/wusher/volcano/internal/styles"
@@ -39,6 +40,7 @@ type DynamicConfig struct {
 	CSSPath     string
 	AccentColor string // Custom accent color in hex format (e.g., "#ff6600")
 	FaviconPath string // Path to favicon file
+	InstantNav  bool   // Enable instant navigation with hover prefetching
 }
 
 // DynamicServer serves markdown files with live rendering
@@ -55,6 +57,7 @@ type DynamicServer struct {
 	faviconData  []byte        // Favicon file content (in memory)
 	faviconMime  string        // Favicon MIME type
 	faviconName  string        // Favicon filename (e.g., "logo.png")
+	instantNavJS template.JS   // Instant navigation JavaScript (if enabled)
 }
 
 // NewDynamicServer creates a new dynamic server
@@ -83,6 +86,11 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 		fs:          osFileSystem{},
 		scanner:     defaultScanner{},
 		cssLoader:   cssLoader,
+	}
+
+	// Initialize instant navigation JS if enabled
+	if config.InstantNav {
+		srv.instantNavJS = template.JS(instant.InstantNavJS)
 	}
 
 	// Process favicon if configured
@@ -430,6 +438,7 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 		HasTOC:       hasTOC,
 		ShowSearch:   true,
 		TopNavItems:  topNavItems,
+		InstantNavJS: s.instantNavJS,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -671,6 +680,7 @@ func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage 
 		Navigation:   nav,
 		CurrentPath:  "",
 		FaviconLinks: s.faviconLinks,
+		InstantNavJS: s.instantNavJS,
 	}
 
 	// Get renderer
@@ -711,6 +721,7 @@ func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 		Navigation:   nav,
 		CurrentPath:  "",
 		FaviconLinks: s.faviconLinks,
+		InstantNavJS: s.instantNavJS,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -826,6 +837,7 @@ func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, n
 		FaviconLinks: s.faviconLinks,
 		ShowSearch:   true,
 		TopNavItems:  topNavItems,
+		InstantNavJS: s.instantNavJS,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)

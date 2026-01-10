@@ -38,15 +38,16 @@ func (g *Generator) generateAutoIndex(node *tree.Node, root *tree.Node) error {
 
 	// Prepare template data
 	data := templates.PageData{
-		SiteTitle:   g.config.Title,
-		PageTitle:   index.Title,
-		Content:     htmlContent,
-		Navigation:  nav,
-		CurrentPath: index.URLPath,
-		Breadcrumbs: breadcrumbsHTML,
-		MetaTags:    metaTagsHTML,
-		ShowSearch:  true,
-		BaseURL:     g.baseURL,
+		SiteTitle:    g.config.Title,
+		PageTitle:    index.Title,
+		Content:      htmlContent,
+		Navigation:   nav,
+		CurrentPath:  index.URLPath,
+		Breadcrumbs:  breadcrumbsHTML,
+		MetaTags:     metaTagsHTML,
+		ShowSearch:   true,
+		BaseURL:      g.baseURL,
+		InstantNavJS: g.instantNavJS,
 	}
 
 	// Create output directory
