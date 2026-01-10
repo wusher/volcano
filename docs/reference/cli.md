@@ -120,6 +120,7 @@ volcano ./docs --title="My Project Documentation"
 Base URL for the site. Used for:
 - Canonical link tags
 - Open Graph URLs
+- Subpath prefix for all internal links
 - Sitemap generation
 
 - **Default:** (none)
@@ -128,6 +129,16 @@ Base URL for the site. Used for:
 ```bash
 volcano ./docs --url="https://docs.example.com"
 ```
+
+**Subpath Deployments:**
+
+When deploying to a subpath (e.g., GitHub Pages project sites), include the path:
+
+```bash
+volcano ./docs --url="https://username.github.io/my-repo"
+```
+
+All internal links will be prefixed with `/my-repo/` automatically.
 
 #### `--author <name>`
 
@@ -337,12 +348,42 @@ volcano ./docs -o ./public -q --url="$SITE_URL"
 
 Quiet mode for cleaner CI logs.
 
+## Link Validation
+
+Volcano automatically validates all internal links during generation. The build will **fail** if any broken links are found.
+
+### What's Validated
+
+1. **Navigation links** — All sidebar navigation links are verified
+2. **Content links** — Internal links within page content are checked
+3. **Wiki links** — `[[Page Name]]` links are resolved and validated
+
+### Error Output
+
+When broken links are found:
+
+```
+✗ Found 2 broken internal links:
+  Page /guides/intro/: broken link /setup/ (not found)
+  Page /reference/api/: broken link /deprecated/ (not found)
+```
+
+### Fixing Broken Links
+
+1. Check the link target exists as a markdown file
+2. Verify the path is correct (paths are case-insensitive)
+3. For wiki links, ensure the page name matches an existing file
+
+### Dynamic Server
+
+When using `volcano -s ./docs` (dynamic serving), broken links are shown inline on the page with detailed error messages instead of failing silently.
+
 ## Exit Codes
 
 | Code | Meaning |
 |------|---------|
 | `0` | Success |
-| `1` | Error (invalid args, missing files, generation failure) |
+| `1` | Error (invalid args, missing files, generation failure, broken links) |
 
 ## Environment
 

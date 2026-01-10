@@ -155,6 +155,43 @@ Top nav works well when:
 - Root-level organization is meaningful
 - You want quick access to key pages
 
+## Keyboard Shortcuts
+
+Navigate efficiently with keyboard shortcuts. Press `?` anywhere to see the shortcuts modal.
+
+| Key | Action |
+|-----|--------|
+| `/` | Focus search box |
+| `t` | Toggle dark/light theme |
+| `n` | Go to next page |
+| `p` | Go to previous page |
+| `h` | Go to homepage |
+| `?` | Show shortcuts modal |
+| `Esc` | Close modal or blur search |
+
+:::note
+Previous/next shortcuts (`n` and `p`) require the `--page-nav` flag to be enabled.
+:::
+
+## Scroll Progress Indicator
+
+A thin progress bar at the top of the page shows how far you've scrolled through the current page. This helps readers track their position in longer documents.
+
+The progress bar:
+- Appears at the very top of the viewport
+- Fills from left to right as you scroll
+- Updates smoothly in real-time
+
+## Back to Top Button
+
+A floating button appears in the bottom-right corner after scrolling down 300 pixels. Click it to smoothly scroll back to the top of the page.
+
+The button:
+- Hidden when near the top
+- Fades in when scrolling down
+- Uses smooth scrolling animation
+- Styled to match the current theme
+
 ## Navigation Elements Summary
 
 | Element | Location | Purpose |
@@ -165,6 +202,8 @@ Top nav works well when:
 | TOC | Right side | Jump within page |
 | Page nav | Bottom of content | Sequential browsing |
 | Top nav | Top bar | Quick section access |
+| Progress bar | Top of viewport | Show scroll position |
+| Back to top | Bottom-right | Quick return to top |
 
 ## Accessibility
 
