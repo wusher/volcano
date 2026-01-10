@@ -328,91 +328,151 @@
 
 ---
 
-### 5. SPA-like Page Transitions (Turbo/PJAX alternatives)
+### 5. Instant Navigation with DOM Morphing
 
-**Concept**: Make static site feel like a SPA by intercepting navigation and doing client-side transitions
+**Concept**: Make navigation instant by pre-fetching on hover and morphing DOM (not full replacement)
 
 **What This Does**:
-- Intercepts clicks on links
-- Fetches next page via AJAX/fetch
-- Swaps content in browser without full page reload
-- Updates URL with History API
-- Results: Faster navigation, no white flash between pages, can add custom transitions
-- Keeps JavaScript state between pages
+1. **Cache current page** in memory
+2. **Pre-fetch links** when user hovers (200-300ms before click)
+3. **Fetch in background** when clicked
+4. **Morph DOM** - intelligently update only what changed, preserve state
+5. **Update URL** with History API
+6. **Result**: Instant navigation, no white flash, preserves JS state, smooth updates
 
-**Popular Libraries**:
+**Key Technologies**:
 
-**1. Turbo (from Hotwire)** (~45KB with Stimulus)
-- Most popular for this pattern
-- Intercepts all links/forms automatically
-- Battle-tested (evolved from Turbolinks/PJAX)
-- Opinionated but smooth out-of-the-box experience
-- Pros: Comprehensive, well-documented, large community
-- Cons: Larger bundle, more opinionated, ties into Hotwire ecosystem
+### DOM Morphing Libraries
 
-**2. htmx** (~14KB)
-- Most popular alternative (90K+ weekly npm downloads, 46K+ GitHub stars)
-- Attribute-based: `<a href="/page" hx-boost="true">`
-- More flexible and transparent than Turbo
-- Can do partial updates, not just full page swaps
-- Pros: Smaller, more flexible, broader feature set (AJAX, WebSockets, SSE)
-- Cons: More manual setup, different paradigm
+**1. idiomorph** (3.3KB, zero dependencies)
+- Created by htmx team, now used by Turbo 8
+- Morphs one DOM tree to another while preserving state
+- Smart ID-based matching
+- Works great for updating pages without losing state
+- Pros: Tiny, standalone, well-tested, no dependencies
+- Cons: Need to combine with pre-fetch solution
 
-**3. Unpoly** (Similar size to Turbo)
-- Like htmx but more Rails-like (opinionated, convention-based)
-- Has migration scripts for upgrading
-- Comprehensive like Turbo but more flexible
-- Pros: Good balance of opinions and flexibility
-- Cons: Smaller community than Turbo/htmx
+**2. Turbo 8 with Morph Mode** (~45KB with Stimulus)
+- Uses idiomorph under the hood
+- Pre-fetches on hover automatically
+- Morphs DOM instead of full replacement (only updates what changed)
+- Can ignore certain elements (keep popovers open, etc.)
+- Pros: Complete solution, battle-tested, does everything
+- Cons: Larger bundle, opinionated
 
-**4. Barba.js** (~9KB)
-- Focused specifically on page transitions with animations
-- Lightweight, flexible for custom transitions
-- Great for creative/portfolio sites
-- Pros: Small, focused, excellent animation support
-- Cons: Less comprehensive (just transitions, not forms/etc)
+**3. Swup with Morph Plugin** (~10-15KB total)
+- Swup handles transitions + pre-fetching
+- Morph plugin adds DOM morphing (uses morphdom)
+- Good for multi-language sites, persistent headers/menus
+- Pros: Smaller than Turbo, focused, flexible
+- Cons: Two libraries to integrate
 
-**5. Swup** (Small)
-- Similar to Barba.js, focused on smooth animated transitions
-- Easy setup
-- Pros: Simple, works well with various frameworks
-- Cons: Less feature-rich than Turbo/htmx
+**4. Alpine Morph** (part of Alpine.js)
+- Morphs elements while preserving Alpine/browser state
+- Good if already using Alpine
+- Pros: Integrates with Alpine ecosystem
+- Cons: Requires Alpine.js
 
-**6. InstantClick** (Tiny)
-- Preloads pages on hover, then swaps instantly on click
-- Extremely fast perceived performance
-- Pros: Tiny, clever approach, very fast
-- Cons: Limited to link navigation, no forms
+### Pre-fetching/Hover Libraries
 
-**Recommendation for Volcano**:
-- **htmx**: Best balance of size (~14KB), flexibility, and features. Attribute-based fits well with HTML-first philosophy
-- **Turbo**: If you want comprehensive, opinionated, battle-tested solution and don't mind the size
-- **Barba.js/Swup**: If you mainly want smooth transitions and don't need form handling
-- **InstantClick**: If you want the absolute smallest/simplest solution
+**1. instant.page** (~1KB)
+- Pre-fetches links on mouse hover (uses `<link rel=prefetch>`)
+- ~300ms from hover to click = free time for fetching
+- Pros: Tiny, simple, just prefetch
+- Cons: Just prefetch, need to add morphing separately
+
+**2. quicklink** (<1KB, by Google)
+- Pre-fetches links in viewport (as soon as visible)
+- Respects user preferences (data-saver mode, slow connection)
+- Uses requestIdleCallback to be responsible
+- Pros: Tiniest, smart about bandwidth, Google-backed
+- Cons: Viewport-based (not hover), just prefetch
+
+**3. Flying Pages**
+- Combines both: viewport preloading + hover preloading
+- Rate limiting (3 requests/sec default)
+- More control than quicklink/instant.page
+- Pros: Best of both worlds, rate limiting
+- Cons: Slightly larger, more WordPress-focused
+
+**4. InstantClick** (Proof of concept)
+- Pre-fetch on hover + AJAX navigation
+- Makes site into SPA
+- Pros: Does both prefetch and navigation
+- Cons: Mostly abandoned, poor docs, high GitHub issues
+
+### Recommended Approaches for Volcano
+
+**Option A: Turbo 8 with Morph Mode** (Complete, ~45KB)
+- Does everything: pre-fetch on hover, DOM morphing, caching, state preservation
+- Battle-tested, used in production by many sites
+- Simple to integrate: just include the script
+- Pros: Complete solution, just works, well-documented
+- Cons: Larger bundle (45KB), most opinionated
+
+**Option B: Swup + Morph Plugin** (Smaller, ~10-15KB)
+- Swup handles pre-fetching and page transitions
+- Morph plugin adds DOM morphing
+- More lightweight than Turbo
+- Pros: Smaller, flexible, good docs
+- Cons: Two pieces to integrate, smaller community
+
+**Option C: Custom with idiomorph + instant.page** (Smallest, ~4-5KB)
+- idiomorph (3.3KB) for DOM morphing
+- instant.page (1KB) for hover pre-fetching
+- Write ~50-100 lines of glue code to connect them
+- Pros: Tiniest bundle, full control, truly minimal
+- Cons: Need to write integration code, less battle-tested combo
+
+**Option D: Custom with idiomorph + quicklink** (Smallest, ~4KB)
+- idiomorph (3.3KB) for DOM morphing
+- quicklink (<1KB) for viewport-based prefetching
+- More responsible with bandwidth (respects data-saver, slow connections)
+- Pros: Tiniest bundle, Google-backed prefetch, smart about resources
+- Cons: Viewport-based (not hover), need integration code
+
+**Best Recommendation for Volcano**: **Option C (idiomorph + instant.page)**
+- Smallest bundle (~4-5KB total)
+- Hover pre-fetching matches Turbo's UX
+- idiomorph is battle-tested (used by Turbo 8)
+- Clean, minimal approach that fits Volcano's philosophy
+- ~100 lines of integration code needed
 
 **Implementation Considerations**:
-- Would need to inject library into generated HTML
-- Could embed minified JS directly (like CSS) or link to CDN
-- May need special handling for theme toggle, search, and other JS state
-- Breaking change: users would need to opt-in via flag (e.g., `--spa-navigation`)
+- Add `--instant-nav` or `--morph-navigation` flag (opt-in)
+- Embed minified JS directly (like CSS) to keep single-binary philosophy
+- Integration code:
+  1. Listen for hover events on links
+  2. Pre-fetch with instant.page
+  3. On click: intercept, fetch, use idiomorph to morph DOM
+  4. Update URL with History API
+  5. Handle edge cases: external links, downloads, anchors
+- May need special handling for theme toggle, search state
+- Test that existing JS (theme toggle, search, etc.) survives morphing
 
 **Zero-Dependency Trade-off**:
-- Adds runtime dependency (but not build dependency)
-- Could embed JS directly to keep "single binary" philosophy
-- This is a significant departure from current minimal JS approach
+- Adds ~4-5KB runtime dependency (but not build dependency)
+- Can embed JS directly to keep "single binary" philosophy
+- Small enough to align with Volcano's minimal approach
+- idiomorph is from htmx team (same philosophy as Volcano)
 
 **Pros**:
-- Much faster perceived performance
-- Modern, app-like feel
-- Better user experience for navigation-heavy sites
+- **Instant navigation** - feels incredibly fast
+- No white flash between pages
+- Preserves JavaScript state (theme preference, search, etc.)
+- Smooth, modern UX
+- Small bundle size (4-5KB vs 45KB for Turbo)
+- Pre-fetching on hover uses the 200-300ms "dead time" perfectly
 
 **Cons**:
-- Adds JavaScript dependency (~14-45KB)
-- Can break assumptions (scripts run differently)
-- More complexity in testing
-- Need to handle edge cases (external links, downloads, etc.)
+- Adds JavaScript dependency (~4-5KB)
+- Need to write ~100 lines of integration code
+- Slight complexity in testing
+- Need to handle edge cases (external links, downloads, anchor links)
+- Scripts run differently (need to re-init on morph)
+- Breaking change for users with custom JS (need docs on how to adapt)
 
-**Verdict**: TBD - is this valuable enough to add runtime dependency?
+**Verdict**: TBD - is instant navigation worth ~4-5KB runtime dependency?
 
 ---
 
