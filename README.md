@@ -64,6 +64,17 @@ cd volcano
 go build -o volcano .
 ```
 
+## Releases
+
+Tag a release to publish GitHub release binaries:
+
+```bash
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+The release workflow builds cross-platform binaries and attaches them to the GitHub release.
+
 ## Usage
 
 ### Generate a static site

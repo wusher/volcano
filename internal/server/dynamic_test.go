@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"volcano/internal/markdown"
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/markdown"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 // mockFileSystem implements FileSystem for testing

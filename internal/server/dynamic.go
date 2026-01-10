@@ -16,13 +16,13 @@ import (
 	"syscall"
 	"time"
 
-	"volcano/internal/content"
-	"volcano/internal/markdown"
-	"volcano/internal/navigation"
-	"volcano/internal/styles"
-	"volcano/internal/templates"
-	"volcano/internal/toc"
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/content"
+	"github.com/wusher/volcano/internal/markdown"
+	"github.com/wusher/volcano/internal/navigation"
+	"github.com/wusher/volcano/internal/styles"
+	"github.com/wusher/volcano/internal/templates"
+	"github.com/wusher/volcano/internal/toc"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 // buildValidURLMap creates a map of all valid URLs from the site

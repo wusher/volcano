@@ -3,7 +3,7 @@ package navigation
 import (
 	"testing"
 
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 func TestFlattenTreeForPagination(t *testing.T) {

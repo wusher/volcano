@@ -8,13 +8,13 @@ import (
 	"os"
 	"strings"
 
-	"volcano/cmd"
-	"volcano/internal/output"
-	"volcano/internal/styles"
+	"github.com/wusher/volcano/cmd"
+	"github.com/wusher/volcano/internal/output"
+	"github.com/wusher/volcano/internal/styles"
 )
 
-// Version is the CLI version
-const Version = "0.1.0"
+// Version is the CLI version (overridden at build time for releases)
+var Version = "dev"
 
 func main() {
 	os.Exit(Run(os.Args[1:], os.Stdout, os.Stderr))

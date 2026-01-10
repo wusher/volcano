@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 // NavLink represents a navigation link (previous or next page)

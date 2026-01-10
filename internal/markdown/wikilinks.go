@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 // wikiLinkRegex matches Obsidian-style wiki links: [[Page]] or [[Page|Display Text]]

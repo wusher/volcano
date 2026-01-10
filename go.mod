@@ -1,4 +1,4 @@
-module volcano
+module github.com/wusher/volcano
 
 go 1.24.0
 

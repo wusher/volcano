@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"volcano/internal/styles"
+	"github.com/wusher/volcano/internal/styles"
 )
 
 // CSS outputs the vanilla CSS skeleton to stdout or a file

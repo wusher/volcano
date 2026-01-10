@@ -8,16 +8,16 @@ import (
 	"os"
 	"path/filepath"
 
-	"volcano/internal/assets"
-	"volcano/internal/content"
-	"volcano/internal/markdown"
-	"volcano/internal/navigation"
-	"volcano/internal/output"
-	"volcano/internal/seo"
-	"volcano/internal/styles"
-	"volcano/internal/templates"
-	"volcano/internal/toc"
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/assets"
+	"github.com/wusher/volcano/internal/content"
+	"github.com/wusher/volcano/internal/markdown"
+	"github.com/wusher/volcano/internal/navigation"
+	"github.com/wusher/volcano/internal/output"
+	"github.com/wusher/volcano/internal/seo"
+	"github.com/wusher/volcano/internal/styles"
+	"github.com/wusher/volcano/internal/templates"
+	"github.com/wusher/volcano/internal/toc"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 // Config holds configuration for the generator

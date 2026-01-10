@@ -3,7 +3,7 @@ package cmd
 import (
 	"io"
 
-	"volcano/internal/generator"
+	"github.com/wusher/volcano/internal/generator"
 )
 
 // Generate handles the static site generation from input folder to output folder

@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"os"
 
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 // Package-level variables for dependency injection (can be overridden in tests)

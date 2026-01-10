@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 func TestBuildBreadcrumbs(t *testing.T) {

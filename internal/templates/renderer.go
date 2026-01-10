@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 //go:embed layout.html

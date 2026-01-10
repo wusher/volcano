@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 func TestNewRenderer(t *testing.T) {

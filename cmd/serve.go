@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"volcano/internal/server"
+	"github.com/wusher/volcano/internal/server"
 )
 
 // Serve starts the HTTP server to preview the site

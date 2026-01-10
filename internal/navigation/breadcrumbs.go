@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 // Breadcrumb represents a single breadcrumb item

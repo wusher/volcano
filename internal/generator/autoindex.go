@@ -7,10 +7,10 @@ import (
 	"sort"
 	"strings"
 
-	"volcano/internal/navigation"
-	"volcano/internal/seo"
-	"volcano/internal/templates"
-	"volcano/internal/tree"
+	"github.com/wusher/volcano/internal/navigation"
+	"github.com/wusher/volcano/internal/seo"
+	"github.com/wusher/volcano/internal/templates"
+	"github.com/wusher/volcano/internal/tree"
 )
 
 // IndexItem represents an item in an auto-generated folder index
