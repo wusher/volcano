@@ -472,10 +472,136 @@
 - Scripts run differently (need to re-init on morph)
 - Breaking change for users with custom JS (need docs on how to adapt)
 
-**Verdict**: TBD - is instant navigation worth ~4-5KB runtime dependency?
+**Verdict**: **YES** - Pursue Option C (idiomorph + instant.page) behind CLI flag
+
+**Implementation Plan**:
+- CLI flag: `--instant-nav` (opt-in, disabled by default)
+- Embed idiomorph (3.3KB) + instant.page (1KB) minified into binary
+- Write ~100 lines of integration glue code
+- Only inject JS when flag is enabled
+- Document usage and edge cases
 
 ---
 
 ## Stories
 
-<!-- Stories will be formalized here once we've discussed the ideas -->
+### Story 1: Accent Color Customization
+
+**Feature**: Add `--accent-color` flag to customize theme colors with HSL-based tint/shade generation
+
+**Requirements**:
+- Add `--accent-color="#hexcolor"` CLI flag
+- Implement hex → HSL → hex conversion utilities
+- Generate 3 CSS variables from input color:
+  - `--accent`: Original color (normalized to 50% lightness)
+  - `--accent-dark`: 10% lightness (dark mode backgrounds)
+  - `--accent-light`: 95% lightness (light mode backgrounds)
+- Inject CSS variables into template when flag provided
+- Update themes to use accent variables for:
+  - Active navigation items
+  - TOC active border
+  - Link hover states
+  - Scroll progress bar
+  - Breadcrumbs (optional)
+  - Admonitions (optional)
+- No variables injected if flag not provided (backward compatible)
+
+**Acceptance Criteria**:
+- Works with various brand colors
+- Colors look good in both light/dark modes
+- No visual change when flag not provided
+- Documentation with examples
+
+**Estimated Effort**: Medium (~200-300 lines Go code for color conversion + CSS variable injection + theme updates)
+
+---
+
+### Story 2: Icon-Only Copy Buttons
+
+**Feature**: Simplify code block copy buttons to show only icons (no text)
+
+**Requirements**:
+- Remove "Copy" and "Copied!" text from copy buttons
+- Keep icon swap functionality (📋 → ✓)
+- Add proper `aria-label` attributes for accessibility:
+  - `aria-label="Copy code"` (initial state)
+  - `aria-label="Copied!"` (success state)
+- Update JavaScript to change aria-label on state change
+
+**Acceptance Criteria**:
+- Buttons show only icons
+- Screen readers announce actions properly
+- Visual appearance matches modern patterns (GitHub, VS Code)
+
+**Estimated Effort**: Trivial (~10 lines changed in template + JS)
+
+---
+
+### Story 3: Browser Theme Color Meta Tags
+
+**Feature**: Add `theme-color` and `color-scheme` meta tags for better mobile browser integration
+
+**Requirements**:
+- Add `theme-color` meta tags to `RenderMetaTags()`:
+  - Light mode: `<meta name="theme-color" content="#ffffff">`
+  - Dark mode: `<meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">`
+- Add color-scheme meta tag: `<meta name="color-scheme" content="light dark">`
+- Match colors to current theme CSS variables
+- Consider interaction with accent color feature (use neutral colors by default)
+
+**Acceptance Criteria**:
+- Mobile browser chrome colors match site theme
+- Works on iOS Safari and Chrome Android
+- Colors update properly for light/dark mode
+
+**Estimated Effort**: Trivial (~20 lines in `internal/seo/meta.go`)
+
+---
+
+### Story 4: Instant Navigation with DOM Morphing
+
+**Feature**: Add opt-in instant navigation using hover prefetching + DOM morphing
+
+**Requirements**:
+- Add `--instant-nav` CLI flag (disabled by default)
+- Embed minified libraries when flag enabled:
+  - idiomorph (3.3KB) - DOM morphing
+  - instant.page (1KB) - hover prefetching
+- Write integration glue code (~100 lines):
+  - Hook into instant.page prefetch events
+  - Intercept link clicks
+  - Fetch new page HTML
+  - Use idiomorph to morph DOM (preserve state)
+  - Update URL with History API
+  - Handle edge cases:
+    - External links (skip morphing)
+    - Downloads (skip morphing)
+    - Anchor links (smooth scroll, no fetch)
+    - Hash changes
+- Ensure existing JS survives morphing:
+  - Theme toggle state preserved
+  - Search state preserved
+  - Event listeners re-attached if needed
+- Add data attributes for control:
+  - `data-no-instant` to exclude links from instant nav
+- Documentation:
+  - Usage guide
+  - How to adapt custom JavaScript
+  - Performance benefits
+  - Edge cases and limitations
+
+**Acceptance Criteria**:
+- Navigation feels instant (no white flash)
+- Pre-fetches on hover (~200-300ms before click)
+- DOM morphs smoothly (only updates changed elements)
+- Theme toggle works across navigations
+- Search state preserved
+- External links open normally
+- Downloads work normally
+- Anchor links smooth scroll
+- Total JS bundle: ~4-5KB added
+- No impact when flag not enabled
+
+**Estimated Effort**: Large (~100-150 lines integration code + testing + documentation)
+
+---
