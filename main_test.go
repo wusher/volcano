@@ -87,14 +87,14 @@ func TestCLIHelp(t *testing.T) {
 	}
 
 	output := stdout.String()
-	if !strings.Contains(output, "volcano - A static site generator") {
+	if !strings.Contains(output, "Volcano - Static site generator") {
 		t.Errorf("Help output should contain description, got: %s", output)
 	}
-	if !strings.Contains(output, "--output") {
-		t.Error("Help output should mention --output flag")
+	if !strings.Contains(output, "build") {
+		t.Error("Help output should mention build command")
 	}
-	if !strings.Contains(output, "--serve") {
-		t.Error("Help output should mention --serve flag")
+	if !strings.Contains(output, "serve") {
+		t.Error("Help output should mention serve command")
 	}
 }
 
@@ -109,7 +109,7 @@ func TestCLIShortHelp(t *testing.T) {
 	}
 
 	output := stdout.String()
-	if !strings.Contains(output, "volcano - A static site generator") {
+	if !strings.Contains(output, "Volcano - Static site generator") {
 		t.Errorf("Help output should contain description, got: %s", output)
 	}
 }
@@ -197,7 +197,7 @@ func TestCLIGenerate(t *testing.T) {
 	}
 }
 
-// TestCLIServe tests basic serve command with -s flag
+// TestCLIServe tests basic serve command with serve subcommand
 func TestCLIServe(t *testing.T) {
 	tmpDir := t.TempDir()
 	inputDir := filepath.Join(tmpDir, "input")
@@ -213,7 +213,7 @@ func TestCLIServe(t *testing.T) {
 
 	// Start server in a goroutine (it blocks)
 	go func() {
-		_ = Run([]string{"-s", "-p", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
+		_ = Run([]string{"serve", "-p", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
 	}()
 
 	// Wait for server to start
@@ -245,7 +245,7 @@ func TestCLIServe(t *testing.T) {
 	}
 }
 
-// TestCLIServeLong tests serve command with --serve flag
+// TestCLIServeLong tests serve command with server alias
 func TestCLIServeLong(t *testing.T) {
 	tmpDir := t.TempDir()
 	inputDir := filepath.Join(tmpDir, "input")
@@ -261,7 +261,7 @@ func TestCLIServeLong(t *testing.T) {
 
 	// Start server in a goroutine (it blocks)
 	go func() {
-		_ = Run([]string{"--serve", "-p", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
+		_ = Run([]string{"server", "-p", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
 	}()
 
 	// Wait for server to start
@@ -368,7 +368,7 @@ func TestCLIWithPort(t *testing.T) {
 
 	// Start server in a goroutine (it blocks)
 	go func() {
-		_ = Run([]string{"-s", "-p", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
+		_ = Run([]string{"serve", "-p", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
 	}()
 
 	// Wait for server to start
@@ -412,7 +412,7 @@ func TestCLIWithPortLong(t *testing.T) {
 
 	// Start server in a goroutine (it blocks)
 	go func() {
-		_ = Run([]string{"-s", "--port", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
+		_ = Run([]string{"serve", "--port", fmt.Sprintf("%d", port), inputDir}, &stdout, io.Discard)
 	}()
 
 	// Wait for server to start

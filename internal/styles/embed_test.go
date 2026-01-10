@@ -5,17 +5,13 @@ import (
 	"testing"
 )
 
-func TestDocsCSS(t *testing.T) {
-	if DocsCSS == "" {
-		t.Error("DocsCSS should not be empty")
+func TestLayoutCSS(t *testing.T) {
+	if LayoutCSS == "" {
+		t.Error("LayoutCSS should not be empty")
 	}
 
-	// Check for essential CSS content
+	// Check for structural CSS content in layout.css
 	checks := []string{
-		":root",
-		"--bg-primary",
-		"--text-primary",
-		"[data-theme=\"dark\"]",
 		".sidebar",
 		".content",
 		".prose",
@@ -24,6 +20,26 @@ func TestDocsCSS(t *testing.T) {
 		".mobile-menu-btn",
 		".drawer-backdrop",
 		"@media",
+	}
+
+	for _, check := range checks {
+		if !strings.Contains(LayoutCSS, check) {
+			t.Errorf("LayoutCSS should contain %q", check)
+		}
+	}
+}
+
+func TestDocsCSS(t *testing.T) {
+	if DocsCSS == "" {
+		t.Error("DocsCSS should not be empty")
+	}
+
+	// Check for styling CSS content in docs.css (colors, fonts, theming)
+	checks := []string{
+		":root",
+		"--bg-primary",
+		"--text-primary",
+		"[data-theme=\"dark\"]",
 	}
 
 	for _, check := range checks {
@@ -43,14 +59,14 @@ func TestBlogCSS(t *testing.T) {
 		t.Error("BlogCSS should contain Charter font family")
 	}
 
-	// Blog theme should have sidebar
-	if !strings.Contains(BlogCSS, "--sidebar-width: 240px") {
-		t.Error("BlogCSS should have 240px sidebar width")
+	// Blog theme should have color variables (styling, not layout)
+	if !strings.Contains(BlogCSS, "--bg-primary") {
+		t.Error("BlogCSS should have --bg-primary color variable")
 	}
 
-	// Blog theme should have refined table styling
-	if !strings.Contains(BlogCSS, ".prose thead") {
-		t.Error("BlogCSS should have refined table styling")
+	// Blog theme should have dark mode styling
+	if !strings.Contains(BlogCSS, "[data-theme=\"dark\"]") {
+		t.Error("BlogCSS should have dark mode styling")
 	}
 }
 
@@ -59,13 +75,18 @@ func TestVanillaCSS(t *testing.T) {
 		t.Error("VanillaCSS should not be empty")
 	}
 
-	// Vanilla theme should have layout but minimal styling
-	if !strings.Contains(VanillaCSS, ".sidebar") {
-		t.Error("VanillaCSS should contain .sidebar")
+	// Vanilla theme is a customization skeleton with commented examples
+	if !strings.Contains(VanillaCSS, "Customization Skeleton") {
+		t.Error("VanillaCSS should contain 'Customization Skeleton' header")
 	}
 
-	// Vanilla theme should not have many color declarations
-	// (it uses inherit/defaults)
+	// Vanilla theme should have :root section (even if mostly commented)
+	if !strings.Contains(VanillaCSS, ":root") {
+		t.Error("VanillaCSS should contain :root selector")
+	}
+
+	// Vanilla theme should not have many actual style declarations
+	// (it's mostly commented examples)
 	colorCount := strings.Count(VanillaCSS, "color:")
 	if colorCount > 5 {
 		t.Logf("VanillaCSS has %d 'color:' declarations - should be minimal", colorCount)
@@ -74,8 +95,8 @@ func TestVanillaCSS(t *testing.T) {
 
 func TestGetCSS(t *testing.T) {
 	tests := []struct {
-		theme    string
-		expected *string
+		theme       string
+		expectedCSS *string // The theme-specific CSS that should be included
 	}{
 		{"docs", &DocsCSS},
 		{"blog", &BlogCSS},
@@ -89,8 +110,14 @@ func TestGetCSS(t *testing.T) {
 		if css == "" {
 			t.Errorf("GetCSS(%q) should not return empty string", tt.theme)
 		}
-		if css != *tt.expected {
-			t.Errorf("GetCSS(%q) returned unexpected CSS", tt.theme)
+		// GetCSS returns LayoutCSS + "\n" + themeCSS
+		expectedCombined := LayoutCSS + "\n" + *tt.expectedCSS
+		if css != expectedCombined {
+			t.Errorf("GetCSS(%q) should return combined layout + theme CSS", tt.theme)
+		}
+		// Verify it contains both layout and theme content
+		if !strings.Contains(css, ".sidebar") {
+			t.Errorf("GetCSS(%q) should contain layout CSS (.sidebar)", tt.theme)
 		}
 	}
 }
@@ -121,8 +148,9 @@ func TestCSSBackwardCompat(t *testing.T) {
 	if CSS == "" {
 		t.Error("CSS variable should not be empty")
 	}
-	// CSS should be the same as DocsCSS
-	if CSS != DocsCSS {
-		t.Error("CSS should equal DocsCSS for backward compatibility")
+	// CSS should be combined LayoutCSS + DocsCSS for backward compatibility
+	expected := LayoutCSS + "\n" + DocsCSS
+	if CSS != expected {
+		t.Error("CSS should equal LayoutCSS + DocsCSS for backward compatibility")
 	}
 }

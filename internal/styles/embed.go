@@ -6,6 +6,11 @@ import (
 	"fmt"
 )
 
+// LayoutCSS is the embedded shared layout stylesheet.
+//
+//go:embed themes/layout.css
+var LayoutCSS string
+
 // DocsCSS is the embedded docs theme stylesheet.
 //
 //go:embed themes/docs.css
@@ -22,24 +27,27 @@ var BlogCSS string
 var VanillaCSS string
 
 // CSS is kept for backward compatibility, points to docs theme
-var CSS = DocsCSS
+var CSS = LayoutCSS + "\n" + DocsCSS
 
 // ValidThemes lists all available theme names
 var ValidThemes = []string{"docs", "blog", "vanilla"}
 
 // GetCSS returns the CSS for the specified theme
 // If theme is empty, returns the docs theme (default)
+// CSS is combined: layout.css + theme.css
 func GetCSS(theme string) string {
+	var themeCSS string
 	switch theme {
 	case "blog":
-		return BlogCSS
+		themeCSS = BlogCSS
 	case "vanilla":
-		return VanillaCSS
+		themeCSS = VanillaCSS
 	case "docs", "":
-		return DocsCSS
+		themeCSS = DocsCSS
 	default:
-		return DocsCSS
+		themeCSS = DocsCSS
 	}
+	return LayoutCSS + "\n" + themeCSS
 }
 
 // ValidateTheme checks if the given theme name is valid

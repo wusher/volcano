@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/wusher/volcano/internal/assets"
 	"github.com/wusher/volcano/internal/autoindex"
 	"github.com/wusher/volcano/internal/content"
 	"github.com/wusher/volcano/internal/markdown"
@@ -36,18 +37,23 @@ type DynamicConfig struct {
 	ShowPageNav bool
 	Theme       string
 	CSSPath     string
+	FaviconPath string // Path to favicon file
 }
 
 // DynamicServer serves markdown files with live rendering
 type DynamicServer struct {
-	config      DynamicConfig
-	renderer    *templates.Renderer
-	transformer *markdown.ContentTransformer
-	writer      io.Writer
-	server      *http.Server
-	fs          FileSystem
-	scanner     TreeScanner
-	cssLoader   styles.CSSLoader
+	config       DynamicConfig
+	renderer     *templates.Renderer
+	transformer  *markdown.ContentTransformer
+	writer       io.Writer
+	server       *http.Server
+	fs           FileSystem
+	scanner      TreeScanner
+	cssLoader    styles.CSSLoader
+	faviconLinks template.HTML // Favicon HTML tags
+	faviconData  []byte        // Favicon file content (in memory)
+	faviconMime  string        // Favicon MIME type
+	faviconName  string        // Favicon filename (e.g., "logo.png")
 }
 
 // NewDynamicServer creates a new dynamic server
@@ -67,7 +73,7 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 		return nil, fmt.Errorf("failed to create renderer: %w", err)
 	}
 
-	return &DynamicServer{
+	srv := &DynamicServer{
 		config:      config,
 		renderer:    renderer,
 		transformer: markdown.NewContentTransformer(""), // Dynamic server doesn't use site URL for external links
@@ -75,7 +81,72 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 		fs:          osFileSystem{},
 		scanner:     defaultScanner{},
 		cssLoader:   cssLoader,
-	}, nil
+	}
+
+	// Process favicon if configured
+	if config.FaviconPath != "" {
+		if err := srv.loadFavicon(); err != nil {
+			// Log warning but don't fail server startup
+			_, _ = fmt.Fprintf(writer, "Warning: Failed to load favicon: %v\n", err)
+		}
+	}
+
+	return srv, nil
+}
+
+// loadFavicon loads the favicon file into memory and generates HTML tags
+func (s *DynamicServer) loadFavicon() error {
+	// Validate file exists
+	if _, err := os.Stat(s.config.FaviconPath); os.IsNotExist(err) {
+		return fmt.Errorf("favicon file not found: %s", s.config.FaviconPath)
+	}
+
+	// Read file into memory
+	data, err := os.ReadFile(s.config.FaviconPath)
+	if err != nil {
+		return fmt.Errorf("failed to read favicon: %w", err)
+	}
+
+	// Get filename and MIME type
+	filename := filepath.Base(s.config.FaviconPath)
+	mimeType := assets.GetFaviconMimeType(filename)
+	if mimeType == "" {
+		return fmt.Errorf("unsupported favicon format: %s", filename)
+	}
+
+	// Store in memory
+	s.faviconData = data
+	s.faviconMime = mimeType
+	s.faviconName = filename
+
+	// Generate HTML link tags
+	links := []assets.FaviconLink{{
+		Rel:  "icon",
+		Type: mimeType,
+		Href: "/" + filename,
+	}}
+	s.faviconLinks = assets.RenderFaviconLinks(links)
+
+	return nil
+}
+
+// serveFavicon serves the favicon from memory
+func (s *DynamicServer) serveFavicon(w http.ResponseWriter, urlPath string) bool {
+	if s.faviconData == nil || s.faviconName == "" {
+		return false
+	}
+
+	// Check if the request is for the favicon
+	requestedFile := strings.TrimPrefix(urlPath, "/")
+	if requestedFile != s.faviconName {
+		return false
+	}
+
+	// Serve from memory
+	w.Header().Set("Content-Type", s.faviconMime)
+	w.Header().Set("Cache-Control", "public, max-age=3600") // Cache for 1 hour
+	_, _ = w.Write(s.faviconData)
+	return true
 }
 
 // getRenderer returns a renderer, re-reading CSS file if using custom CSS
@@ -161,6 +232,12 @@ func (s *DynamicServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	rec.Header().Set("Expires", "0")
 
 	urlPath := r.URL.Path
+
+	// Serve favicon from memory if requested
+	if s.serveFavicon(rec, urlPath) {
+		s.logRequest(r.Method, urlPath, rec.statusCode, time.Since(start))
+		return
+	}
 
 	// Try to serve static files first (images, CSS, JS, etc.)
 	if s.serveStaticFile(rec, r, urlPath) {
@@ -338,18 +415,19 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 
 	// Prepare template data
 	data := templates.PageData{
-		SiteTitle:   s.config.Title,
-		PageTitle:   page.Title,
-		Content:     template.HTML(htmlContent),
-		Navigation:  nav,
-		CurrentPath: nodeURLPath,
-		Breadcrumbs: breadcrumbsHTML,
-		PageNav:     pageNavHTML,
-		TOC:         tocHTML,
-		ReadingTime: readingTime,
-		HasTOC:      hasTOC,
-		ShowSearch:  true,
-		TopNavItems: topNavItems,
+		SiteTitle:    s.config.Title,
+		PageTitle:    page.Title,
+		Content:      template.HTML(htmlContent),
+		Navigation:   nav,
+		CurrentPath:  nodeURLPath,
+		Breadcrumbs:  breadcrumbsHTML,
+		PageNav:      pageNavHTML,
+		TOC:          tocHTML,
+		FaviconLinks: s.faviconLinks,
+		ReadingTime:  readingTime,
+		HasTOC:       hasTOC,
+		ShowSearch:   true,
+		TopNavItems:  topNavItems,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -585,11 +663,12 @@ func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage 
 	}
 
 	data := templates.PageData{
-		SiteTitle:   s.config.Title,
-		PageTitle:   "Build Error",
-		Content:     template.HTML(sb.String()),
-		Navigation:  nav,
-		CurrentPath: "",
+		SiteTitle:    s.config.Title,
+		PageTitle:    "Build Error",
+		Content:      template.HTML(sb.String()),
+		Navigation:   nav,
+		CurrentPath:  "",
+		FaviconLinks: s.faviconLinks,
 	}
 
 	// Get renderer
@@ -624,11 +703,12 @@ func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 <p><a href="/">Return to home</a></p>`
 
 	data := templates.PageData{
-		SiteTitle:   s.config.Title,
-		PageTitle:   "Page Not Found",
-		Content:     template.HTML(content),
-		Navigation:  nav,
-		CurrentPath: "",
+		SiteTitle:    s.config.Title,
+		PageTitle:    "Page Not Found",
+		Content:      template.HTML(content),
+		Navigation:   nav,
+		CurrentPath:  "",
+		FaviconLinks: s.faviconLinks,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -735,14 +815,15 @@ func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, n
 
 	// Prepare template data
 	data := templates.PageData{
-		SiteTitle:   s.config.Title,
-		PageTitle:   node.Name,
-		Content:     htmlContent,
-		Navigation:  nav,
-		CurrentPath: urlPath,
-		Breadcrumbs: breadcrumbsHTML,
-		ShowSearch:  true,
-		TopNavItems: topNavItems,
+		SiteTitle:    s.config.Title,
+		PageTitle:    node.Name,
+		Content:      htmlContent,
+		Navigation:   nav,
+		CurrentPath:  urlPath,
+		Breadcrumbs:  breadcrumbsHTML,
+		FaviconLinks: s.faviconLinks,
+		ShowSearch:   true,
+		TopNavItems:  topNavItems,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)

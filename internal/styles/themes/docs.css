@@ -1,20 +1,34 @@
-/* CSS Variables for theming */
+/* ==========================================================================
+   VOLCANO DOCS THEME - Styling Only
+   ==========================================================================
+   Clean, minimal documentation theme with monochrome aesthetics.
+   Layout is provided by layout.css. This file contains:
+   - Color variables (light/dark modes)
+   - Typography (fonts, sizes, weights)
+   - Borders, shadows, decorations
+   - Syntax highlighting colors
+   ========================================================================== */
+
+/* ==========================================================================
+   CSS VARIABLES - Colors & Typography
+   ========================================================================== */
+
 :root {
+  /* Background colors */
   --bg-primary: #ffffff;
   --bg-secondary: #f5f5f5;
   --bg-tertiary: #e5e5e5;
+
+  /* Text colors */
   --text-primary: #000000;
   --text-secondary: #333333;
   --text-muted: #666666;
+
+  /* UI colors */
   --border-color: #e5e5e5;
   --link-color: #000000;
   --link-hover: #333333;
   --code-bg: #f5f5f5;
-  --sidebar-width: 280px;
-  --toc-width: 220px;
-  --content-max-width: 800px;
-  --transition-speed: 0.2s;
-  --breadcrumbs-height: 48px;
 }
 
 [data-theme="dark"] {
@@ -30,41 +44,15 @@
   --code-bg: #1a1a1a;
 }
 
-/* Reset */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ==========================================================================
+   BASE TYPOGRAPHY
+   ========================================================================== */
 
-/* Base */
 html {
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  scroll-behavior: smooth;
-  /* Prevent horizontal scroll on mobile */
-  overflow-x: hidden;
-}
-
-/* Ensure proper viewport sizing on mobile */
-body {
-  /* Prevent bounce scrolling on iOS */
-  position: relative;
-  min-height: 100vh;
-  /* Ensure consistent layout across mobile browsers */
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-  /* Prevent horizontal scroll */
-  overflow-x: hidden;
-  width: 100%;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
 }
 
 body {
@@ -85,47 +73,29 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Scroll Progress Indicator */
+/* ==========================================================================
+   SCROLL PROGRESS
+   ========================================================================== */
+
 .scroll-progress {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
   background: var(--bg-secondary);
-  z-index: 1000;
 }
 
 .scroll-progress-bar {
-  height: 100%;
   background: var(--text-primary);
-  width: 0;
-  transition: width 0.1s linear;
 }
 
-/* Layout */
+/* ==========================================================================
+   SIDEBAR STYLING
+   ========================================================================== */
+
 .sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: var(--sidebar-width);
-  height: 100vh;
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
-  overflow-y: auto;
-  z-index: 100;
-  transition: transform var(--transition-speed);
-  display: flex;
-  flex-direction: column;
 }
 
 .sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
   border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
 }
 
 .site-title {
@@ -134,39 +104,25 @@ a:hover {
 }
 
 .close-btn {
-  display: none;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-primary);
-  padding: 0.25rem;
 }
 
-/* Navigation Search */
+/* ==========================================================================
+   NAVIGATION SEARCH STYLING
+   ========================================================================== */
+
 .nav-search {
-  padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-}
-
-.search-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
 }
 
 .search-icon {
-  position: absolute;
-  left: 10px;
-  width: 16px;
-  height: 16px;
   color: var(--text-muted);
-  pointer-events: none;
 }
 
 .search-input {
-  width: 100%;
-  padding: 8px 32px 8px 36px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   background: var(--bg-primary);
@@ -184,9 +140,6 @@ a:hover {
 }
 
 .search-clear {
-  position: absolute;
-  right: 8px;
-  padding: 4px;
   background: none;
   border: none;
   cursor: pointer;
@@ -198,60 +151,23 @@ a:hover {
 }
 
 .search-empty {
-  padding: 24px 16px;
-  text-align: center;
   color: var(--text-muted);
   font-size: 14px;
 }
 
-/* Main Wrapper */
-.main-wrapper {
-  margin-left: var(--sidebar-width);
-}
+/* ==========================================================================
+   MOBILE HEADER STYLING
+   ========================================================================== */
 
-.main-wrapper.has-toc {
-  margin-right: 200px; /* Space for floating TOC */
-}
-
-.content {
-  padding: 2rem;
-  min-height: 100vh;
-  /* Better mobile content handling */
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
-.prose {
-  max-width: var(--content-max-width);
-  margin: 0 auto;
-  /* Extra padding so headings near page bottom can scroll to top */
-  padding-bottom: calc(100vh - 200px);
-}
-
-/* Mobile Header Bar */
 .mobile-header {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 48px;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
-  z-index: 200;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 0.75rem;
 }
 
 .mobile-header .mobile-menu-btn,
 .mobile-header .mobile-theme-toggle {
-  display: flex;
   background: none;
   border: none;
-  padding: 0.5rem;
   cursor: pointer;
   color: var(--text-primary);
 }
@@ -267,52 +183,22 @@ a:hover {
   text-decoration: none;
 }
 
-.mobile-header .mobile-theme-toggle .sun-icon {
-  display: none;
-}
+/* ==========================================================================
+   DRAWER BACKDROP STYLING
+   ========================================================================== */
 
-.mobile-header .mobile-theme-toggle .moon-icon {
-  display: block;
-}
-
-[data-theme="dark"] .mobile-header .mobile-theme-toggle .sun-icon {
-  display: block;
-}
-
-[data-theme="dark"] .mobile-header .mobile-theme-toggle .moon-icon {
-  display: none;
-}
-
-
-/* Mobile menu button (used in mobile header) */
-.mobile-menu-btn {
-  display: none;
-}
-
-/* Drawer backdrop */
 .drawer-backdrop {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 90;
-  opacity: 0;
-  transition: opacity var(--transition-speed);
 }
 
-/* Theme toggle */
+/* ==========================================================================
+   THEME TOGGLE STYLING
+   ========================================================================== */
+
 .theme-toggle {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 200;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 0.375rem;
-  padding: 0.5rem;
   cursor: pointer;
   color: var(--text-primary);
 }
@@ -321,51 +207,19 @@ a:hover {
   background-color: var(--bg-tertiary);
 }
 
-.sun-icon {
-  display: none;
-}
+/* ==========================================================================
+   TOP NAVIGATION BAR STYLING
+   ========================================================================== */
 
-.moon-icon {
-  display: block;
-}
-
-[data-theme="dark"] .sun-icon {
-  display: block;
-}
-
-[data-theme="dark"] .moon-icon {
-  display: none;
-}
-
-/* Top Navigation Bar */
 .top-nav {
-  position: fixed;
-  top: 0;
-  left: var(--sidebar-width);
-  right: 0;
   border-bottom: 1px solid var(--border-color);
-  padding: 0 16px;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  z-index: 90;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 48px;
 }
 
 [data-theme="dark"] .top-nav {
   background: rgba(26, 26, 26, 0.8);
-}
-
-.top-nav-list {
-  display: flex;
-  gap: 8px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  overflow-x: auto;
 }
 
 .top-nav-theme-toggle {
@@ -374,9 +228,6 @@ a:hover {
   padding: 0;
   cursor: pointer;
   color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   transition: color 0.2s ease, transform 0.2s ease;
 }
 
@@ -393,28 +244,9 @@ a:hover {
   transform: rotate(20deg);
 }
 
-.top-nav-theme-toggle .sun-icon {
-  display: none;
-}
-
-.top-nav-theme-toggle .moon-icon {
-  display: block;
-}
-
-[data-theme="dark"] .top-nav-theme-toggle .sun-icon {
-  display: block;
-}
-
-[data-theme="dark"] .top-nav-theme-toggle .moon-icon {
-  display: none;
-}
-
 .top-nav-list li a {
-  display: block;
-  padding: 12px 16px;
   color: var(--text-secondary);
   text-decoration: none;
-  white-space: nowrap;
   border-bottom: 2px solid transparent;
 }
 
@@ -427,57 +259,11 @@ a:hover {
   border-bottom-color: var(--text-primary);
 }
 
-/* Adjust content when top nav is present */
-.has-top-nav .main-wrapper {
-  padding-top: 48px;
-}
-
-.has-top-nav .theme-toggle {
-  display: none; /* Hidden when top nav has its own toggle */
-}
-
-.has-top-nav .toc-sidebar {
-  top: 6rem; /* Below top nav */
-}
-
-/* Mobile: top nav scrolls horizontally */
-@media (max-width: 768px) {
-  .top-nav {
-    left: 0;
-    padding: 0 16px;
-  }
-
-  .top-nav-list {
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-/* Tree Navigation */
-.tree-nav {
-  padding: 1rem;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.tree-nav ul {
-  list-style: none;
-}
-
-.tree-nav > ul {
-  padding: 0;
-}
-
-.tree-nav li {
-  margin: 0;
-}
-
-.tree-nav li[hidden] {
-  display: none;
-}
+/* ==========================================================================
+   TREE NAVIGATION STYLING
+   ========================================================================== */
 
 .tree-nav a {
-  display: block;
-  padding: 0.375rem 0.5rem;
   border-radius: 0.25rem;
   color: var(--text-secondary);
   transition: background-color var(--transition-speed), color var(--transition-speed);
@@ -494,21 +280,10 @@ a:hover {
   font-weight: 500;
 }
 
-/* Folder styling */
-.folder-header {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
 .folder-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.25rem;
   color: var(--text-muted);
   transition: color var(--transition-speed);
 }
@@ -517,18 +292,8 @@ a:hover {
   color: var(--text-primary);
 }
 
-.folder-toggle .chevron {
-  transition: transform var(--transition-speed);
-}
-
-.folder.expanded > .folder-header .folder-toggle .chevron {
-  transform: rotate(90deg);
-}
-
 .folder-link,
 .folder-label {
-  flex: 1;
-  padding: 0.375rem 0.5rem;
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -542,54 +307,25 @@ a:hover {
   border-radius: 0.25rem;
 }
 
-.folder-children {
-  display: none;
-  padding-left: 1rem;
-}
+/* ==========================================================================
+   BREADCRUMBS STYLING
+   ========================================================================== */
 
-.folder.expanded > .folder-children {
-  display: block;
-}
-
-/* Breadcrumbs */
 .breadcrumbs {
-  position: -webkit-sticky;
-  position: sticky;
-  top: 0;
-  margin: -1rem -2rem 1.5rem;
-  padding: 0.75rem 2rem;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  z-index: 50;
 }
 
 [data-theme="dark"] .breadcrumbs {
   background: rgba(26, 26, 26, 0.8);
 }
 
-.has-top-nav .breadcrumbs {
-  top: 48px;
-}
-
 .breadcrumbs ol {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  list-style: none;
-  padding: 0;
-  margin: 0;
   font-size: 14px;
 }
 
-.breadcrumbs li {
-  display: flex;
-  align-items: center;
-}
-
 .breadcrumbs li:not(:last-child)::after {
-  content: "›";
-  margin: 0 0.5rem;
   color: var(--text-muted);
 }
 
@@ -605,43 +341,24 @@ a:hover {
   color: var(--text-secondary);
 }
 
-/* Page Meta (Reading Time) */
+/* ==========================================================================
+   PAGE META STYLING
+   ========================================================================== */
+
 .page-meta {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
   font-size: 14px;
   color: var(--text-muted);
 }
 
-.reading-time {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-}
+/* ==========================================================================
+   TABLE OF CONTENTS STYLING
+   ========================================================================== */
 
-.clock-icon {
-  flex-shrink: 0;
-}
-
-/* Table of Contents */
 .toc-sidebar {
-  position: fixed;
-  top: 5rem;
-  right: 1.5rem;
-  width: 180px;
-  max-height: calc(100vh - 8rem);
-  padding: 1rem;
-  overflow-y: auto;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.toc {
-  position: relative;
 }
 
 .toc-title {
@@ -653,28 +370,10 @@ a:hover {
   margin-bottom: 0.75rem;
 }
 
-.toc ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.toc li {
-  margin: 0;
-}
-
-.toc ul ul {
-  padding-left: 0.75rem;
-}
-
 .toc a {
-  display: block;
-  padding: 0.2rem 0;
   font-size: 12px;
   color: var(--text-muted);
   border-left: 2px solid transparent;
-  padding-left: 0.5rem;
-  margin-left: -0.5rem;
   line-height: 1.4;
 }
 
@@ -689,24 +388,18 @@ a:hover {
   border-left-color: var(--text-primary);
 }
 
-/* Page Navigation (Prev/Next) */
+/* ==========================================================================
+   PAGE NAVIGATION STYLING
+   ========================================================================== */
+
 .page-nav {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 3rem;
-  padding-top: 1.5rem;
   border-top: 1px solid var(--border-color);
-  gap: 1rem;
 }
 
 .page-nav-prev,
 .page-nav-next {
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
-  max-width: 45%;
   transition: background-color var(--transition-speed), border-color var(--transition-speed);
 }
 
@@ -715,11 +408,6 @@ a:hover {
   background-color: var(--bg-secondary);
   border-color: var(--text-muted);
   text-decoration: none;
-}
-
-.page-nav-next {
-  text-align: right;
-  margin-left: auto;
 }
 
 .page-nav-label {
@@ -735,34 +423,17 @@ a:hover {
   color: var(--text-primary);
 }
 
-.page-nav-placeholder {
-  flex: 1;
-}
+/* ==========================================================================
+   BACK TO TOP BUTTON STYLING
+   ========================================================================== */
 
-/* Back to Top Button */
 .back-to-top {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 36px;
-  height: 36px;
   border-radius: 50%;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   cursor: pointer;
   color: var(--text-primary);
-  opacity: 0;
-  transform: translateY(10px);
   transition: opacity 0.3s, transform 0.3s, background-color var(--transition-speed);
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.back-to-top.visible {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .back-to-top:hover {
@@ -770,77 +441,26 @@ a:hover {
   border-color: var(--text-muted);
 }
 
-/* Heading Anchors */
+/* ==========================================================================
+   HEADING ANCHORS STYLING
+   ========================================================================== */
+
 .heading-anchor {
-  opacity: 0;
-  margin-left: -24px;
-  padding-right: 8px;
   color: var(--text-muted);
-  transition: opacity var(--transition-speed);
 }
 
-.prose h1:hover .heading-anchor,
-.prose h2:hover .heading-anchor,
-.prose h3:hover .heading-anchor,
-.prose h4:hover .heading-anchor,
-.prose h5:hover .heading-anchor,
-.prose h6:hover .heading-anchor,
-.heading-anchor:focus {
-  opacity: 1;
-}
-
-.anchor-icon {
-  vertical-align: middle;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  scroll-margin-top: 80px;
-}
-
-/* External Link Icon */
-.external-icon {
-  display: inline-block;
-  margin-left: 4px;
-  vertical-align: baseline;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Code Block with Copy Button */
-.code-block {
-  position: relative;
-  margin: 1em 0;
-}
+/* ==========================================================================
+   CODE BLOCK STYLING
+   ========================================================================== */
 
 .copy-button {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 12px;
   color: var(--text-secondary);
   cursor: pointer;
-  opacity: 1; /* Always visible on mobile/touch */
   transition: opacity var(--transition-speed), background-color var(--transition-speed);
-  /* Ensure button works on touch devices */
-  -webkit-tap-highlight-color: transparent;
-  outline: none;
 }
 
 .code-block:hover .copy-button {
@@ -852,68 +472,34 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--bg-secondary);
 }
 
-.copy-button .check-icon {
-  display: none;
-}
-
 .copy-button.copied {
   color: #22863a;
-}
-
-.copy-button.copied .copy-icon {
-  display: none;
-}
-
-.copy-button.copied .check-icon {
-  display: block;
 }
 
 [data-theme="dark"] .copy-button.copied {
   color: #7ee787;
 }
 
-/* Code Line Highlighting */
-.code-block .line {
-  display: block;
-}
-
 .code-block .line.highlight {
   background: rgba(255, 255, 0, 0.1);
-  margin: 0 -1rem;
-  padding: 0 1rem;
 }
 
 [data-theme="dark"] .code-block .line.highlight {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* Admonitions */
+/* ==========================================================================
+   ADMONITION STYLING
+   ========================================================================== */
+
 .admonition {
-  padding: 16px;
-  margin: 16px 0;
   border-left: 4px solid var(--border-color);
   border-radius: 4px;
   background: var(--bg-secondary);
 }
 
 .admonition-heading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
   font-weight: 600;
-}
-
-.admonition-icon {
-  flex-shrink: 0;
-}
-
-.admonition-content p:first-child {
-  margin-top: 0;
-}
-
-.admonition-content p:last-child {
-  margin-bottom: 0;
 }
 
 .admonition-note {
@@ -938,14 +524,15 @@ h1, h2, h3, h4, h5, h6 {
   border-color: var(--text-muted);
 }
 
-/* Keyboard Shortcuts Modal */
+/* ==========================================================================
+   KEYBOARD SHORTCUTS MODAL STYLING
+   ========================================================================== */
+
 .shortcuts-modal {
-  padding: 2rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-primary);
   color: var(--text-primary);
-  max-width: 400px;
 }
 
 .shortcuts-modal::backdrop {
@@ -953,28 +540,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .shortcuts-modal h2 {
-  margin-bottom: 1.5rem;
   font-size: 1.25rem;
 }
 
-.shortcuts-list {
-  display: grid;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.shortcut-group {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.shortcut-group dt {
-  order: 1;
-}
-
 .shortcut-group dd {
-  order: 0;
   color: var(--text-secondary);
 }
 
@@ -990,8 +559,6 @@ kbd {
 }
 
 .close-modal {
-  width: 100%;
-  padding: 0.75rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 4px;
@@ -1004,20 +571,17 @@ kbd {
   background: var(--bg-tertiary);
 }
 
-/* Typography (Prose) */
+/* ==========================================================================
+   TYPOGRAPHY STYLING
+   ========================================================================== */
+
 .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
   font-weight: 600;
   line-height: 1.3;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-  /* Better heading spacing on mobile */
-  word-break: break-word;
-  overflow-wrap: break-word;
 }
 
 .prose h1 {
   font-size: 2rem;
-  margin-top: 0;
 }
 
 .prose h2 {
@@ -1038,27 +602,6 @@ kbd {
   font-size: 1rem;
 }
 
-.prose p {
-  margin: 1em 0;
-  /* Better text flow on mobile */
-  word-break: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-}
-
-.prose ul, .prose ol {
-  margin: 1em 0;
-  padding-left: 1.5em;
-}
-
-.prose li {
-  margin: 0.25em 0;
-}
-
-.prose li > ul, .prose li > ol {
-  margin: 0.25em 0;
-}
-
 .prose code {
   font-family: "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.875em;
@@ -1069,49 +612,27 @@ kbd {
 
 .prose pre {
   background-color: var(--code-bg);
-  padding: 1rem;
   border-radius: 0.375rem;
-  overflow-x: auto;
-  margin: 1em 0;
 }
 
 .prose pre code {
   background: none;
-  padding: 0;
   font-size: 0.875rem;
   line-height: 1.5;
 }
 
 .prose blockquote {
   border-left: 4px solid var(--border-color);
-  padding-left: 1rem;
-  margin: 1em 0;
   color: var(--text-muted);
   font-style: italic;
 }
 
 .prose hr {
-  border: none;
   border-top: 1px solid var(--border-color);
-  margin: 2em 0;
-}
-
-.prose table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1em 0;
-  /* Better mobile table handling */
-  display: block;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .prose th, .prose td {
   border: 1px solid var(--border-color);
-  padding: 0.5rem 0.75rem;
-  text-align: left;
-  /* Prevent table from breaking layout on mobile */
-  min-width: 120px;
 }
 
 .prose th {
@@ -1120,8 +641,6 @@ kbd {
 }
 
 .prose img {
-  max-width: 100%;
-  height: auto;
   border-radius: 0.375rem;
 }
 
@@ -1133,182 +652,14 @@ kbd {
   text-decoration: none;
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  /* Show mobile header bar */
-  .mobile-header {
-    display: flex;
-  }
+/* ==========================================================================
+   PRINT STYLES - Colors
+   ========================================================================== */
 
-  /* Hide desktop theme toggle (mobile-header has its own) */
-  .theme-toggle {
-    display: none !important;
-  }
-
-  .main-wrapper.has-toc {
-    margin-right: 0;
-  }
-
-  .toc-sidebar {
-    display: none;
-  }
-
-  .close-btn {
-    display: flex;
-  }
-
-  .sidebar {
-    transform: translateX(-100%);
-  }
-
-  .main-wrapper {
-    margin-left: 0;
-  }
-
-  /* Row 1: mobile header (48px) */
-  /* Row 2: top nav (48px if present) */
-  /* Row 3: breadcrumbs (sticky in content) */
-  .content {
-    padding: 1rem;
-    padding-top: calc(48px + var(--breadcrumbs-height) + 1rem); /* mobile header + breadcrumbs + spacing */
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-
-  /* When top nav is present, add its height */
-  .has-top-nav .content {
-    padding-top: calc(48px + 48px + var(--breadcrumbs-height) + 1rem); /* mobile header + top nav + breadcrumbs + spacing */
-  }
-
-  /* Top nav sits below mobile header on mobile */
-  .top-nav {
-    top: 48px;
-    left: 0;
-    right: 0;
-    height: auto;
-    padding: 0.5rem 1rem;
-  }
-
-  /* Top nav wraps and centers on mobile */
-  .top-nav-list {
-    flex-wrap: wrap;
-    justify-content: center;
-    overflow-x: visible;
-    gap: 0;
-  }
-
-  .top-nav-list li a {
-    padding: 0.5rem 0.75rem;
-  }
-
-  /* Hide top-nav theme toggle on mobile (mobile header has one) */
-  .top-nav-theme-toggle {
-    display: none !important;
-  }
-
-  /* Breadcrumbs adjust for mobile header */
-  .breadcrumbs {
-    position: fixed;
-    left: 0;
-    right: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0.75rem 1rem;
-    top: 48px;
-    z-index: 95;
-  }
-
-  .has-top-nav .breadcrumbs {
-    top: 96px;
-  }
-
-  /* Copy button always visible on mobile */
-  .copy-button {
-    opacity: 1 !important;
-  }
-
-  .back-to-top {
-    bottom: 16px;
-    right: 16px;
-    width: 32px;
-    height: 32px;
-  }
-
-  .page-nav {
-    flex-direction: column;
-  }
-
-  .page-nav-prev,
-  .page-nav-next {
-    max-width: 100%;
-  }
-
-  .page-nav-next {
-    text-align: left;
-    margin-left: 0;
-  }
-
-  /* Drawer open state */
-  body.drawer-open .sidebar {
-    transform: translateX(0);
-  }
-
-  body.drawer-open .drawer-backdrop {
-    display: block;
-    opacity: 1;
-  }
-
-  body.drawer-open {
-    overflow: hidden;
-  }
-}
-
-/* Hide mobile header when drawer is open */
-body.drawer-open .mobile-header {
-  display: none !important;
-}
-
-body.drawer-open .mobile-menu-btn {
-  display: none !important;
-}
-
-/* Print Stylesheet */
 @media print {
-  .sidebar,
-  .toc-sidebar,
-  .theme-toggle,
-  .mobile-menu-btn,
-  .mobile-header,
-  .copy-button,
-  .page-nav,
-  .heading-anchor,
-  .back-to-top,
-  .scroll-progress,
-  .nav-search,
-  .drawer-backdrop,
-  .top-nav {
-    display: none !important;
-  }
-
   body {
     background: white !important;
     color: black !important;
-  }
-
-  .main-wrapper {
-    margin: 0 !important;
-  }
-
-  .content {
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .prose {
-    max-width: none !important;
   }
 
   a[href^="http"]::after {
@@ -1316,27 +667,16 @@ body.drawer-open .mobile-menu-btn {
     font-size: 0.8em;
     color: #666;
   }
-
-  pre, code, img, table {
-    page-break-inside: avoid;
-  }
-
-  h1, h2, h3, h4 {
-    page-break-after: avoid;
-  }
-
-  @page {
-    margin: 2cm;
-  }
 }
 
-/* Syntax highlighting - Light mode (GitHub-like) */
+/* ==========================================================================
+   SYNTAX HIGHLIGHTING - Light mode (GitHub-like)
+   ========================================================================== */
+
 .chroma { background-color: var(--code-bg); }
-.chroma .lntd { vertical-align: top; padding: 0; margin: 0; border: 0; }
-.chroma .lntable { border-spacing: 0; padding: 0; margin: 0; border: 0; width: auto; overflow: auto; display: block; }
-.chroma .hl { background-color: #ffffcc; display: block; width: 100%; }
-.chroma .lnt { margin-right: 0.4em; padding: 0 0.4em; color: #7f7f7f; }
-.chroma .ln { margin-right: 0.4em; padding: 0 0.4em; color: #7f7f7f; }
+.chroma .hl { background-color: #ffffcc; }
+.chroma .lnt { color: #7f7f7f; }
+.chroma .ln { color: #7f7f7f; }
 .chroma .k { color: #d73a49; font-weight: bold; }
 .chroma .kc { color: #d73a49; font-weight: bold; }
 .chroma .kd { color: #d73a49; font-weight: bold; }
@@ -1392,7 +732,10 @@ body.drawer-open .mobile-menu-btn {
 .chroma .gs { font-weight: bold; }
 .chroma .gu { color: #6f42c1; font-weight: bold; }
 
-/* Syntax highlighting - Dark mode (GitHub Dark-like) */
+/* ==========================================================================
+   SYNTAX HIGHLIGHTING - Dark mode (GitHub Dark-like)
+   ========================================================================== */
+
 [data-theme="dark"] .chroma .hl { background-color: #3b3d42; }
 [data-theme="dark"] .chroma .k { color: #ff7b72; }
 [data-theme="dark"] .chroma .kc { color: #ff7b72; }

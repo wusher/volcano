@@ -32,7 +32,7 @@ type Config struct {
 	Colored     bool
 	SiteURL     string // Base URL for canonical links
 	Author      string // Site author
-	OGImage     string // Default Open Graph image
+	OGImage     string // Path to local OG image file (copied to output)
 	FaviconPath string // Path to favicon file
 	ShowLastMod bool   // Show last modified date
 	TopNav      bool   // Display root files in top navigation bar
@@ -60,6 +60,7 @@ type Generator struct {
 	transformer    *markdown.ContentTransformer
 	logger         *output.Logger
 	faviconLinks   template.HTML
+	ogImageURL     string // Processed OG image URL (absolute if BaseURL provided)
 	topNavItems    []templates.TopNavItem
 	generatedPages []generatedPage // Track pages for link validation
 	baseURL        string          // Base URL path prefix extracted from SiteURL
@@ -125,6 +126,20 @@ func (g *Generator) Generate() (*Result, error) {
 			g.logger.Warning("Failed to process favicon: %v", err)
 		} else {
 			g.faviconLinks = assets.RenderFaviconLinks(links)
+		}
+	}
+
+	// Process OG image if configured
+	if g.config.OGImage != "" {
+		ogConfig := assets.OGImageConfig{
+			ImagePath: g.config.OGImage,
+			BaseURL:   g.config.SiteURL,
+		}
+		ogURL, err := assets.ProcessOGImage(ogConfig, g.config.OutputDir)
+		if err != nil {
+			g.logger.Warning("Failed to process og-image: %v", err)
+		} else {
+			g.ogImageURL = ogURL
 		}
 	}
 
@@ -339,7 +354,7 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		SiteURL:   g.config.SiteURL,
 		SiteTitle: g.config.Title,
 		Author:    g.config.Author,
-		OGImage:   g.config.OGImage,
+		OGImage:   g.ogImageURL, // Use processed URL, not raw path
 	}
 	pageMeta := seo.GeneratePageMeta(page.Title, htmlContent, urlPath, seoConfig)
 	metaTagsHTML := seo.RenderMetaTags(pageMeta)

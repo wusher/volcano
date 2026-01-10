@@ -1,0 +1,974 @@
+/* ==========================================================================
+   VOLCANO LAYOUT CSS
+   ==========================================================================
+   Shared structural CSS for all themes. Contains:
+   - CSS reset
+   - Layout dimensions and positioning
+   - Flexbox/Grid layouts
+   - Mobile responsiveness
+   - Print styles
+
+   Theme files provide colors, fonts, shadows, and decorations.
+   ========================================================================== */
+
+/* CSS Layout Variables - Shared across all themes */
+:root {
+  --sidebar-width: 280px;
+  --toc-width: 220px;
+  --content-max-width: 800px;
+  --transition-speed: 0.2s;
+  --breadcrumbs-height: 48px;
+}
+
+/* ==========================================================================
+   CSS RESET
+   ========================================================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ==========================================================================
+   BASE LAYOUT
+   ========================================================================== */
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  position: relative;
+  min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* ==========================================================================
+   SCROLL PROGRESS INDICATOR
+   ========================================================================== */
+
+.scroll-progress {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 1000;
+}
+
+.scroll-progress-bar {
+  height: 100%;
+  width: 0;
+  transition: width 0.1s linear;
+}
+
+/* ==========================================================================
+   SIDEBAR LAYOUT
+   ========================================================================== */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+  transition: transform var(--transition-speed);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  flex-shrink: 0;
+}
+
+.close-btn {
+  display: none;
+  padding: 0.25rem;
+}
+
+/* ==========================================================================
+   NAVIGATION SEARCH
+   ========================================================================== */
+
+.nav-search {
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 32px 8px 36px;
+}
+
+.search-clear {
+  position: absolute;
+  right: 8px;
+  padding: 4px;
+}
+
+.search-empty {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+/* ==========================================================================
+   MAIN WRAPPER & CONTENT
+   ========================================================================== */
+
+.main-wrapper {
+  margin-left: var(--sidebar-width);
+}
+
+.main-wrapper.has-toc {
+  margin-right: 200px;
+}
+
+.content {
+  padding: 2rem;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.prose {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding-bottom: calc(100vh - 200px);
+}
+
+/* ==========================================================================
+   MOBILE HEADER BAR
+   ========================================================================== */
+
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  z-index: 200;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.75rem;
+}
+
+.mobile-header .mobile-menu-btn,
+.mobile-header .mobile-theme-toggle {
+  display: flex;
+  padding: 0.5rem;
+}
+
+.mobile-menu-btn {
+  display: none;
+}
+
+/* ==========================================================================
+   DRAWER BACKDROP
+   ========================================================================== */
+
+.drawer-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 90;
+  opacity: 0;
+  transition: opacity var(--transition-speed);
+}
+
+/* ==========================================================================
+   THEME TOGGLE
+   ========================================================================== */
+
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 200;
+  padding: 0.5rem;
+}
+
+.sun-icon {
+  display: none;
+}
+
+.moon-icon {
+  display: block;
+}
+
+[data-theme="dark"] .sun-icon {
+  display: block;
+}
+
+[data-theme="dark"] .moon-icon {
+  display: none;
+}
+
+.mobile-header .mobile-theme-toggle .sun-icon {
+  display: none;
+}
+
+.mobile-header .mobile-theme-toggle .moon-icon {
+  display: block;
+}
+
+[data-theme="dark"] .mobile-header .mobile-theme-toggle .sun-icon {
+  display: block;
+}
+
+[data-theme="dark"] .mobile-header .mobile-theme-toggle .moon-icon {
+  display: none;
+}
+
+/* ==========================================================================
+   TOP NAVIGATION BAR
+   ========================================================================== */
+
+.top-nav {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  padding: 0 16px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+}
+
+.top-nav-list {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+}
+
+.top-nav-theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.top-nav-theme-toggle .sun-icon {
+  display: none;
+}
+
+.top-nav-theme-toggle .moon-icon {
+  display: block;
+}
+
+[data-theme="dark"] .top-nav-theme-toggle .sun-icon {
+  display: block;
+}
+
+[data-theme="dark"] .top-nav-theme-toggle .moon-icon {
+  display: none;
+}
+
+.top-nav-list li a {
+  display: block;
+  padding: 12px 16px;
+  white-space: nowrap;
+}
+
+.has-top-nav .main-wrapper {
+  padding-top: 48px;
+}
+
+.has-top-nav .theme-toggle {
+  display: none;
+}
+
+.has-top-nav .toc-sidebar {
+  top: 6rem;
+}
+
+@media (max-width: 768px) {
+  .top-nav {
+    left: 0;
+    padding: 0 16px;
+  }
+
+  .top-nav-list {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ==========================================================================
+   TREE NAVIGATION
+   ========================================================================== */
+
+.tree-nav {
+  padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tree-nav ul {
+  list-style: none;
+}
+
+.tree-nav > ul {
+  padding: 0;
+}
+
+.tree-nav li {
+  margin: 0;
+}
+
+.tree-nav li[hidden] {
+  display: none;
+}
+
+.tree-nav a {
+  display: block;
+  padding: 0.375rem 0.5rem;
+}
+
+.folder-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.folder-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+}
+
+.folder-toggle .chevron {
+  transition: transform var(--transition-speed);
+}
+
+.folder.expanded > .folder-header .folder-toggle .chevron {
+  transform: rotate(90deg);
+}
+
+.folder-link,
+.folder-label {
+  flex: 1;
+  padding: 0.375rem 0.5rem;
+}
+
+.folder-children {
+  display: none;
+  padding-left: 1rem;
+}
+
+.folder.expanded > .folder-children {
+  display: block;
+}
+
+/* ==========================================================================
+   BREADCRUMBS
+   ========================================================================== */
+
+.breadcrumbs {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  margin: -1rem -2rem 1.5rem;
+  padding: 0.75rem 2rem;
+  z-index: 50;
+}
+
+.has-top-nav .breadcrumbs {
+  top: 48px;
+}
+
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.breadcrumbs li {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumbs li:not(:last-child)::after {
+  content: "›";
+  margin: 0 0.5rem;
+}
+
+/* ==========================================================================
+   PAGE META
+   ========================================================================== */
+
+.page-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.reading-time {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.clock-icon {
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   TABLE OF CONTENTS
+   ========================================================================== */
+
+.toc-sidebar {
+  position: fixed;
+  top: 5rem;
+  right: 1.5rem;
+  width: 180px;
+  max-height: calc(100vh - 8rem);
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.toc {
+  position: relative;
+}
+
+.toc ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.toc li {
+  margin: 0;
+}
+
+.toc ul ul {
+  padding-left: 0.75rem;
+}
+
+.toc a {
+  display: block;
+  padding: 0.2rem 0;
+  padding-left: 0.5rem;
+  margin-left: -0.5rem;
+}
+
+/* ==========================================================================
+   PAGE NAVIGATION (Prev/Next)
+   ========================================================================== */
+
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  gap: 1rem;
+}
+
+.page-nav-prev,
+.page-nav-next {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  max-width: 45%;
+}
+
+.page-nav-next {
+  text-align: right;
+  margin-left: auto;
+}
+
+.page-nav-placeholder {
+  flex: 1;
+}
+
+/* ==========================================================================
+   BACK TO TOP BUTTON
+   ========================================================================== */
+
+.back-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 36px;
+  height: 36px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   HEADING ANCHORS
+   ========================================================================== */
+
+.heading-anchor {
+  opacity: 0;
+  margin-left: -24px;
+  padding-right: 8px;
+  transition: opacity var(--transition-speed);
+}
+
+.prose h1:hover .heading-anchor,
+.prose h2:hover .heading-anchor,
+.prose h3:hover .heading-anchor,
+.prose h4:hover .heading-anchor,
+.prose h5:hover .heading-anchor,
+.prose h6:hover .heading-anchor,
+.heading-anchor:focus {
+  opacity: 1;
+}
+
+.anchor-icon {
+  vertical-align: middle;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  scroll-margin-top: 80px;
+}
+
+/* ==========================================================================
+   EXTERNAL LINK ICON
+   ========================================================================== */
+
+.external-icon {
+  display: inline-block;
+  margin-left: 4px;
+  vertical-align: baseline;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ==========================================================================
+   CODE BLOCK LAYOUT
+   ========================================================================== */
+
+.code-block {
+  position: relative;
+  margin: 1em 0;
+}
+
+.copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  opacity: 1;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.copy-button .check-icon {
+  display: none;
+}
+
+.copy-button.copied .copy-icon {
+  display: none;
+}
+
+.copy-button.copied .check-icon {
+  display: block;
+}
+
+.code-block .line {
+  display: block;
+}
+
+.code-block .line.highlight {
+  margin: 0 -1rem;
+  padding: 0 1rem;
+}
+
+/* ==========================================================================
+   ADMONITION LAYOUT
+   ========================================================================== */
+
+.admonition {
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.admonition-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.admonition-icon {
+  flex-shrink: 0;
+}
+
+.admonition-content p:first-child {
+  margin-top: 0;
+}
+
+.admonition-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* ==========================================================================
+   KEYBOARD SHORTCUTS MODAL
+   ========================================================================== */
+
+.shortcuts-modal {
+  padding: 2rem;
+  max-width: 400px;
+}
+
+.shortcuts-modal h2 {
+  margin-bottom: 1.5rem;
+}
+
+.shortcuts-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.shortcut-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.shortcut-group dt {
+  order: 1;
+}
+
+.shortcut-group dd {
+  order: 0;
+}
+
+.close-modal {
+  width: 100%;
+  padding: 0.75rem;
+}
+
+/* ==========================================================================
+   TYPOGRAPHY LAYOUT
+   ========================================================================== */
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.prose h1 {
+  margin-top: 0;
+}
+
+.prose p {
+  margin: 1em 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.prose ul, .prose ol {
+  margin: 1em 0;
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin: 0.25em 0;
+}
+
+.prose li > ul, .prose li > ol {
+  margin: 0.25em 0;
+}
+
+.prose pre {
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.prose pre code {
+  padding: 0;
+}
+
+.prose blockquote {
+  padding-left: 1rem;
+  margin: 1em 0;
+}
+
+.prose hr {
+  border: none;
+  margin: 2em 0;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose th, .prose td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  min-width: 120px;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVE LAYOUT
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .mobile-header {
+    display: flex;
+  }
+
+  .theme-toggle {
+    display: none !important;
+  }
+
+  .main-wrapper.has-toc {
+    margin-right: 0;
+  }
+
+  .toc-sidebar {
+    display: none;
+  }
+
+  .close-btn {
+    display: flex;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .main-wrapper {
+    margin-left: 0;
+  }
+
+  .content {
+    padding: 1rem;
+    padding-top: calc(48px + var(--breadcrumbs-height) + 1rem);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .has-top-nav .content {
+    padding-top: calc(48px + 48px + var(--breadcrumbs-height) + 1rem);
+  }
+
+  .top-nav {
+    top: 48px;
+    left: 0;
+    right: 0;
+    height: auto;
+    padding: 0.5rem 1rem;
+  }
+
+  .top-nav-list {
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: visible;
+    gap: 0;
+  }
+
+  .top-nav-list li a {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .top-nav-theme-toggle {
+    display: none !important;
+  }
+
+  .breadcrumbs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0.75rem 1rem;
+    top: 48px;
+    z-index: 95;
+  }
+
+  .has-top-nav .breadcrumbs {
+    top: 96px;
+  }
+
+  .copy-button {
+    opacity: 1 !important;
+  }
+
+  .back-to-top {
+    bottom: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .page-nav {
+    flex-direction: column;
+  }
+
+  .page-nav-prev,
+  .page-nav-next {
+    max-width: 100%;
+  }
+
+  .page-nav-next {
+    text-align: left;
+    margin-left: 0;
+  }
+
+  body.drawer-open .sidebar {
+    transform: translateX(0);
+  }
+
+  body.drawer-open .drawer-backdrop {
+    display: block;
+    opacity: 1;
+  }
+
+  body.drawer-open {
+    overflow: hidden;
+  }
+}
+
+body.drawer-open .mobile-header {
+  display: none !important;
+}
+
+body.drawer-open .mobile-menu-btn {
+  display: none !important;
+}
+
+/* ==========================================================================
+   PRINT STYLESHEET
+   ========================================================================== */
+
+@media print {
+  .sidebar,
+  .toc-sidebar,
+  .theme-toggle,
+  .mobile-menu-btn,
+  .mobile-header,
+  .copy-button,
+  .page-nav,
+  .heading-anchor,
+  .back-to-top,
+  .scroll-progress,
+  .nav-search,
+  .drawer-backdrop,
+  .top-nav {
+    display: none !important;
+  }
+
+  .main-wrapper {
+    margin: 0 !important;
+  }
+
+  .content {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .prose {
+    max-width: none !important;
+  }
+
+  pre, code, img, table {
+    page-break-inside: avoid;
+  }
+
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+  }
+
+  @page {
+    margin: 2cm;
+  }
+}
+
+/* ==========================================================================
+   CHROMA SYNTAX HIGHLIGHTING LAYOUT
+   ========================================================================== */
+
+.chroma .lntd { vertical-align: top; padding: 0; margin: 0; border: 0; }
+.chroma .lntable { border-spacing: 0; padding: 0; margin: 0; border: 0; width: auto; overflow: auto; display: block; }
+.chroma .hl { display: block; width: 100%; }
+.chroma .lnt { margin-right: 0.4em; padding: 0 0.4em; }
+.chroma .ln { margin-right: 0.4em; padding: 0 0.4em; }
