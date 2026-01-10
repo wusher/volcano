@@ -17,9 +17,13 @@ setup:
 build:
 	go build -o volcano .
 
-# Run tests with race detector
+# Run tests with coverage threshold
 test:
-	go test -race ./...
+	go test -coverprofile=coverage.out ./...
+	@COVERAGE=$$(go tool cover -func=coverage.out | awk '/total/ {gsub("%","",$$3); print $$3}'); \
+		echo "Total coverage: $$COVERAGE%"; \
+		awk -v c="$$COVERAGE" 'BEGIN { exit (c >= 90) ? 0 : 1 }' || (echo "Coverage $$COVERAGE% is below 90% threshold" && exit 1); \
+		rm -f coverage.out
 
 # Run linter
 lint:
