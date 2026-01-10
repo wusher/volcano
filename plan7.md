@@ -1090,47 +1090,368 @@ Then use those exact values in theme-color meta tags.
 
 **Feature**: Add opt-in instant navigation using hover prefetching + DOM morphing
 
-**Requirements**:
-- Add `--instant-nav` CLI flag (disabled by default)
-- Embed minified libraries when flag enabled:
-  - idiomorph (3.3KB) - DOM morphing
-  - instant.page (1KB) - hover prefetching
-- Write integration glue code (~100 lines):
-  - Hook into instant.page prefetch events
-  - Intercept link clicks
-  - Fetch new page HTML
-  - Use idiomorph to morph DOM (preserve state)
-  - Update URL with History API
-  - Handle edge cases:
-    - External links (skip morphing)
-    - Downloads (skip morphing)
-    - Anchor links (smooth scroll, no fetch)
-    - Hash changes
-- Ensure existing JS survives morphing:
-  - Theme toggle state preserved
-  - Search state preserved
-  - Event listeners re-attached if needed
-- Add data attributes for control:
-  - `data-no-instant` to exclude links from instant nav
-- Documentation:
-  - Usage guide
-  - How to adapt custom JavaScript
-  - Performance benefits
-  - Edge cases and limitations
+**Technical Specification**:
+
+**1. Add CLI Flag**
+- **File**: `cmd/config.go`
+- **Change**: Add field to Config struct:
+  ```go
+  InstantNav bool // Enable instant navigation with DOM morphing
+  ```
+- **File**: `cmd/root.go` (or wherever flags are defined)
+- **Change**: Add CLI flag:
+  ```go
+  rootCmd.Flags().BoolVar(&cfg.InstantNav, "instant-nav", false, "Enable instant navigation with DOM morphing and hover prefetching")
+  ```
+
+**2. Embed External Libraries**
+- **New File**: `internal/instant/idiomorph.min.js` (download from CDN, embed using go:embed)
+  - Source: https://unpkg.com/idiomorph@0.3.0/dist/idiomorph.min.js
+  - Size: ~3.3KB minified
+  - License: BSD-2-Clause (compatible)
+
+- **New File**: `internal/instant/instant.page.js` (download from CDN, embed using go:embed)
+  - Source: https://instant.page/5.2.0
+  - Size: ~1KB minified
+  - License: MIT (compatible)
+
+- **New Package**: `internal/instant/embed.go`
+  ```go
+  package instant
+
+  import _ "embed"
+
+  //go:embed idiomorph.min.js
+  var IdiomorphJS string
+
+  //go:embed instant.page.js
+  var InstantPageJS string
+
+  // IntegrationJS is the glue code connecting instant.page and idiomorph
+  const IntegrationJS = `...` // See below
+  ```
+
+**3. Integration JavaScript (Glue Code)**
+- **File**: `internal/instant/embed.go`
+- **Constant**: `IntegrationJS` (~100-150 lines)
+- **Algorithm**:
+  ```javascript
+  (function() {
+      // Configuration
+      const config = {
+          prefetchDelay: 65, // instant.page default
+          morphOptions: {
+              ignoreActiveValue: true, // Preserve form input values
+              callbacks: {
+                  beforeNodeMorphed: function(oldNode, newNode) {
+                      // Preserve theme toggle state
+                      if (oldNode.hasAttribute && oldNode.hasAttribute('data-theme')) {
+                          newNode.setAttribute('data-theme', oldNode.getAttribute('data-theme'));
+                      }
+                      return true;
+                  }
+              }
+          }
+      };
+
+      // Track whether instant.page is actively prefetching
+      let prefetchedPages = new Map(); // URL → HTML content
+
+      // Initialize instant.page with custom prefetch handler
+      // instant.page will handle hover detection and prefetching automatically
+      // We just need to intercept clicks and use the prefetched content
+
+      // Intercept all navigation clicks
+      document.addEventListener('click', function(e) {
+          const link = e.target.closest('a');
+          if (!link) return;
+
+          const href = link.getAttribute('href');
+          if (!href) return;
+
+          // Skip if explicitly opted out
+          if (link.hasAttribute('data-no-instant')) return;
+
+          // Skip external links
+          if (link.hostname !== window.location.hostname) return;
+
+          // Skip downloads (has download attribute)
+          if (link.hasAttribute('download')) return;
+
+          // Skip anchor links on same page
+          if (href.startsWith('#')) {
+              // Let default smooth scroll behavior handle it
+              return;
+          }
+
+          // Skip special protocols
+          if (href.startsWith('mailto:') || href.startsWith('tel:') ||
+              href.startsWith('javascript:')) return;
+
+          // Skip if modifier keys pressed (user wants new tab)
+          if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+
+          // Skip if not left click
+          if (e.button !== 0) return;
+
+          // Intercept the navigation
+          e.preventDefault();
+
+          // Fetch and morph
+          instantNavigate(link.href);
+      }, false);
+
+      // Handle browser back/forward
+      window.addEventListener('popstate', function(e) {
+          instantNavigate(window.location.href, true);
+      });
+
+      async function instantNavigate(url, isPop = false) {
+          try {
+              // Show loading indicator (optional)
+              document.body.style.cursor = 'wait';
+
+              // Fetch the new page
+              const response = await fetch(url);
+              if (!response.ok) {
+                  throw new Error('Network response was not ok');
+              }
+
+              const html = await response.text();
+
+              // Parse the new page
+              const parser = new DOMParser();
+              const newDoc = parser.parseFromString(html, 'text/html');
+
+              // Morph the DOM using idiomorph
+              // Morph head (update title, meta tags)
+              Idiomorph.morph(document.head, newDoc.head, config.morphOptions);
+
+              // Morph body (update content)
+              Idiomorph.morph(document.body, newDoc.body, config.morphOptions);
+
+              // Update URL (unless this is a popstate event)
+              if (!isPop) {
+                  history.pushState(null, '', url);
+              }
+
+              // Re-initialize JavaScript that needs setup
+              // (Most event listeners survive morphing if they're on <body>)
+              reinitializeScripts();
+
+              // Scroll to top (smooth)
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+
+              // Reset cursor
+              document.body.style.cursor = '';
+
+          } catch (error) {
+              console.error('Instant navigation failed, falling back to normal navigation:', error);
+              // Fallback to normal navigation
+              window.location.href = url;
+          }
+      }
+
+      function reinitializeScripts() {
+          // Most scripts use event delegation on document/body and survive morphing
+          // But some might need re-initialization:
+
+          // Example: Re-run TOC scroll spy setup if new page has TOC
+          const tocScript = document.querySelector('script[data-reinit="toc"]');
+          if (tocScript) {
+              // The original scripts are already set up with event delegation
+              // and should work without re-initialization
+          }
+
+          // Dispatch custom event for user scripts
+          document.dispatchEvent(new CustomEvent('instant:navigated', {
+              detail: { url: window.location.href }
+          }));
+      }
+  })();
+  ```
+
+**4. Inject JavaScript When Flag Enabled**
+- **File**: `internal/templates/renderer.go`
+- **Modify**: `PageData` struct:
+  ```go
+  InstantNavJS template.JS // JavaScript for instant navigation (if enabled)
+  ```
+- **Add Function**:
+  ```go
+  func GenerateInstantNavJS(enabled bool) template.JS {
+      if !enabled {
+          return ""
+      }
+
+      // Combine all three scripts
+      js := instant.IdiomorphJS + "\n" +
+            instant.InstantPageJS + "\n" +
+            instant.IntegrationJS
+
+      return template.JS(js)
+  }
+  ```
+
+- **File**: `internal/templates/layout.html`
+- **Change**: Add instant nav scripts at end of `<body>` (before closing tag):
+  ```html
+  {{if .InstantNavJS}}
+  <script>
+  {{.InstantNavJS}}
+  </script>
+  {{end}}
+  </body>
+  ```
+
+**5. Update Generator**
+- **File**: `internal/generator/generator.go`
+- **Modify**: Where `PageData` is populated:
+  ```go
+  pageData := templates.PageData{
+      // ... existing fields ...
+      InstantNavJS: templates.GenerateInstantNavJS(g.config.InstantNav),
+  }
+  ```
+
+**6. Preserve Theme State**
+- **Challenge**: Theme toggle state is stored in `localStorage` and `data-theme` attribute
+- **Solution**: The morphing callback preserves `data-theme` attribute on `<html>` element
+- **Code**: Already included in `beforeNodeMorphed` callback above
+
+**7. Handle Search State**
+- **Challenge**: Search input value and expanded state
+- **Solution**: idiomorph's `ignoreActiveValue: true` preserves form input values
+- **Additional**: Search event listeners use event delegation, survive morphing
+
+**8. Edge Cases**
+
+**External Links**:
+- Check `link.hostname !== window.location.hostname`
+- Skip instant navigation, allow default behavior
+
+**Downloads**:
+- Check for `download` attribute
+- Skip instant navigation
+
+**Anchor Links**:
+- Same page: Let default smooth scroll behavior handle it
+- Different page with hash: Fetch page, morph, then scroll to anchor
+
+**Hash-only Navigation**:
+- URL like `#heading-name`
+- Skip fetch, just smooth scroll
+
+**Modified Clicks** (Ctrl/Cmd+Click):
+- User wants new tab
+- Check `e.ctrlKey || e.metaKey || e.shiftKey`
+- Skip instant navigation
+
+**Right Click / Middle Click**:
+- Check `e.button !== 0`
+- Skip instant navigation
+
+**Forms**:
+- Don't intercept form submissions
+- Only intercept `<a>` tag clicks
+
+**9. Opt-Out Attribute**
+- Add `data-no-instant` to links that shouldn't use instant nav
+- Example use cases:
+  - Logout links
+  - Links that trigger downloads
+  - Links to different authentication state
+  - External links to same domain (edge case)
+
+**Testing**:
+
+**Manual Testing**:
+1. Generate site with `--instant-nav` flag
+2. Verify instant.page and idiomorph scripts are present in HTML
+3. Test navigation:
+   - ✅ Hover over link, verify prefetch in Network tab
+   - ✅ Click link, navigation is instant (no white flash)
+   - ✅ URL updates in address bar
+   - ✅ Page title updates
+   - ✅ Content updates smoothly
+   - ✅ Theme toggle state preserved across navigation
+   - ✅ Search input value preserved if navigating while search is active
+4. Test edge cases:
+   - ✅ External links open normally
+   - ✅ Downloads work (if site has download links)
+   - ✅ Anchor links scroll smoothly without fetch
+   - ✅ Ctrl+Click opens in new tab
+   - ✅ Right-click context menu works
+   - ✅ Browser back button works
+   - ✅ Browser forward button works
+5. Test existing features still work:
+   - ✅ Theme toggle (t key and button)
+   - ✅ Search navigation
+   - ✅ TOC scroll spy
+   - ✅ Copy code buttons
+   - ✅ Back to top button
+   - ✅ Keyboard shortcuts (p, n, h, ?)
+6. Test without flag:
+   - ✅ No instant nav scripts in HTML
+   - ✅ Normal navigation works
+   - ✅ No JavaScript errors
+
+**Performance Testing**:
+1. Measure Time to Interactive (TTI) with/without instant nav
+2. Check Network tab for prefetch requests
+3. Verify navigation speed improvement
+4. Test on slow 3G connection
+5. Verify bundle size increase (~4-5KB)
+
+**Browser Compatibility Testing**:
+- Chrome/Edge (should work perfectly)
+- Firefox (should work perfectly)
+- Safari (should work perfectly)
+- Mobile Chrome (Android)
+- Mobile Safari (iOS)
+
+**Accessibility Testing**:
+- Screen reader navigation still works
+- Focus management after navigation
+- Keyboard navigation works
+- No ARIA violations
 
 **Acceptance Criteria**:
-- Navigation feels instant (no white flash)
-- Pre-fetches on hover (~200-300ms before click)
-- DOM morphs smoothly (only updates changed elements)
-- Theme toggle works across navigations
-- Search state preserved
-- External links open normally
-- Downloads work normally
-- Anchor links smooth scroll
-- Total JS bundle: ~4-5KB added
-- No impact when flag not enabled
+- ✅ CLI flag `--instant-nav` available
+- ✅ When enabled, adds ~4-5KB minified JS to pages
+- ✅ When disabled, no instant nav code present
+- ✅ Navigation feels instant (no white flash)
+- ✅ Hover prefetching works (~65ms delay)
+- ✅ DOM morphs smoothly (only changed elements update)
+- ✅ Theme toggle state preserved across navigation
+- ✅ Search state preserved
+- ✅ All existing JavaScript features work after navigation
+- ✅ External links open normally (not intercepted)
+- ✅ Downloads work normally
+- ✅ Anchor links smooth scroll without fetching
+- ✅ Ctrl/Cmd+Click opens new tab
+- ✅ Browser back/forward buttons work
+- ✅ `data-no-instant` attribute excludes links from instant nav
+- ✅ No JavaScript errors in console
+- ✅ Works in all major browsers
+- ✅ Accessible (screen readers, keyboard nav)
 
-**Estimated Effort**: Large (~100-150 lines integration code + testing + documentation)
+**Documentation Updates**:
+- Update CLAUDE.md:
+  - Document `--instant-nav` flag
+  - Explain hover prefetching behavior
+  - Explain DOM morphing
+  - Show how to opt-out with `data-no-instant`
+  - Document `instant:navigated` custom event for user scripts
+  - Performance benefits
+  - Browser compatibility
+  - Trade-offs (bundle size increase)
+- Add code comments explaining integration
+- Document licenses for external libraries (idiomorph: BSD-2, instant.page: MIT)
+
+**Estimated Effort**: Large (~150-200 lines: 100 integration JS, 50 Go plumbing, 50 testing, documentation)
+
+---
 
 ---
 
@@ -1277,45 +1598,502 @@ Then use those exact values in theme-color meta tags.
 
 **Feature**: Minify all inline JavaScript to reduce page size and improve performance
 
-**Requirements**:
-- Add `github.com/tdewolff/minify/v2` as Go module dependency
-- Minify JavaScript during template loading in `NewRenderer()`:
-  - Extract `<script>` blocks from `layout.html`
-  - Minify each block with `js.Minify()` from tdewolff/minify
-  - Replace original JS with minified version in template
-  - Preserve template variables (e.g., `{{.BaseURL}}`) during minification
-- Apply to both embedded JS blocks:
-  - Theme detection script (~415 bytes)
-  - Main script block (~10.5KB)
-- When instant-nav feature is added: minify idiomorph + instant.page before embedding
-- Error handling: if minification fails, fall back to unminified JS with warning
-- Update CLAUDE.md to document new dependency
-- Always enabled (no flag needed)
-- Optional: Add `--no-minify` flag for debugging if needed later
+**Technical Specification**:
+
+**1. Add Dependency**
+- **File**: `go.mod`
+- **Add**: `github.com/tdewolff/minify/v2 v2.20.0` (or latest stable)
+- **Command**: `go get github.com/tdewolff/minify/v2`
+
+**2. Create Minification Utility**
+- **New File**: `internal/minify/js.go`
+- **Package**: `minify`
+- **Functions**:
+  ```go
+  package minify
+
+  import (
+      "bytes"
+      "log"
+
+      "github.com/tdewolff/minify/v2"
+      "github.com/tdewolff/minify/v2/js"
+  )
+
+  // MinifyJS minifies JavaScript code
+  // Returns minified JS on success, or original JS if minification fails
+  func MinifyJS(input string) string {
+      m := minify.New()
+      m.AddFunc("text/javascript", js.Minify)
+
+      var buf bytes.Buffer
+      if err := m.Minify("text/javascript", &buf, bytes.NewReader([]byte(input))); err != nil {
+          log.Printf("Warning: JavaScript minification failed: %v", err)
+          log.Printf("Falling back to unminified JavaScript")
+          return input
+      }
+
+      return buf.String()
+  }
+
+  // MinifyJSWithTemplates minifies JavaScript while preserving Go template syntax
+  // Handles cases where template variables like {{.BaseURL}} are embedded in JS
+  func MinifyJSWithTemplates(input string) string {
+      // Strategy: Minify as-is
+      // Go template syntax is syntactically valid in JS when used in strings
+      // Example: const url = '{{.BaseURL}}'; // Valid JS, minifier preserves it
+
+      // tdewolff/minify preserves strings and their content
+      // So {{.BaseURL}} inside strings will be preserved
+
+      return MinifyJS(input)
+  }
+  ```
+
+**3. Update Template Renderer**
+- **File**: `internal/templates/renderer.go`
+- **Modify**: `NewRenderer()` function
+
+**Current Code** (approximate):
+```go
+func NewRenderer(css string) (*Renderer, error) {
+    tmplContent, err := layoutFS.ReadFile("layout.html")
+    if err != nil {
+        return nil, err
+    }
+
+    tmpl, err := template.New("layout").Parse(string(tmplContent))
+    if err != nil {
+        return nil, err
+    }
+
+    return &Renderer{
+        tmpl: tmpl,
+        css:  css,
+    }, nil
+}
+```
+
+**New Code**:
+```go
+import (
+    "github.com/wusher/volcano/internal/minify"
+)
+
+func NewRenderer(css string) (*Renderer, error) {
+    tmplContent, err := layoutFS.ReadFile("layout.html")
+    if err != nil {
+        return nil, err
+    }
+
+    // Minify inline JavaScript before parsing template
+    tmplContentStr := string(tmplContent)
+    tmplContentStr = minifyInlineJS(tmplContentStr)
+
+    tmpl, err := template.New("layout").Parse(tmplContentStr)
+    if err != nil {
+        return nil, err
+    }
+
+    return &Renderer{
+        tmpl: tmpl,
+        css:  css,
+    }, nil
+}
+
+// minifyInlineJS finds and minifies all <script> blocks in HTML
+func minifyInlineJS(html string) string {
+    // Simple approach: Extract script blocks, minify, replace
+    // Uses regex to find <script>...</script> blocks
+
+    scriptRegex := regexp.MustCompile(`(?s)<script>(.*?)</script>`)
+
+    result := scriptRegex.ReplaceAllStringFunc(html, func(match string) string {
+        // Extract the JavaScript content
+        jsContent := scriptRegex.FindStringSubmatch(match)[1]
+
+        // Minify the JavaScript
+        minified := minify.MinifyJSWithTemplates(jsContent)
+
+        // Return the script tag with minified content
+        return "<script>" + minified + "</script>"
+    })
+
+    return result
+}
+```
+
+**4. Alternative Implementation (More Robust)**
+If regex approach has issues with nested tags or template syntax, use a more careful parser:
+
+```go
+import (
+    "strings"
+    "golang.org/x/net/html"
+)
+
+func minifyInlineJS(htmlContent string) string {
+    doc, err := html.Parse(strings.NewReader(htmlContent))
+    if err != nil {
+        log.Printf("Warning: Failed to parse HTML for JS minification: %v", err)
+        return htmlContent
+    }
+
+    var processNode func(*html.Node)
+    processNode = func(n *html.Node) {
+        if n.Type == html.ElementNode && n.Data == "script" {
+            // Find the text node child (contains the JavaScript)
+            for c := n.FirstChild; c != nil; c = c.NextSibling {
+                if c.Type == html.TextNode {
+                    // Minify the JavaScript
+                    c.Data = minify.MinifyJSWithTemplates(c.Data)
+                }
+            }
+        }
+        // Recursively process children
+        for c := n.FirstChild; c != nil; c = c.NextSibling {
+            processNode(c)
+        }
+    }
+
+    processNode(doc)
+
+    // Render back to string
+    var buf bytes.Buffer
+    if err := html.Render(&buf, doc); err != nil {
+        log.Printf("Warning: Failed to render HTML after JS minification: %v", err)
+        return htmlContent
+    }
+
+    return buf.String()
+}
+```
+
+**Recommendation**: Start with regex approach (simpler), fall back to HTML parser if needed.
+
+**5. Handle Template Variables**
+- **Challenge**: Go template syntax like `{{.BaseURL}}` embedded in JavaScript
+- **Example**: `const baseURL = '{{.BaseURL}}';`
+- **Solution**: tdewolff/minify preserves string content, so templates stay intact
+- **Testing**: Verify template variables render correctly after minification
+
+**6. Minify Instant Nav Scripts (When Story 4 Implemented)**
+- **File**: `internal/instant/embed.go`
+- **Modify**: When embedding external libraries:
+  ```go
+  package instant
+
+  import (
+      _ "embed"
+      "github.com/wusher/volcano/internal/minify"
+  )
+
+  //go:embed idiomorph.min.js
+  var idiomorphJSRaw string
+
+  //go:embed instant.page.js
+  var instantPageJSRaw string
+
+  // These are already minified from CDN, but run through our minifier
+  // to ensure consistency and verify no issues
+  var IdiomorphJS = minify.MinifyJS(idiomorphJSRaw)
+  var InstantPageJS = minify.MinifyJS(instantPageJSRaw)
+
+  // IntegrationJS should also be minified
+  var IntegrationJS = minify.MinifyJS(`
+  (function() {
+      // ... integration code ...
+  })();
+  `)
+  ```
+
+**7. Error Handling**
+- **Strategy**: If minification fails, fall back to unminified JavaScript
+- **Logging**: Log warning when fallback occurs
+- **Why**: Better to serve working unminified JS than break the site
+- **Code**: Already included in `MinifyJS()` function above
+
+**8. Testing Strategy**
+
+**Unit Tests** (`internal/minify/js_test.go`):
+```go
+package minify
+
+import (
+    "strings"
+    "testing"
+)
+
+func TestMinifyJS(t *testing.T) {
+    tests := []struct {
+        name     string
+        input    string
+        checkFn  func(string) bool // Function to verify output
+    }{
+        {
+            name:  "simple function",
+            input: "function test() { return 42; }",
+            checkFn: func(output string) bool {
+                return len(output) < len("function test() { return 42; }") &&
+                       strings.Contains(output, "test") &&
+                       strings.Contains(output, "42")
+            },
+        },
+        {
+            name:  "with whitespace",
+            input: "const x    =     5;   \n  const y = 10;",
+            checkFn: func(output string) bool {
+                return len(output) < 30 && // Much smaller than input
+                       strings.Contains(output, "x") &&
+                       strings.Contains(output, "y")
+            },
+        },
+        {
+            name:  "preserves functionality",
+            input: "document.addEventListener('click', function() { console.log('test'); });",
+            checkFn: func(output string) bool {
+                return strings.Contains(output, "addEventListener") &&
+                       strings.Contains(output, "click") &&
+                       strings.Contains(output, "console.log")
+            },
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            output := MinifyJS(tt.input)
+            if !tt.checkFn(output) {
+                t.Errorf("Minification test failed\nInput: %s\nOutput: %s", tt.input, output)
+            }
+        })
+    }
+}
+
+func TestMinifyJSWithTemplates(t *testing.T) {
+    tests := []struct {
+        name  string
+        input string
+    }{
+        {
+            name:  "template in string",
+            input: "const url = '{{.BaseURL}}';",
+        },
+        {
+            name:  "multiple templates",
+            input: "const a = '{{.BaseURL}}'; const b = '{{.SiteTitle}}';",
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            output := MinifyJSWithTemplates(tt.input)
+
+            // Verify template syntax preserved
+            if !strings.Contains(output, "{{.") {
+                t.Errorf("Template syntax not preserved in minified output")
+            }
+
+            // Verify output is smaller (spaces removed)
+            if len(output) >= len(tt.input) {
+                t.Errorf("Minification did not reduce size")
+            }
+        })
+    }
+}
+
+func TestMinifyJSFailure(t *testing.T) {
+    // Test that invalid JS returns original input (doesn't crash)
+    invalid := "this is not valid javascript {{"
+    output := MinifyJS(invalid)
+
+    // Should return input when minification fails
+    if output != invalid {
+        t.Errorf("Expected fallback to original input on minification failure")
+    }
+}
+```
+
+**Integration Tests** (`internal/templates/renderer_test.go`):
+```go
+func TestRendererMinifiesJS(t *testing.T) {
+    css := "body { color: red; }"
+    renderer, err := NewRenderer(css)
+    if err != nil {
+        t.Fatalf("Failed to create renderer: %v", err)
+    }
+
+    // Generate a page
+    data := PageData{
+        SiteTitle: "Test",
+        PageTitle: "Test Page",
+        Content:   template.HTML("<p>Test content</p>"),
+        BaseURL:   "/test",
+    }
+
+    html, err := renderer.RenderToString(data)
+    if err != nil {
+        t.Fatalf("Failed to render: %v", err)
+    }
+
+    // Verify JavaScript is present and appears minified
+    if !strings.Contains(html, "<script>") {
+        t.Error("No script tags found in output")
+    }
+
+    // Check for signs of minification (no excessive whitespace)
+    scriptContent := extractScriptContent(html)
+    if strings.Count(scriptContent, "\n\n") > 5 {
+        t.Error("JavaScript appears not to be minified (too many blank lines)")
+    }
+
+    // Verify template variable is present
+    if !strings.Contains(html, "/test") {
+        t.Error("Template variable (BaseURL) not rendered correctly")
+    }
+}
+
+func extractScriptContent(html string) string {
+    start := strings.Index(html, "<script>")
+    end := strings.Index(html, "</script>")
+    if start == -1 || end == -1 {
+        return ""
+    }
+    return html[start+8 : end]
+}
+```
+
+**Manual Testing**:
+1. Build Volcano with minification
+2. Generate a test site: `volcano ./example -o ./output`
+3. Open generated HTML files
+4. Verify in browser dev tools:
+   - ✅ All JavaScript features work:
+     - Theme toggle (t key and button)
+     - Navigation search
+     - Folder expand/collapse
+     - Copy code buttons
+     - Keyboard shortcuts (p, n, h, ?)
+     - TOC scroll spy
+     - Back to top button
+     - Smooth scrolling
+   - ✅ No JavaScript errors in console
+   - ✅ Template variables rendered correctly (check BaseURL in network requests)
+5. View page source:
+   - ✅ JavaScript appears minified (no extra whitespace)
+   - ✅ Script block is much smaller than before
+6. Check file sizes:
+   - ✅ HTML files are smaller (~8KB per page)
+7. Test in multiple browsers:
+   - Chrome/Edge
+   - Firefox
+   - Safari
+   - Mobile browsers
+
+**Performance Testing**:
+```bash
+# Measure before minification
+ls -lh output/index.html
+
+# Measure after minification
+ls -lh output/index.html
+
+# Should see ~8KB reduction per page
+```
+
+**Lighthouse Testing**:
+- Run Lighthouse on generated site
+- Verify improved scores for:
+  - Performance
+  - First Contentful Paint (FCP)
+  - Largest Contentful Paint (LCP)
+  - Total Blocking Time (TBT)
+
+**9. Rollback Strategy**
+If minification causes issues, add temporary flag to disable:
+
+```go
+// In cmd/config.go
+type Config struct {
+    // ... existing fields ...
+    NoMinify bool // Disable JavaScript minification (for debugging)
+}
+
+// In internal/templates/renderer.go
+func NewRenderer(css string, noMinify bool) (*Renderer, error) {
+    tmplContent, err := layoutFS.ReadFile("layout.html")
+    if err != nil {
+        return nil, err
+    }
+
+    tmplContentStr := string(tmplContent)
+
+    // Only minify if not disabled
+    if !noMinify {
+        tmplContentStr = minifyInlineJS(tmplContentStr)
+    }
+
+    // ... rest of function ...
+}
+```
 
 **Acceptance Criteria**:
-- JavaScript size reduced by 70-80% (~11KB → ~2-3KB)
-- All JavaScript functionality works correctly (theme toggle, search, navigation, etc.)
-- No runtime errors from minification
-- Build completes successfully with minified JS
-- Template variables preserved and working
-- Generated HTML contains minified inline JS
+- ✅ `github.com/tdewolff/minify/v2` added to `go.mod`
+- ✅ JavaScript size reduced by 70-80% (~11KB → ~2-3KB)
+- ✅ All JavaScript functionality works correctly:
+  - ✅ Theme toggle (button and 't' key)
+  - ✅ Navigation search and filtering
+  - ✅ Folder expand/collapse
+  - ✅ Copy code buttons
+  - ✅ TOC scroll spy
+  - ✅ Back to top button
+  - ✅ Keyboard shortcuts (p, n, h, ?, /)
+  - ✅ Smooth scrolling (TOC links, anchors)
+  - ✅ Breadcrumbs navigation
+- ✅ No runtime JavaScript errors in console
+- ✅ Build completes successfully
+- ✅ Template variables ({{.BaseURL}}, etc.) preserved and rendered correctly
+- ✅ Generated HTML contains minified inline JavaScript
+- ✅ Minification errors are gracefully handled (fallback to unminified)
+- ✅ Works in all major browsers (Chrome, Firefox, Safari, Edge)
+- ✅ Works on mobile devices (iOS Safari, Android Chrome)
+- ✅ HTML file sizes reduced by ~8KB per page
+- ✅ Lighthouse performance scores improved
 
-**Testing**:
-- Verify theme toggle works
-- Verify navigation search works
-- Verify copy buttons work
-- Verify keyboard shortcuts work
-- Verify TOC scroll spy works
-- Verify all interactive features function correctly
-- Test in multiple browsers (Chrome, Firefox, Safari)
+**Documentation Updates**:
+- Update CLAUDE.md:
+  - Document new dependency: `github.com/tdewolff/minify/v2`
+  - Explain that JS is always minified (no flag needed)
+  - Note: this is a build-time dependency only (users don't need it)
+  - Mention performance benefits (~8KB per page saved)
+- Update `go.mod`:
+  - Add tdewolff/minify dependency
+- Add code comments:
+  - Explain minification process in `renderer.go`
+  - Document fallback behavior in `minify/js.go`
 
-**Estimated Effort**: Small-Medium (~50-100 lines Go code + testing)
+**Estimated Effort**: Small-Medium (~100-150 lines: 50 minify package, 50 integration, 50 tests)
 
 **Performance Impact**:
-- Saves ~8KB per page load
-- Faster page loads (especially on mobile/slow connections)
-- Better Core Web Vitals scores
-- Improved SEO from page speed
+- **Page Size**: Reduces by ~8KB per page (~70-80% JS reduction)
+- **Load Time**: Faster on slow connections
+  - 3G: ~0.5-1s improvement
+  - 4G: ~0.1-0.3s improvement
+  - WiFi: ~0.05-0.1s improvement
+- **Core Web Vitals**:
+  - FCP (First Contentful Paint): Improved
+  - LCP (Largest Contentful Paint): Improved
+  - TBT (Total Blocking Time): Improved (less JS to parse)
+- **SEO**: Better rankings from improved page speed scores
+- **Bandwidth**: Site with 1000 views/day saves ~10MB/day
+
+**Trade-offs**:
+- **Pro**: Significant performance improvement
+- **Pro**: Pure Go solution (no external tools needed)
+- **Pro**: Automatic, always-on (no flags to remember)
+- **Pro**: Graceful fallback on minification errors
+- **Con**: Adds Go module dependency (~100KB in go.mod)
+- **Con**: Slightly longer build time (~50-100ms per build)
+- **Con**: Minified JS harder to debug (but browser dev tools format it automatically)
+- **Con**: Need to test that template variables still work
 
 ---
