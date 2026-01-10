@@ -71,7 +71,19 @@
 - Pros: Zero complexity, user has full control
 - Cons: User needs to test in both modes, some colors won't work well
 
-**Verdict**: TBD - HSL computation vs simple approach
+**Option C: Generate Tints & Shades**
+- User provides base color: `--accent-color="#ff6600"`
+- Compute dark variant (almost black): mix with black (e.g., 95% black + 5% accent)
+- Compute light variant (almost white): mix with white (e.g., 95% white + 5% accent)
+- Creates 3 CSS variables: `--accent`, `--accent-dark`, `--accent-light`
+- Use cases:
+  - `--accent` for main interactive elements (works in both modes if chosen well)
+  - `--accent-light` for subtle backgrounds in light mode
+  - `--accent-dark` for subtle backgrounds in dark mode
+- Pros: One input creates mini palette, subtle branded backgrounds, flexible
+- Cons: Still need color math (simpler than HSL though), more variables to manage
+
+**Verdict**: TBD - simple same-color vs tints/shades approach
 
 ---
 
