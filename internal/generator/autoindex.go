@@ -28,7 +28,7 @@ func (g *Generator) generateAutoIndex(node *tree.Node, root *tree.Node) error {
 		SiteURL:   g.config.SiteURL,
 		SiteTitle: g.config.Title,
 		Author:    g.config.Author,
-		OGImage:   g.config.OGImage,
+		OGImage:   g.ogImageURL, // Use processed URL, not raw path
 	}
 	pageMeta := seo.GeneratePageMeta(index.Title, string(htmlContent), index.URLPath, seoConfig)
 	metaTagsHTML := seo.RenderMetaTags(pageMeta)
