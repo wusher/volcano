@@ -22,3 +22,7 @@ Volcano is packed with features to help you create beautiful documentation sites
 - **[[auto-index]]** — Automatic folder index pages
 - **[[reading-time]]** — Estimated reading time display
 - **[[seo-and-meta]]** — Auto-generated SEO tags
+
+## Quality
+
+- **[[reference/cli#link-validation|Link validation]]** — Automatic broken link detection during build
