@@ -77,6 +77,13 @@ jobs:
       - name: Test serve command output
         run: |
           timeout 3s ./volcano -s ./example 2>&1 | grep -qE "(Serving|Live server)" && echo "Serve command works" || true
+      - name: Test base URL prefixing
+        run: |
+          ./volcano -o ./url-test-output --url="https://wusher.github.io/volcano/" ./example
+          # Verify navigation links are prefixed with /volcano/
+          grep -q 'href="/volcano/' ./url-test-output/index.html && echo "Base URL prefixing works"
+          # Verify 404 page has prefixed home link
+          grep -q 'href="/volcano/"' ./url-test-output/404.html && echo "404 base URL works"
 
   docs:
     runs-on: ubuntu-latest

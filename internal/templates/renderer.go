@@ -39,6 +39,7 @@ type PageData struct {
 	HasTOC       bool          // Whether to show TOC sidebar
 	ShowSearch   bool          // Whether to show nav search
 	TopNavItems  []TopNavItem  // Items for top navigation bar (when --top-nav enabled)
+	BaseURL      string        // Base URL path prefix for all links (e.g., "/volcano")
 }
 
 // Renderer handles HTML template rendering
@@ -82,13 +83,18 @@ func (r *Renderer) RenderToString(data PageData) (string, error) {
 
 // RenderNavigation renders the navigation tree as HTML
 func RenderNavigation(root *tree.Node, currentPath string) template.HTML {
+	return RenderNavigationWithBaseURL(root, currentPath, "")
+}
+
+// RenderNavigationWithBaseURL renders the navigation tree as HTML with base URL prefixing
+func RenderNavigationWithBaseURL(root *tree.Node, currentPath, baseURL string) template.HTML {
 	var buf bytes.Buffer
-	renderNavNode(&buf, root.Children, currentPath, 0)
+	renderNavNode(&buf, root.Children, currentPath, 0, baseURL)
 	return template.HTML(buf.String())
 }
 
 // renderNavNode recursively renders navigation nodes
-func renderNavNode(buf *bytes.Buffer, nodes []*tree.Node, currentPath string, depth int) {
+func renderNavNode(buf *bytes.Buffer, nodes []*tree.Node, currentPath string, depth int, baseURL string) {
 	if len(nodes) == 0 {
 		return
 	}
@@ -97,9 +103,9 @@ func renderNavNode(buf *bytes.Buffer, nodes []*tree.Node, currentPath string, de
 
 	for _, node := range nodes {
 		if node.IsFolder {
-			renderFolderNode(buf, node, currentPath, depth)
+			renderFolderNode(buf, node, currentPath, depth, baseURL)
 		} else {
-			renderFileNode(buf, node, currentPath)
+			renderFileNode(buf, node, currentPath, baseURL)
 		}
 	}
 
@@ -107,7 +113,7 @@ func renderNavNode(buf *bytes.Buffer, nodes []*tree.Node, currentPath string, de
 }
 
 // renderFolderNode renders a folder node with its children
-func renderFolderNode(buf *bytes.Buffer, node *tree.Node, currentPath string, depth int) {
+func renderFolderNode(buf *bytes.Buffer, node *tree.Node, currentPath string, depth int, baseURL string) {
 	buf.WriteString("<li role=\"treeitem\" class=\"folder\" data-search-text=\"")
 	buf.WriteString(template.HTMLEscapeString(node.Name))
 	buf.WriteString("\">\n")
@@ -124,18 +130,20 @@ func renderFolderNode(buf *bytes.Buffer, node *tree.Node, currentPath string, de
 	if node.HasIndex {
 		folderURL = tree.GetURLPath(&tree.Node{Path: node.IndexPath})
 	}
+	// Apply base URL prefix
+	prefixedURL := tree.PrefixURL(baseURL, folderURL)
 	active := ""
 	if folderURL == currentPath {
 		active = " active"
 	}
-	buf.WriteString("<a href=\"" + template.HTMLEscapeString(folderURL) + "\" class=\"folder-link" + active + "\">" + template.HTMLEscapeString(node.Name) + "</a>\n")
+	buf.WriteString("<a href=\"" + template.HTMLEscapeString(prefixedURL) + "\" class=\"folder-link" + active + "\">" + template.HTMLEscapeString(node.Name) + "</a>\n")
 
 	buf.WriteString("</div>\n")
 
 	// Render children
 	if len(node.Children) > 0 {
 		buf.WriteString("<div class=\"folder-children\">\n")
-		renderNavNode(buf, node.Children, currentPath, depth+1)
+		renderNavNode(buf, node.Children, currentPath, depth+1, baseURL)
 		buf.WriteString("</div>\n")
 	}
 
@@ -143,8 +151,9 @@ func renderFolderNode(buf *bytes.Buffer, node *tree.Node, currentPath string, de
 }
 
 // renderFileNode renders a file node as a link
-func renderFileNode(buf *bytes.Buffer, node *tree.Node, currentPath string) {
+func renderFileNode(buf *bytes.Buffer, node *tree.Node, currentPath string, baseURL string) {
 	urlPath := tree.GetURLPath(node)
+	prefixedURL := tree.PrefixURL(baseURL, urlPath)
 	active := ""
 	if urlPath == currentPath {
 		active = " active"
@@ -153,7 +162,7 @@ func renderFileNode(buf *bytes.Buffer, node *tree.Node, currentPath string) {
 	buf.WriteString("<li role=\"treeitem\" data-search-text=\"")
 	buf.WriteString(template.HTMLEscapeString(node.Name))
 	buf.WriteString("\">\n")
-	buf.WriteString("<a href=\"" + template.HTMLEscapeString(urlPath) + "\" class=\"file-link" + active + "\">" + template.HTMLEscapeString(node.Name) + "</a>\n")
+	buf.WriteString("<a href=\"" + template.HTMLEscapeString(prefixedURL) + "\" class=\"file-link" + active + "\">" + template.HTMLEscapeString(node.Name) + "</a>\n")
 	buf.WriteString("</li>\n")
 }
 
@@ -161,6 +170,11 @@ func renderFileNode(buf *bytes.Buffer, node *tree.Node, currentPath string) {
 // Returns nil if topNav is disabled or there are no eligible items
 // Items are sorted: files first, then folders, each sorted by date/number/name
 func BuildTopNavItems(root *tree.Node, topNav bool) []TopNavItem {
+	return BuildTopNavItemsWithBaseURL(root, topNav, "")
+}
+
+// BuildTopNavItemsWithBaseURL extracts root-level items for top navigation bar with base URL prefixing
+func BuildTopNavItemsWithBaseURL(root *tree.Node, topNav bool, baseURL string) []TopNavItem {
 	if !topNav || root == nil {
 		return nil
 	}
@@ -220,12 +234,13 @@ func BuildTopNavItems(root *tree.Node, topNav bool) []TopNavItem {
 		return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 	})
 
-	// Build top nav items
+	// Build top nav items with base URL prefixing
 	var items []TopNavItem
 	for _, node := range rootItems {
+		urlPath := tree.GetURLPath(node)
 		items = append(items, TopNavItem{
 			Name: node.Name,
-			URL:  tree.GetURLPath(node),
+			URL:  tree.PrefixURL(baseURL, urlPath),
 		})
 	}
 
@@ -242,23 +257,29 @@ func topNavNumberForSort(n *int) int {
 
 // RenderNavigationWithTopNav renders navigation excluding root files when top nav is enabled
 func RenderNavigationWithTopNav(root *tree.Node, currentPath string, topNavItems []TopNavItem) template.HTML {
+	return RenderNavigationWithTopNavAndBaseURL(root, currentPath, topNavItems, "")
+}
+
+// RenderNavigationWithTopNavAndBaseURL renders navigation with top nav filtering and base URL prefixing
+func RenderNavigationWithTopNavAndBaseURL(root *tree.Node, currentPath string, topNavItems []TopNavItem, baseURL string) template.HTML {
 	if len(topNavItems) == 0 {
-		return RenderNavigation(root, currentPath)
+		return RenderNavigationWithBaseURL(root, currentPath, baseURL)
 	}
 
-	// Create a set of URLs to exclude from sidebar
+	// Create a set of URLs to exclude from sidebar (use unprefixed URLs for comparison)
 	topNavURLs := make(map[string]bool)
 	for _, item := range topNavItems {
+		// Store the original URL path (without base prefix) for exclusion matching
 		topNavURLs[item.URL] = true
 	}
 
 	var buf bytes.Buffer
-	renderNavNodeFiltered(&buf, root.Children, currentPath, 0, topNavURLs)
+	renderNavNodeFiltered(&buf, root.Children, currentPath, 0, topNavURLs, baseURL)
 	return template.HTML(buf.String())
 }
 
 // renderNavNodeFiltered renders nav nodes, filtering out specified URLs
-func renderNavNodeFiltered(buf *bytes.Buffer, nodes []*tree.Node, currentPath string, depth int, excludeURLs map[string]bool) {
+func renderNavNodeFiltered(buf *bytes.Buffer, nodes []*tree.Node, currentPath string, depth int, excludeURLs map[string]bool, baseURL string) {
 	if len(nodes) == 0 {
 		return
 	}
@@ -266,15 +287,19 @@ func renderNavNodeFiltered(buf *bytes.Buffer, nodes []*tree.Node, currentPath st
 	buf.WriteString("<ul role=\"tree\">\n")
 
 	for _, node := range nodes {
-		// Skip excluded files
-		if !node.IsFolder && excludeURLs[tree.GetURLPath(node)] {
-			continue
+		// Skip excluded files - compare against prefixed URL since that's what's in excludeURLs
+		if !node.IsFolder {
+			urlPath := tree.GetURLPath(node)
+			prefixedURL := tree.PrefixURL(baseURL, urlPath)
+			if excludeURLs[prefixedURL] {
+				continue
+			}
 		}
 
 		if node.IsFolder {
-			renderFolderNode(buf, node, currentPath, depth)
+			renderFolderNode(buf, node, currentPath, depth, baseURL)
 		} else {
-			renderFileNode(buf, node, currentPath)
+			renderFileNode(buf, node, currentPath, baseURL)
 		}
 	}
 

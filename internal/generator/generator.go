@@ -61,6 +61,7 @@ type Generator struct {
 	faviconLinks   template.HTML
 	topNavItems    []templates.TopNavItem
 	generatedPages []generatedPage // Track pages for link validation
+	baseURL        string          // Base URL path prefix extracted from SiteURL
 }
 
 // New creates a new Generator
@@ -76,11 +77,21 @@ func New(config Config, writer io.Writer) (*Generator, error) {
 		return nil, fmt.Errorf("failed to create renderer: %w", err)
 	}
 
+	// Extract base URL path from SiteURL for prefixing all links
+	baseURL := tree.PrefixURL(config.SiteURL, "/")
+	if baseURL == "/" {
+		baseURL = ""
+	} else {
+		// Remove trailing slash from base URL path
+		baseURL = baseURL[:len(baseURL)-1]
+	}
+
 	return &Generator{
 		config:   config,
 		renderer: renderer,
 		parser:   markdown.NewParser(),
 		logger:   output.NewLogger(writer, config.Colored, config.Quiet, config.Verbose),
+		baseURL:  baseURL,
 	}, nil
 }
 
@@ -129,8 +140,8 @@ func (g *Generator) Generate() (*Result, error) {
 	g.logger.Println("Found %d markdown files in %d folders", len(site.AllPages), folderCount)
 	g.logger.Println("")
 
-	// Build top nav items if enabled
-	g.topNavItems = templates.BuildTopNavItems(site.Root, g.config.TopNav)
+	// Build top nav items if enabled (with base URL prefixing)
+	g.topNavItems = templates.BuildTopNavItemsWithBaseURL(site.Root, g.config.TopNav, g.config.SiteURL)
 	if len(g.topNavItems) > 0 {
 		g.logger.Verbose("Using top navigation bar with %d items", len(g.topNavItems))
 	}
@@ -338,14 +349,14 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		lastModified = content.FormatLastModified(mod, false) // Use absolute format
 	}
 
-	// Build breadcrumbs
-	breadcrumbs := navigation.BuildBreadcrumbs(node, g.config.Title)
+	// Build breadcrumbs (with base URL prefixing)
+	breadcrumbs := navigation.BuildBreadcrumbsWithBaseURL(node, g.config.Title, g.config.SiteURL)
 	breadcrumbsHTML := navigation.RenderBreadcrumbs(breadcrumbs)
 
-	// Build page navigation (only if enabled)
+	// Build page navigation (only if enabled, with base URL prefixing)
 	var pageNavHTML template.HTML
 	if g.config.ShowPageNav {
-		pageNav := navigation.BuildPageNavigation(node, allPages)
+		pageNav := navigation.BuildPageNavigationWithBaseURL(node, allPages, g.config.SiteURL)
 		pageNavHTML = navigation.RenderPageNavigation(pageNav)
 	}
 
@@ -364,8 +375,8 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 	pageMeta := seo.GeneratePageMeta(page.Title, htmlContent, urlPath, seoConfig)
 	metaTagsHTML := seo.RenderMetaTags(pageMeta)
 
-	// Render navigation (filtered when top nav is enabled)
-	nav := templates.RenderNavigationWithTopNav(root, urlPath, g.topNavItems)
+	// Render navigation (filtered when top nav is enabled, with base URL prefixing)
+	nav := templates.RenderNavigationWithTopNavAndBaseURL(root, urlPath, g.topNavItems, g.config.SiteURL)
 
 	// Prepare template data
 	data := templates.PageData{
@@ -384,6 +395,7 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		HasTOC:       hasTOC,
 		ShowSearch:   true,
 		TopNavItems:  g.topNavItems,
+		BaseURL:      g.baseURL,
 	}
 
 	// Create output directory
@@ -414,11 +426,16 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 
 // generate404 generates the 404 error page
 func (g *Generator) generate404(root *tree.Node) error {
-	content := `<h1>404 - Page Not Found</h1>
+	// Build home URL with base URL prefix
+	homeURL := "/"
+	if g.baseURL != "" {
+		homeURL = g.baseURL + "/"
+	}
+	content := fmt.Sprintf(`<h1>404 - Page Not Found</h1>
 <p>The page you're looking for doesn't exist.</p>
-<p><a href="/">Return to home</a></p>`
+<p><a href="%s">Return to home</a></p>`, homeURL)
 
-	nav := templates.RenderNavigation(root, "")
+	nav := templates.RenderNavigationWithBaseURL(root, "", g.config.SiteURL)
 
 	data := templates.PageData{
 		SiteTitle:   g.config.Title,
@@ -426,6 +443,7 @@ func (g *Generator) generate404(root *tree.Node) error {
 		Content:     template.HTML(content),
 		Navigation:  nav,
 		CurrentPath: "",
+		BaseURL:     g.baseURL,
 	}
 
 	fullPath := filepath.Join(g.config.OutputDir, "404.html")

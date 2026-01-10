@@ -23,6 +23,11 @@ type PageNavigation struct {
 
 // BuildPageNavigation creates prev/next navigation for a page
 func BuildPageNavigation(currentNode *tree.Node, allPages []*tree.Node) PageNavigation {
+	return BuildPageNavigationWithBaseURL(currentNode, allPages, "")
+}
+
+// BuildPageNavigationWithBaseURL creates prev/next navigation for a page with base URL prefixing
+func BuildPageNavigationWithBaseURL(currentNode *tree.Node, allPages []*tree.Node, baseURL string) PageNavigation {
 	if currentNode == nil || len(allPages) == 0 {
 		return PageNavigation{}
 	}
@@ -45,9 +50,10 @@ func BuildPageNavigation(currentNode *tree.Node, allPages []*tree.Node) PageNavi
 	// Previous page
 	if currentIdx > 0 {
 		prevNode := allPages[currentIdx-1]
+		urlPath := tree.GetURLPath(prevNode)
 		nav.Previous = &NavLink{
 			Title:   prevNode.Name,
-			URL:     tree.GetURLPath(prevNode),
+			URL:     tree.PrefixURL(baseURL, urlPath),
 			Section: getSection(prevNode),
 		}
 	}
@@ -55,9 +61,10 @@ func BuildPageNavigation(currentNode *tree.Node, allPages []*tree.Node) PageNavi
 	// Next page
 	if currentIdx < len(allPages)-1 {
 		nextNode := allPages[currentIdx+1]
+		urlPath := tree.GetURLPath(nextNode)
 		nav.Next = &NavLink{
 			Title:   nextNode.Name,
-			URL:     tree.GetURLPath(nextNode),
+			URL:     tree.PrefixURL(baseURL, urlPath),
 			Section: getSection(nextNode),
 		}
 	}
