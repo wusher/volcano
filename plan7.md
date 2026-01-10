@@ -250,8 +250,35 @@
 **Option C: Fuse.js (Fuzzy Search)**
 - Generate simple JSON index
 - Include Fuse.js (~15KB minified) for fuzzy matching
-- Pros: Typo-tolerant, smaller than Lunr, simple
-- Cons: Still a dependency, less powerful ranking
+- Pros: Typo-tolerant, smaller than Lunr, simple API
+- Cons: Still a dependency, can be slow on huge datasets (1000+ pages)
+
+**Option D: FlexSearch**
+- Lightweight (~6KB minified), extremely fast
+- Claims to be faster and more memory-efficient than Fuse/Lunr
+- Supports multi-language indexing and custom scoring
+- Generate simple JSON index
+- Pros: Very fast even on large datasets, small size, good balance
+- Cons: Still a dependency, slightly more complex API than Fuse
+
+**Option E: MiniSearch**
+- Tiny (~8KB minified), full-text search with minimal resources
+- Can add/remove documents from index dynamically
+- Built-in support for prefix search, fuzzy matching, boosting
+- Pros: Small size, flexible, good documentation, pure JS
+- Cons: Still a dependency, newer/less battle-tested than Lunr
+
+**Option F: ElasticLunr**
+- Fork of Lunr.js with more features (query-time boosting, field search)
+- Faster than original Lunr
+- Pros: More flexible than Lunr, familiar API for Lunr users
+- Cons: Larger than other options, still heavyweight
+
+**Recommendation**:
+- **For zero-dependency purists**: Option A (Custom) - keeps Volcano truly dependency-free
+- **For best balance**: Option D (FlexSearch) or Option E (MiniSearch) - small, fast, modern
+- **For proven stability**: Option B (Lunr) - battle-tested but heavier
+- **If fuzzy matching is priority**: Option C (Fuse) - but watch performance on large sites
 
 **Build-Time Index Generation**:
 1. During `generator.Generate()`, collect all page data:
