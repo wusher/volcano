@@ -205,9 +205,9 @@ html {
   margin-left: var(--sidebar-width);
 }
 
-/* Extra right margin when TOC sidebar is present */
+/* TOC is hidden in vanilla theme, no margin needed */
 .main-wrapper.has-toc {
-  margin-right: 200px;
+  margin-right: 0;
 }
 
 /* Inner content container */
@@ -305,6 +305,75 @@ html {
 }
 
 [data-theme="dark"] .moon-icon {
+  display: none;
+}
+
+
+/* =============================================================================
+   MOBILE HEADER BAR
+   =============================================================================
+   Fixed header bar on mobile with menu button, site title, and theme toggle.
+   Row 1: [menu button] [site title] [theme toggle]
+   ============================================================================= */
+
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.75rem;
+}
+
+.mobile-header .mobile-menu-btn,
+.mobile-header .mobile-theme-toggle {
+  position: absolute;
+  display: flex;
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.mobile-header .mobile-menu-btn {
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.mobile-header .mobile-theme-toggle {
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.mobile-header .mobile-site-title {
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.mobile-header .mobile-site-title:hover {
+  text-decoration: none;
+}
+
+.mobile-header .mobile-theme-toggle .sun-icon {
+  display: none;
+}
+
+.mobile-header .mobile-theme-toggle .moon-icon {
+  display: block;
+}
+
+[data-theme="dark"] .mobile-header .mobile-theme-toggle .sun-icon {
+  display: block;
+}
+
+[data-theme="dark"] .mobile-header .mobile-theme-toggle .moon-icon {
   display: none;
 }
 
@@ -598,13 +667,7 @@ html {
    ============================================================================= */
 
 .toc-sidebar {
-  position: fixed;
-  top: 5rem;
-  right: 1.5rem;
-  width: 180px;
-  max-height: calc(100vh - 8rem);
-  padding: 1rem;
-  overflow-y: auto;
+  display: none;
 }
 
 .toc {
@@ -1160,17 +1223,7 @@ kbd {
    - Removes the right margin that made space for TOC
    ============================================================================= */
 
-@media (max-width: 1280px) {
-  /* Remove right margin since TOC is hidden */
-  .main-wrapper.has-toc {
-    margin-right: 0;
-  }
-
-  /* Hide table of contents sidebar */
-  .toc-sidebar {
-    display: none;
-  }
-}
+/* TOC is always hidden in vanilla theme, no responsive rules needed */
 
 
 /* =============================================================================
@@ -1184,9 +1237,14 @@ kbd {
    ============================================================================= */
 
 @media (max-width: 768px) {
-  /* Show mobile menu (hamburger) button */
-  .mobile-menu-btn {
+  /* Show mobile header bar */
+  .mobile-header {
     display: flex;
+  }
+
+  /* Hide desktop theme toggle (mobile-header has its own) */
+  .theme-toggle {
+    display: none !important;
   }
 
   /* Show close button in sidebar header */
@@ -1204,15 +1262,60 @@ kbd {
     margin-left: 0;
   }
 
-  /* Adjust content padding for mobile */
+  /* Row 1: mobile header (48px) */
+  /* Row 2: top nav (48px if present) */
+  /* Row 3: breadcrumbs (sticky in content) */
   .content {
-    padding: 4rem 1rem 2rem;  /* Extra top padding for menu button */
+    padding: 1rem;
+    padding-top: calc(48px + 1rem); /* mobile header height + spacing */
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
-  /* Reposition theme toggle */
-  .theme-toggle {
-    top: 1rem;
-    right: 1rem;
+  /* When top nav is present, add its height */
+  .has-top-nav .content {
+    padding-top: calc(48px + 48px + 1rem); /* mobile header + top nav + spacing */
+  }
+
+  /* Top nav sits below mobile header on mobile */
+  .top-nav {
+    top: 48px;
+    left: 0;
+    right: 0;
+    height: auto;
+    padding: 0.5rem 1rem;
+  }
+
+  /* Top nav wraps and centers on mobile */
+  .top-nav-list {
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: visible;
+    gap: 0;
+  }
+
+  .top-nav-list li a {
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Hide top-nav theme toggle on mobile (mobile header has one) */
+  .top-nav-theme-toggle {
+    display: none !important;
+  }
+
+  /* Breadcrumbs adjust for mobile header */
+  .breadcrumbs {
+    top: 0;
+  }
+
+  .has-top-nav .breadcrumbs {
+    top: 0;
+  }
+
+  /* Copy button always visible on mobile */
+  .copy-button {
+    opacity: 1 !important;
   }
 
   /* Smaller back-to-top button on mobile */
@@ -1238,12 +1341,6 @@ kbd {
     margin-left: 0;
   }
 
-  /* Top nav spans full width on mobile */
-  .top-nav {
-    left: 0;
-    padding: 0 16px;
-  }
-
   /* =========================================================================
      DRAWER OPEN STATE
      =========================================================================
@@ -1267,7 +1364,11 @@ kbd {
   }
 }
 
-/* Hide mobile menu button when drawer is open (close button takes over) */
+/* Hide mobile header when drawer is open */
+body.drawer-open .mobile-header {
+  display: none !important;
+}
+
 body.drawer-open .mobile-menu-btn {
   display: none !important;
 }
@@ -1286,13 +1387,15 @@ body.drawer-open .mobile-menu-btn {
   .toc-sidebar,
   .theme-toggle,
   .mobile-menu-btn,
+  .mobile-header,
   .copy-button,
   .page-nav,
   .heading-anchor,
   .back-to-top,
   .scroll-progress,
   .nav-search,
-  .drawer-backdrop {
+  .drawer-backdrop,
+  .top-nav {
     display: none !important;
   }
 

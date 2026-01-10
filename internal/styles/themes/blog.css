@@ -384,6 +384,80 @@ a:hover {
 
 
 /* ============================================================================
+   MOBILE HEADER BAR
+   ============================================================================
+   Fixed header bar on mobile with menu button, site title, and theme toggle.
+   Row 1: [menu button] [site title] [theme toggle]
+   ============================================================================ */
+
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.75rem;
+  font-family: var(--font-serif);
+}
+
+.mobile-header .mobile-menu-btn,
+.mobile-header .mobile-theme-toggle {
+  position: absolute;
+  display: flex;
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.mobile-header .mobile-menu-btn {
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.mobile-header .mobile-theme-toggle {
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.mobile-header .mobile-site-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.mobile-header .mobile-site-title:hover {
+  text-decoration: none;
+}
+
+.mobile-header .mobile-theme-toggle .sun-icon {
+  display: none;
+}
+
+.mobile-header .mobile-theme-toggle .moon-icon {
+  display: block;
+}
+
+[data-theme="dark"] .mobile-header .mobile-theme-toggle .sun-icon {
+  display: block;
+}
+
+[data-theme="dark"] .mobile-header .mobile-theme-toggle .moon-icon {
+  display: none;
+}
+
+
+/* ============================================================================
    TOP NAVIGATION BAR
    ============================================================================
    Optional horizontal nav bar at top for root-level pages.
@@ -1368,8 +1442,14 @@ kbd {
     font-size: 17px;                  /* Slightly smaller on mobile */
   }
 
-  .mobile-menu-btn {
+  /* Show mobile header bar */
+  .mobile-header {
     display: flex;
+  }
+
+  /* Hide desktop theme toggle (mobile-header has its own) */
+  .theme-toggle {
+    display: none !important;
   }
 
   .close-btn {
@@ -1385,8 +1465,62 @@ kbd {
     margin-left: 0;
   }
 
+  /* Row 1: mobile header (48px) */
+  /* Row 2: top nav (48px if present) */
+  /* Row 3: breadcrumbs (sticky in content) */
   .content {
-    padding: 4rem 1.25rem 2rem;
+    padding: 1.25rem;
+    padding-top: calc(48px + 1.25rem); /* mobile header height + spacing */
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* When top nav is present, add its height */
+  .has-top-nav .content {
+    padding-top: calc(48px + 48px + 1.25rem); /* mobile header + top nav + spacing */
+  }
+
+  /* Top nav sits below mobile header on mobile */
+  .top-nav {
+    top: 48px;
+    left: 0;
+    right: 0;
+    height: auto;
+    padding: 0.5rem 1rem;
+  }
+
+  /* Top nav wraps and centers on mobile */
+  .top-nav-list {
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: visible;
+    gap: 0;
+  }
+
+  .top-nav-list li a {
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Hide top-nav theme toggle on mobile (mobile header has one) */
+  .top-nav-theme-toggle {
+    display: none !important;
+  }
+
+  /* Breadcrumbs adjust for mobile header */
+  .breadcrumbs {
+    margin: 0 -1.25rem 1.5rem;
+    padding: 0.75rem 1.25rem;
+    top: 0;
+  }
+
+  .has-top-nav .breadcrumbs {
+    top: 0;
+  }
+
+  /* Copy button always visible on mobile */
+  .copy-button {
+    opacity: 1 !important;
   }
 
   .prose h1 {
@@ -1395,11 +1529,6 @@ kbd {
 
   .prose h2 {
     font-size: 1.5rem;
-  }
-
-  .theme-toggle {
-    top: 1rem;
-    right: 1rem;
   }
 
   .back-to-top {
@@ -1448,7 +1577,11 @@ kbd {
   }
 }
 
-/* Hide menu button when drawer is open */
+/* Hide mobile header when drawer is open */
+body.drawer-open .mobile-header {
+  display: none !important;
+}
+
 body.drawer-open .mobile-menu-btn {
   display: none !important;
 }
@@ -1467,13 +1600,15 @@ body.drawer-open .mobile-menu-btn {
   .toc-sidebar,
   .theme-toggle,
   .mobile-menu-btn,
+  .mobile-header,
   .copy-button,
   .page-nav,
   .heading-anchor,
   .back-to-top,
   .scroll-progress,
   .nav-search,
-  .drawer-backdrop {
+  .drawer-backdrop,
+  .top-nav {
     display: none !important;
   }
 
