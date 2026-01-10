@@ -41,7 +41,7 @@ func ExtractInternalLinks(htmlContent string) []string {
 }
 
 // ValidateLinks checks if all internal links resolve to valid URLs in the site.
-// validURLs should be a map of all valid URL paths in the site.
+// validURLs should be a map of all valid URL paths in the site (including base URL prefix if applicable).
 // Returns a list of broken links.
 func ValidateLinks(htmlContent string, sourcePage string, validURLs map[string]bool) []BrokenLink {
 	links := ExtractInternalLinks(htmlContent)

@@ -18,11 +18,15 @@ func NewContentTransformer(siteURL string) *ContentTransformer {
 // Transform applies all content transformations to HTML content.
 // This includes:
 // - Adding heading anchors for linkable sections
+// - Prefixing internal links with base URL path
 // - Processing external links (adding target="_blank" and icons)
 // - Wrapping code blocks with copy buttons
 func (t *ContentTransformer) Transform(htmlContent string) string {
 	// Add heading anchors
 	htmlContent = AddHeadingAnchors(htmlContent)
+
+	// Prefix internal links with base URL path (must be before ProcessExternalLinks)
+	htmlContent = PrefixInternalLinks(htmlContent, t.siteURL)
 
 	// Process external links
 	htmlContent = ProcessExternalLinks(htmlContent, t.siteURL)

@@ -892,3 +892,73 @@ func TestIntegrationBaseURLNoSubpath(t *testing.T) {
 		t.Error("No subpath: JavaScript baseURL should be empty")
 	}
 }
+
+// Test: Base URL Prefixing for Content Links (Wiki Links)
+func TestIntegrationBaseURLContentLinks(t *testing.T) {
+	// Create a temp directory with markdown files that have wiki links
+	inputDir := t.TempDir()
+	outputDir := t.TempDir()
+
+	// Create a markdown file with wiki links
+	pageContent := `# Test Page
+
+This page has [[other-page|a wiki link]] and a regular [markdown link](/docs/page/).
+
+![Image](/images/logo.png)
+`
+	if err := os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(pageContent), 0644); err != nil {
+		t.Fatalf("Failed to write test file: %v", err)
+	}
+
+	// Create the other-page so links are valid
+	otherContent := `# Other Page
+
+Content here.
+`
+	if err := os.WriteFile(filepath.Join(inputDir, "other-page.md"), []byte(otherContent), 0644); err != nil {
+		t.Fatalf("Failed to write other-page file: %v", err)
+	}
+
+	// Create a docs folder with a page
+	docsDir := filepath.Join(inputDir, "docs")
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatalf("Failed to create docs dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Docs Page\n"), 0644); err != nil {
+		t.Fatalf("Failed to write docs/page file: %v", err)
+	}
+
+	// Create an images directory (even if empty, for link validation)
+	imagesDir := filepath.Join(outputDir, "images")
+	if err := os.MkdirAll(imagesDir, 0755); err != nil {
+		t.Fatalf("Failed to create images dir: %v", err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, "--url=https://wusher.github.io/volcano/", "--title=Test Site", inputDir}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	// Read the generated HTML
+	content, err := os.ReadFile(filepath.Join(outputDir, "test", "index.html"))
+	if err != nil {
+		t.Fatalf("Failed to read test/index.html: %v", err)
+	}
+	html := string(content)
+
+	// Verify wiki link is prefixed with /volcano/
+	if !strings.Contains(html, `href="/volcano/other-page/"`) {
+		t.Error("Content links: wiki link should be prefixed with /volcano/")
+	}
+
+	// Verify markdown link is prefixed with /volcano/
+	if !strings.Contains(html, `href="/volcano/docs/page/"`) {
+		t.Error("Content links: markdown link should be prefixed with /volcano/")
+	}
+
+	// Verify image src is prefixed with /volcano/
+	if !strings.Contains(html, `src="/volcano/images/logo.png"`) {
+		t.Error("Content resources: image src should be prefixed with /volcano/")
+	}
+}

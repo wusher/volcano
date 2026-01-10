@@ -84,8 +84,17 @@ func (n *Node) ModTime() time.Time {
 
 // BuildValidURLMap creates a map of all valid URLs from a site structure.
 // This is used for validating internal links in generated content.
-func BuildValidURLMap(site *Site) map[string]bool {
+// If baseURL is provided (e.g., "https://example.com/volcano/"), URLs will be prefixed with the base path.
+func BuildValidURLMap(site *Site, baseURL string) map[string]bool {
 	validURLs := make(map[string]bool)
+
+	// Extract base path from baseURL
+	basePath := extractBasePath(baseURL)
+
+	// Add root URL (with or without base path)
+	if basePath != "" {
+		validURLs[basePath+"/"] = true
+	}
 	validURLs["/"] = true
 
 	// Add all page URLs
@@ -93,19 +102,32 @@ func BuildValidURLMap(site *Site) map[string]bool {
 		urlPath := GetURLPath(node)
 		if urlPath != "" {
 			validURLs[urlPath] = true
+			// Also add prefixed version if base URL provided
+			if basePath != "" {
+				validURLs[basePath+urlPath] = true
+			}
 		}
 	}
 
 	// Add folder URLs (for auto-index pages)
-	addFolderURLs(site.Root, validURLs)
+	addFolderURLs(site.Root, validURLs, basePath)
 
 	return validURLs
 }
 
 // BuildValidURLMapWithAutoIndex creates a map of all valid URLs including specific auto-index folders.
 // The autoIndexFolders parameter contains additional folders that will have auto-generated indexes.
-func BuildValidURLMapWithAutoIndex(allPages []*Node, autoIndexFolders []*Node) map[string]bool {
+// If baseURL is provided (e.g., "https://example.com/volcano/"), URLs will be prefixed with the base path.
+func BuildValidURLMapWithAutoIndex(allPages []*Node, autoIndexFolders []*Node, baseURL string) map[string]bool {
 	validURLs := make(map[string]bool)
+
+	// Extract base path from baseURL
+	basePath := extractBasePath(baseURL)
+
+	// Add root URL (with or without base path)
+	if basePath != "" {
+		validURLs[basePath+"/"] = true
+	}
 	validURLs["/"] = true
 
 	// Add all page URLs
@@ -113,6 +135,10 @@ func BuildValidURLMapWithAutoIndex(allPages []*Node, autoIndexFolders []*Node) m
 		urlPath := GetURLPath(node)
 		if urlPath != "" {
 			validURLs[urlPath] = true
+			// Also add prefixed version if base URL provided
+			if basePath != "" {
+				validURLs[basePath+urlPath] = true
+			}
 		}
 	}
 
@@ -120,13 +146,17 @@ func BuildValidURLMapWithAutoIndex(allPages []*Node, autoIndexFolders []*Node) m
 	for _, folder := range autoIndexFolders {
 		urlPath := "/" + SlugifyPath(folder.Path) + "/"
 		validURLs[urlPath] = true
+		// Also add prefixed version if base URL provided
+		if basePath != "" {
+			validURLs[basePath+urlPath] = true
+		}
 	}
 
 	return validURLs
 }
 
 // addFolderURLs recursively adds folder URLs to the map
-func addFolderURLs(node *Node, validURLs map[string]bool) {
+func addFolderURLs(node *Node, validURLs map[string]bool, basePath string) {
 	if node == nil {
 		return
 	}
@@ -134,9 +164,13 @@ func addFolderURLs(node *Node, validURLs map[string]bool) {
 	if node.IsFolder && node.Path != "" {
 		urlPath := "/" + SlugifyPath(node.Path) + "/"
 		validURLs[urlPath] = true
+		// Also add prefixed version if base path provided
+		if basePath != "" {
+			validURLs[basePath+urlPath] = true
+		}
 	}
 
 	for _, child := range node.Children {
-		addFolderURLs(child, validURLs)
+		addFolderURLs(child, validURLs, basePath)
 	}
 }
