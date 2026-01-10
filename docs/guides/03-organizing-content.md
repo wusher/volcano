@@ -132,8 +132,8 @@ Example:
 
 ```
 guides/
-├── 2024-01-15-news.md      # 1st (has date, sorted by date)
-├── 2024-01-20-update.md    # 2nd
+├── 2024-01-20-update.md    # 1st (has date, newest first)
+├── 2024-01-15-news.md      # 2nd
 ├── 01-intro.md             # 3rd (number prefix)
 ├── 02-basics.md            # 4th
 ├── advanced.md             # 5th (alphabetical)
