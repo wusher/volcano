@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/wusher/volcano/internal/assets"
+	"github.com/wusher/volcano/internal/autoindex"
 	"github.com/wusher/volcano/internal/content"
 	"github.com/wusher/volcano/internal/markdown"
 	"github.com/wusher/volcano/internal/navigation"
@@ -56,7 +57,7 @@ type generatedPage struct {
 type Generator struct {
 	config         Config
 	renderer       *templates.Renderer
-	parser         *markdown.Parser
+	transformer    *markdown.ContentTransformer
 	logger         *output.Logger
 	faviconLinks   template.HTML
 	topNavItems    []templates.TopNavItem
@@ -66,8 +67,13 @@ type Generator struct {
 
 // New creates a new Generator
 func New(config Config, writer io.Writer) (*Generator, error) {
-	// Get CSS content - from file if specified, otherwise from theme
-	css, err := getCSS(config)
+	// Get CSS content using the shared CSSLoader
+	cssConfig := styles.CSSConfig{
+		Theme:   config.Theme,
+		CSSPath: config.CSSPath,
+	}
+	cssLoader := styles.NewCSSLoader(cssConfig, os.ReadFile)
+	css, err := cssLoader.LoadCSS()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load CSS: %w", err)
 	}
@@ -87,11 +93,11 @@ func New(config Config, writer io.Writer) (*Generator, error) {
 	}
 
 	return &Generator{
-		config:   config,
-		renderer: renderer,
-		parser:   markdown.NewParser(),
-		logger:   output.NewLogger(writer, config.Colored, config.Quiet, config.Verbose),
-		baseURL:  baseURL,
+		config:      config,
+		renderer:    renderer,
+		transformer: markdown.NewContentTransformer(config.SiteURL),
+		logger:      output.NewLogger(writer, config.Colored, config.Quiet, config.Verbose),
+		baseURL:     baseURL,
 	}, nil
 }
 
@@ -157,7 +163,7 @@ func (g *Generator) Generate() (*Result, error) {
 	}
 
 	// Step 4: Generate auto-index pages for folders without index.md
-	foldersNeedingIndex := collectFoldersNeedingAutoIndex(site.Root)
+	foldersNeedingIndex := autoindex.CollectFoldersNeedingAutoIndex(site.Root)
 	if len(foldersNeedingIndex) > 0 {
 		g.logger.Verbose("Generating auto-index pages for %d folders...", len(foldersNeedingIndex))
 		for _, folder := range foldersNeedingIndex {
@@ -187,7 +193,7 @@ func (g *Generator) Generate() (*Result, error) {
 
 	// Step 7: Verify all internal links in content resolve
 	g.logger.Verbose("Verifying internal links in content...")
-	validURLs := g.buildValidURLMap(site.AllPages, foldersNeedingIndex)
+	validURLs := tree.BuildValidURLMapWithAutoIndex(site.AllPages, foldersNeedingIndex)
 	brokenContentLinks := g.verifyContentLinks(validURLs)
 	if len(brokenContentLinks) > 0 {
 		g.logger.Println("")
@@ -237,30 +243,6 @@ func (g *Generator) verifyLinks(allPages []*tree.Node) []string {
 	return broken
 }
 
-// buildValidURLMap creates a map of all valid URLs in the site
-func (g *Generator) buildValidURLMap(allPages []*tree.Node, autoIndexFolders []*tree.Node) map[string]bool {
-	validURLs := make(map[string]bool)
-
-	// Add root URL
-	validURLs["/"] = true
-
-	// Add all page URLs
-	for _, node := range allPages {
-		urlPath := tree.GetURLPath(node)
-		if urlPath != "" {
-			validURLs[urlPath] = true
-		}
-	}
-
-	// Add auto-index folder URLs
-	for _, folder := range autoIndexFolders {
-		urlPath := "/" + tree.SlugifyPath(folder.Path) + "/"
-		validURLs[urlPath] = true
-	}
-
-	return validURLs
-}
-
 // verifyContentLinks checks all internal links in generated page content
 func (g *Generator) verifyContentLinks(validURLs map[string]bool) []markdown.BrokenLink {
 	var allBroken []markdown.BrokenLink
@@ -302,9 +284,6 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		return err
 	}
 
-	// Process admonitions before parsing
-	mdContent = []byte(markdown.ProcessAdmonitions(string(mdContent)))
-
 	// Compute source directory for wikilink resolution
 	// e.g., "guides/customizing-appearance.md" -> "/guides/"
 	relDir := filepath.Dir(node.Path)
@@ -313,30 +292,20 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		sourceDir = "/" + tree.SlugifyPath(relDir) + "/"
 	}
 
-	// Parse the preprocessed content
-	page, err := markdown.ParseContent(
+	// Transform markdown to HTML with all enhancements
+	page, err := g.transformer.TransformMarkdown(
 		mdContent,
+		sourceDir,
 		node.SourcePath,
 		outputPath,
 		urlPath,
-		sourceDir,
 		node.Name, // fallback title
 	)
 	if err != nil {
 		return err
 	}
 
-	// Process content enhancements
 	htmlContent := page.Content
-
-	// Add heading anchors
-	htmlContent = markdown.AddHeadingAnchors(htmlContent)
-
-	// Process external links
-	htmlContent = markdown.ProcessExternalLinks(htmlContent, g.config.SiteURL)
-
-	// Wrap code blocks with copy button
-	htmlContent = markdown.WrapCodeBlocks(htmlContent)
 
 	// Calculate reading time
 	rt := content.CalculateReadingTime(htmlContent)
@@ -454,19 +423,4 @@ func (g *Generator) generate404(root *tree.Node) error {
 	defer func() { _ = f.Close() }()
 
 	return g.renderer.Render(f, data)
-}
-
-// getCSS returns minified CSS content from custom file or embedded theme
-func getCSS(config Config) (string, error) {
-	var css string
-	if config.CSSPath != "" {
-		content, err := os.ReadFile(config.CSSPath)
-		if err != nil {
-			return "", err
-		}
-		css = string(content)
-	} else {
-		css = styles.GetCSS(config.Theme)
-	}
-	return styles.MinifyCSS(css)
 }

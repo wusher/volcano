@@ -28,14 +28,6 @@ type TreeScanner interface {
 	Scan(dir string) (*tree.Site, error)
 }
 
-// PageRenderer abstracts page rendering for testability
-type PageRenderer interface {
-	// RenderPage renders a markdown file to HTML
-	RenderPage(sourcePath, outputPath, urlPath, fallbackTitle, siteTitle string, nav any) ([]byte, error)
-	// Render404 renders a 404 page
-	Render404(siteTitle string, nav any) ([]byte, error)
-}
-
 // osFileSystem is the default FileSystem using the os package
 type osFileSystem struct{}
 

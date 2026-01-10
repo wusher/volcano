@@ -2,6 +2,7 @@ package markdown
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -73,7 +74,7 @@ func AddHeadingAnchors(htmlContent string) string {
 
 		slug := baseSlug
 		if count, exists := seenIDs[baseSlug]; exists {
-			slug = baseSlug + "-" + itoa(count)
+			slug = baseSlug + "-" + strconv.Itoa(count)
 			seenIDs[baseSlug] = count + 1
 		} else {
 			seenIDs[baseSlug] = 1
@@ -132,20 +133,4 @@ func escapeAttr(s string) string {
 	s = strings.ReplaceAll(s, "<", "&lt;")
 	s = strings.ReplaceAll(s, ">", "&gt;")
 	return s
-}
-
-// itoa converts int to string
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	if n < 0 {
-		return "-" + itoa(-n)
-	}
-	var digits []byte
-	for n > 0 {
-		digits = append([]byte{byte('0' + n%10)}, digits...)
-		n /= 10
-	}
-	return string(digits)
 }

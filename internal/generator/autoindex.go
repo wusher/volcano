@@ -1,161 +1,23 @@
 package generator
 
 import (
-	"html/template"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
 
+	"github.com/wusher/volcano/internal/autoindex"
 	"github.com/wusher/volcano/internal/navigation"
 	"github.com/wusher/volcano/internal/seo"
 	"github.com/wusher/volcano/internal/templates"
 	"github.com/wusher/volcano/internal/tree"
 )
 
-// IndexItem represents an item in an auto-generated folder index
-type IndexItem struct {
-	Title    string
-	URL      string
-	IsFolder bool
-}
-
-// AutoIndex represents an auto-generated index page for a folder
-type AutoIndex struct {
-	FolderNode *tree.Node
-	Title      string
-	Children   []IndexItem
-	OutputPath string
-	URLPath    string
-}
-
-// NeedsAutoIndex determines if a folder needs an auto-generated index
-func NeedsAutoIndex(node *tree.Node) bool {
-	if !node.IsFolder {
-		return false
-	}
-
-	// Check if folder already has an index file
-	if node.HasIndex {
-		return false
-	}
-
-	// Check for index.md or readme.md in children by looking at the Path (filename)
-	for _, child := range node.Children {
-		if !child.IsFolder {
-			// Use the path's base name instead of the display name (which could be H1 title)
-			baseName := strings.TrimSuffix(filepath.Base(child.Path), filepath.Ext(child.Path))
-			lower := strings.ToLower(baseName)
-			if lower == "index" || lower == "readme" {
-				return false
-			}
-		}
-	}
-
-	return true
-}
-
-// BuildAutoIndex creates an AutoIndex for a folder
-func BuildAutoIndex(node *tree.Node) AutoIndex {
-	return BuildAutoIndexWithBaseURL(node, "")
-}
-
-// BuildAutoIndexWithBaseURL creates an AutoIndex for a folder with base URL prefixing
-func BuildAutoIndexWithBaseURL(node *tree.Node, baseURL string) AutoIndex {
-	var items []IndexItem
-
-	for _, child := range node.Children {
-		url := tree.GetURLPath(child)
-		// For folders, construct the URL from the path
-		if child.IsFolder {
-			url = "/" + tree.SlugifyPath(child.Path) + "/"
-		}
-		// Apply base URL prefix
-		prefixedURL := tree.PrefixURL(baseURL, url)
-		items = append(items, IndexItem{
-			Title:    child.Name,
-			URL:      prefixedURL,
-			IsFolder: child.IsFolder,
-		})
-	}
-
-	// Sort: files first, then folders, then alphabetically
-	// (matches the tree navigation sort order)
-	sort.Slice(items, func(i, j int) bool {
-		if items[i].IsFolder != items[j].IsFolder {
-			return !items[i].IsFolder // files first
-		}
-		return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
-	})
-
-	slugPath := tree.SlugifyPath(node.Path)
-	urlPath := "/" + slugPath + "/"
-	outputPath := filepath.Join(slugPath, "index.html")
-	if node.Path == "" || node.Path == "." {
-		urlPath = "/"
-		outputPath = "index.html"
-	}
-
-	return AutoIndex{
-		FolderNode: node,
-		Title:      node.Name,
-		Children:   items,
-		OutputPath: outputPath,
-		URLPath:    urlPath,
-	}
-}
-
-// RenderAutoIndexContent generates HTML content for an auto-generated index page
-func RenderAutoIndexContent(index AutoIndex) template.HTML {
-	var sb strings.Builder
-
-	sb.WriteString(`<article class="auto-index-page">`)
-	sb.WriteString("\n")
-	sb.WriteString(`<h1>`)
-	sb.WriteString(template.HTMLEscapeString(index.Title))
-	sb.WriteString(`</h1>`)
-	sb.WriteString("\n")
-
-	if len(index.Children) > 0 {
-		sb.WriteString(`<ul class="folder-index">`)
-		sb.WriteString("\n")
-		for _, item := range index.Children {
-			itemClass := "page-item"
-			if item.IsFolder {
-				itemClass = "folder-item"
-			}
-			sb.WriteString(`<li class="`)
-			sb.WriteString(itemClass)
-			sb.WriteString(`">`)
-			sb.WriteString("\n")
-			sb.WriteString(`<a href="`)
-			sb.WriteString(item.URL)
-			sb.WriteString(`">`)
-			sb.WriteString(template.HTMLEscapeString(item.Title))
-			sb.WriteString(`</a>`)
-			sb.WriteString("\n")
-			sb.WriteString(`</li>`)
-			sb.WriteString("\n")
-		}
-		sb.WriteString(`</ul>`)
-		sb.WriteString("\n")
-	} else {
-		sb.WriteString(`<p class="empty-folder">This folder is empty.</p>`)
-		sb.WriteString("\n")
-	}
-
-	sb.WriteString(`</article>`)
-
-	return template.HTML(sb.String())
-}
-
 // generateAutoIndex generates an auto-index page for a folder without an index.md
 func (g *Generator) generateAutoIndex(node *tree.Node, root *tree.Node) error {
-	index := BuildAutoIndexWithBaseURL(node, g.config.SiteURL)
+	index := autoindex.BuildWithBaseURL(node, g.config.SiteURL)
 	fullOutputPath := filepath.Join(g.config.OutputDir, index.OutputPath)
 
 	// Build content
-	htmlContent := RenderAutoIndexContent(index)
+	htmlContent := autoindex.RenderContent(index)
 
 	// Build breadcrumbs (with base URL prefixing)
 	breadcrumbs := navigation.BuildBreadcrumbsWithBaseURL(node, g.config.Title, g.config.SiteURL)
@@ -201,21 +63,4 @@ func (g *Generator) generateAutoIndex(node *tree.Node, root *tree.Node) error {
 	defer func() { _ = f.Close() }()
 
 	return g.renderer.Render(f, data)
-}
-
-// collectFoldersNeedingAutoIndex returns all folders that need auto-generated indexes
-func collectFoldersNeedingAutoIndex(node *tree.Node) []*tree.Node {
-	var folders []*tree.Node
-
-	if node.IsFolder && NeedsAutoIndex(node) && node.Path != "" && node.Path != "." {
-		folders = append(folders, node)
-	}
-
-	for _, child := range node.Children {
-		if child.IsFolder {
-			folders = append(folders, collectFoldersNeedingAutoIndex(child)...)
-		}
-	}
-
-	return folders
 }

@@ -11,11 +11,11 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"sort"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/wusher/volcano/internal/autoindex"
 	"github.com/wusher/volcano/internal/content"
 	"github.com/wusher/volcano/internal/markdown"
 	"github.com/wusher/volcano/internal/navigation"
@@ -24,41 +24,6 @@ import (
 	"github.com/wusher/volcano/internal/toc"
 	"github.com/wusher/volcano/internal/tree"
 )
-
-// buildValidURLMap creates a map of all valid URLs from the site
-func buildValidURLMap(site *tree.Site) map[string]bool {
-	validURLs := make(map[string]bool)
-	validURLs["/"] = true
-
-	// Add all page URLs
-	for _, node := range site.AllPages {
-		urlPath := tree.GetURLPath(node)
-		if urlPath != "" {
-			validURLs[urlPath] = true
-		}
-	}
-
-	// Add folder URLs (for auto-index)
-	addFolderURLs(site.Root, validURLs)
-
-	return validURLs
-}
-
-// addFolderURLs recursively adds folder URLs to the map
-func addFolderURLs(node *tree.Node, validURLs map[string]bool) {
-	if node == nil {
-		return
-	}
-
-	if node.IsFolder && node.Path != "" {
-		urlPath := "/" + tree.SlugifyPath(node.Path) + "/"
-		validURLs[urlPath] = true
-	}
-
-	for _, child := range node.Children {
-		addFolderURLs(child, validURLs)
-	}
-}
 
 // DynamicConfig holds configuration for the dynamic server
 type DynamicConfig struct {
@@ -75,17 +40,24 @@ type DynamicConfig struct {
 
 // DynamicServer serves markdown files with live rendering
 type DynamicServer struct {
-	config   DynamicConfig
-	renderer *templates.Renderer
-	writer   io.Writer
-	server   *http.Server
-	fs       FileSystem
-	scanner  TreeScanner
+	config      DynamicConfig
+	renderer    *templates.Renderer
+	transformer *markdown.ContentTransformer
+	writer      io.Writer
+	server      *http.Server
+	fs          FileSystem
+	scanner     TreeScanner
+	cssLoader   styles.CSSLoader
 }
 
 // NewDynamicServer creates a new dynamic server
 func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, error) {
-	css, err := getCSSContent(config)
+	cssConfig := styles.CSSConfig{
+		Theme:   config.Theme,
+		CSSPath: config.CSSPath,
+	}
+	cssLoader := styles.NewCSSLoader(cssConfig, os.ReadFile)
+	css, err := cssLoader.LoadCSS()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load CSS: %w", err)
 	}
@@ -96,34 +68,21 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 	}
 
 	return &DynamicServer{
-		config:   config,
-		renderer: renderer,
-		writer:   writer,
-		fs:       osFileSystem{},
-		scanner:  defaultScanner{},
+		config:      config,
+		renderer:    renderer,
+		transformer: markdown.NewContentTransformer(""), // Dynamic server doesn't use site URL for external links
+		writer:      writer,
+		fs:          osFileSystem{},
+		scanner:     defaultScanner{},
+		cssLoader:   cssLoader,
 	}, nil
-}
-
-// getCSSContent returns minified CSS from custom file or embedded theme
-func getCSSContent(config DynamicConfig) (string, error) {
-	var css string
-	if config.CSSPath != "" {
-		content, err := os.ReadFile(config.CSSPath)
-		if err != nil {
-			return "", err
-		}
-		css = string(content)
-	} else {
-		css = styles.GetCSS(config.Theme)
-	}
-	return styles.MinifyCSS(css)
 }
 
 // getRenderer returns a renderer, re-reading CSS file if using custom CSS
 func (s *DynamicServer) getRenderer() (*templates.Renderer, error) {
 	// If using custom CSS, re-read on each request for live reload
 	if s.config.CSSPath != "" {
-		css, err := getCSSContent(s.config)
+		css, err := s.cssLoader.LoadCSS()
 		if err != nil {
 			// Fall back to cached renderer if file read fails
 			s.logError("Failed to read CSS file, using cached: %v", err)
@@ -246,7 +205,7 @@ func (s *DynamicServer) tryAutoIndex(w http.ResponseWriter, urlPath string) bool
 	}
 
 	// Check if it needs auto-index
-	if !needsAutoIndex(folderNode) {
+	if !autoindex.NeedsAutoIndex(folderNode) {
 		return false
 	}
 
@@ -319,12 +278,20 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 		sourceDir = "/" + tree.SlugifyPath(relDir) + "/"
 	}
 
-	// Parse the markdown file
-	page, err := markdown.ParseFile(
+	// Read and transform the markdown file
+	mdContent, err := s.fs.ReadFile(fullMdPath)
+	if err != nil {
+		s.logError("Failed to read markdown: %v", err)
+		return false
+	}
+
+	// Transform markdown to HTML with all enhancements
+	page, err := s.transformer.TransformMarkdown(
+		mdContent,
+		sourceDir,
 		fullMdPath,
 		outputPath,
 		nodeURLPath,
-		sourceDir,
 		node.Name,
 	)
 	if err != nil {
@@ -332,14 +299,10 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 		return false
 	}
 
-	// Process the HTML content
 	htmlContent := page.Content
 
-	// Wrap code blocks with copy button
-	htmlContent = markdown.WrapCodeBlocks(htmlContent)
-
 	// Validate internal links
-	validURLs := buildValidURLMap(site)
+	validURLs := tree.BuildValidURLMap(site)
 	brokenLinks := markdown.ValidateLinks(htmlContent, nodeURLPath, validURLs)
 	if len(brokenLinks) > 0 {
 		s.serveBrokenLinksError(w, nodeURLPath, brokenLinks, site)
@@ -754,77 +717,11 @@ func collectPagesRecursive(node *tree.Node, pages *[]*tree.Node) {
 	}
 }
 
-// AutoIndexItem represents an item in an auto-generated folder index
-type AutoIndexItem struct {
-	Title    string
-	URL      string
-	IsFolder bool
-}
-
 // renderAutoIndex renders an auto-generated index page for a folder
 func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, node *tree.Node, site *tree.Site) bool {
-	// Build list of children
-	var items []AutoIndexItem
-	for _, child := range node.Children {
-		url := tree.GetURLPath(child)
-		if child.IsFolder {
-			url = "/" + tree.SlugifyPath(child.Path) + "/"
-		}
-		items = append(items, AutoIndexItem{
-			Title:    child.Name,
-			URL:      url,
-			IsFolder: child.IsFolder,
-		})
-	}
-
-	// Sort: files first, then folders, then alphabetically
-	// (matches the tree navigation sort order)
-	sort.Slice(items, func(i, j int) bool {
-		if items[i].IsFolder != items[j].IsFolder {
-			return !items[i].IsFolder // files first
-		}
-		return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
-	})
-
-	// Build HTML content
-	var sb strings.Builder
-	sb.WriteString(`<article class="auto-index-page">`)
-	sb.WriteString("\n")
-	sb.WriteString(`<h1>`)
-	sb.WriteString(template.HTMLEscapeString(node.Name))
-	sb.WriteString(`</h1>`)
-	sb.WriteString("\n")
-
-	if len(items) > 0 {
-		sb.WriteString(`<ul class="folder-index">`)
-		sb.WriteString("\n")
-		for _, item := range items {
-			itemClass := "page-item"
-			if item.IsFolder {
-				itemClass = "folder-item"
-			}
-			sb.WriteString(`<li class="`)
-			sb.WriteString(itemClass)
-			sb.WriteString(`">`)
-			sb.WriteString("\n")
-			sb.WriteString(`<a href="`)
-			sb.WriteString(item.URL)
-			sb.WriteString(`">`)
-			sb.WriteString(template.HTMLEscapeString(item.Title))
-			sb.WriteString(`</a>`)
-			sb.WriteString("\n")
-			sb.WriteString(`</li>`)
-			sb.WriteString("\n")
-		}
-		sb.WriteString(`</ul>`)
-		sb.WriteString("\n")
-	} else {
-		sb.WriteString(`<p class="empty-folder">This folder is empty.</p>`)
-		sb.WriteString("\n")
-	}
-
-	sb.WriteString(`</article>`)
-	htmlContent := sb.String()
+	// Build index using shared autoindex package
+	index := autoindex.Build(node)
+	htmlContent := autoindex.RenderContent(index)
 
 	// Build breadcrumbs
 	breadcrumbs := navigation.BuildBreadcrumbs(node, s.config.Title)
@@ -840,7 +737,7 @@ func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, n
 	data := templates.PageData{
 		SiteTitle:   s.config.Title,
 		PageTitle:   node.Name,
-		Content:     template.HTML(htmlContent),
+		Content:     htmlContent,
 		Navigation:  nav,
 		CurrentPath: urlPath,
 		Breadcrumbs: breadcrumbsHTML,
@@ -865,31 +762,6 @@ func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, n
 	// Write response
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = w.Write(buf.Bytes())
-	return true
-}
-
-// needsAutoIndex checks if a folder needs an auto-generated index
-func needsAutoIndex(node *tree.Node) bool {
-	if !node.IsFolder {
-		return false
-	}
-
-	// Already has an index
-	if node.HasIndex {
-		return false
-	}
-
-	// Check for index.md in children
-	for _, child := range node.Children {
-		if !child.IsFolder {
-			baseName := strings.TrimSuffix(filepath.Base(child.Path), filepath.Ext(child.Path))
-			lower := strings.ToLower(baseName)
-			if lower == "index" || lower == "readme" {
-				return false
-			}
-		}
-	}
-
 	return true
 }
 

@@ -14,6 +14,7 @@
   --toc-width: 220px;
   --content-max-width: 800px;
   --transition-speed: 0.2s;
+  --breadcrumbs-height: 48px;
 }
 
 [data-theme="dark"] {
@@ -219,6 +220,7 @@ a:hover {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .prose {
@@ -551,6 +553,7 @@ a:hover {
 
 /* Breadcrumbs */
 .breadcrumbs {
+  position: -webkit-sticky;
   position: sticky;
   top: 0;
   margin: -1rem -2rem 1.5rem;
@@ -566,7 +569,7 @@ a:hover {
 }
 
 .has-top-nav .breadcrumbs {
-  top: 44px;
+  top: 48px;
 }
 
 .breadcrumbs ol {
@@ -1167,7 +1170,7 @@ kbd {
   /* Row 3: breadcrumbs (sticky in content) */
   .content {
     padding: 1rem;
-    padding-top: calc(48px + 1rem); /* mobile header height + spacing */
+    padding-top: calc(48px + var(--breadcrumbs-height) + 1rem); /* mobile header + breadcrumbs + spacing */
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -1175,7 +1178,7 @@ kbd {
 
   /* When top nav is present, add its height */
   .has-top-nav .content {
-    padding-top: calc(48px + 48px + 1rem); /* mobile header + top nav + spacing */
+    padding-top: calc(48px + 48px + var(--breadcrumbs-height) + 1rem); /* mobile header + top nav + breadcrumbs + spacing */
   }
 
   /* Top nav sits below mobile header on mobile */
@@ -1206,13 +1209,18 @@ kbd {
 
   /* Breadcrumbs adjust for mobile header */
   .breadcrumbs {
-    margin: 0 -1rem 1.5rem;
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: 100%;
+    margin: 0;
     padding: 0.75rem 1rem;
-    top: 0;
+    top: 48px;
+    z-index: 95;
   }
 
   .has-top-nav .breadcrumbs {
-    top: 0;
+    top: 96px;
   }
 
   /* Copy button always visible on mobile */

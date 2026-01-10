@@ -154,26 +154,6 @@ func TestFormatNumber(t *testing.T) {
 	}
 }
 
-func TestItoa(t *testing.T) {
-	tests := []struct {
-		n        int
-		expected string
-	}{
-		{0, "0"},
-		{5, "5"},
-		{-5, "-5"},
-		{123, "123"},
-		{-123, "-123"},
-	}
-
-	for _, tc := range tests {
-		result := itoa(tc.n)
-		if result != tc.expected {
-			t.Errorf("itoa(%d) = %q, want %q", tc.n, result, tc.expected)
-		}
-	}
-}
-
 func TestCalculateReadingTimeWithCode(t *testing.T) {
 	content := `<p>Some regular text here.</p>
 <pre><code>func main() {

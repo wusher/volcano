@@ -1,4 +1,4 @@
-package generator
+package autoindex
 
 import (
 	"strings"
@@ -70,7 +70,7 @@ func TestNeedsAutoIndex(t *testing.T) {
 	}
 }
 
-func TestBuildAutoIndex(t *testing.T) {
+func TestBuild(t *testing.T) {
 	folder := &tree.Node{
 		Name:     "Guides",
 		Path:     "guides",
@@ -82,7 +82,7 @@ func TestBuildAutoIndex(t *testing.T) {
 		},
 	}
 
-	index := BuildAutoIndex(folder)
+	index := Build(folder)
 
 	if index.Title != "Guides" {
 		t.Errorf("Title = %q, want %q", index.Title, "Guides")
@@ -102,29 +102,29 @@ func TestBuildAutoIndex(t *testing.T) {
 	}
 }
 
-func TestBuildAutoIndexRootPath(t *testing.T) {
+func TestBuildRootPath(t *testing.T) {
 	folder := &tree.Node{
 		Name:     "Root",
 		Path:     "",
 		IsFolder: true,
 	}
 
-	index := BuildAutoIndex(folder)
+	index := Build(folder)
 	if index.URLPath != "/" {
 		t.Errorf("URLPath for root = %q, want %q", index.URLPath, "/")
 	}
 }
 
-func TestRenderAutoIndexContent(t *testing.T) {
-	index := AutoIndex{
+func TestRenderContent(t *testing.T) {
+	index := Index{
 		Title: "Guides",
-		Children: []IndexItem{
+		Children: []Item{
 			{Title: "Subfolder", URL: "/guides/sub/", IsFolder: true},
 			{Title: "Page", URL: "/guides/page/", IsFolder: false},
 		},
 	}
 
-	html := string(RenderAutoIndexContent(index))
+	html := string(RenderContent(index))
 
 	if !strings.Contains(html, "Guides") {
 		t.Error("should contain title")
@@ -137,13 +137,13 @@ func TestRenderAutoIndexContent(t *testing.T) {
 	}
 }
 
-func TestRenderAutoIndexContentEmpty(t *testing.T) {
-	index := AutoIndex{
+func TestRenderContentEmpty(t *testing.T) {
+	index := Index{
 		Title:    "Empty",
-		Children: []IndexItem{},
+		Children: []Item{},
 	}
 
-	html := string(RenderAutoIndexContent(index))
+	html := string(RenderContent(index))
 
 	if !strings.Contains(html, "empty-folder") {
 		t.Error("should show empty folder message")
@@ -172,7 +172,7 @@ func TestCollectFoldersNeedingAutoIndex(t *testing.T) {
 		},
 	}
 
-	folders := collectFoldersNeedingAutoIndex(root)
+	folders := CollectFoldersNeedingAutoIndex(root)
 
 	if len(folders) != 1 {
 		t.Errorf("expected 1 folder needing auto-index, got %d", len(folders))
