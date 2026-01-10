@@ -71,19 +71,25 @@
 - Pros: Zero complexity, user has full control
 - Cons: User needs to test in both modes, some colors won't work well
 
-**Option C: Generate Tints & Shades**
+**Option C: Generate Tints & Shades (Proper Color Space)**
 - User provides base color: `--accent-color="#ff6600"`
-- Compute dark variant (almost black): mix with black (e.g., 95% black + 5% accent)
-- Compute light variant (almost white): mix with white (e.g., 95% white + 5% accent)
+- Convert to better color space (HSL, LAB, or LCH - NOT RGB)
+- Compute variants:
+  - **Dark shade**: Set lightness to ~10% (keep hue/saturation)
+  - **Light tint**: Set lightness to ~95% (keep hue/saturation)
+  - **Base**: Use original or normalized (50% lightness)
 - Creates 3 CSS variables: `--accent`, `--accent-dark`, `--accent-light`
 - Use cases:
-  - `--accent` for main interactive elements (works in both modes if chosen well)
-  - `--accent-light` for subtle backgrounds in light mode
+  - `--accent` for main interactive elements (links, active states, scroll bar)
+  - `--accent-light` for subtle backgrounds in light mode (code blocks, admonitions)
   - `--accent-dark` for subtle backgrounds in dark mode
-- Pros: One input creates mini palette, subtle branded backgrounds, flexible
-- Cons: Still need color math (simpler than HSL though), more variables to manage
+- **Color space options**:
+  - **HSL**: Simple, widely understood, good enough for tints/shades
+  - **Oklab/LCH**: Perceptually uniform, better color mixing, but more complex math
+- Pros: One input creates mini palette, subtle branded backgrounds, flexible, proper color mixing
+- Cons: Need color space conversion, more variables to manage, ~100 lines of code
 
-**Verdict**: TBD - simple same-color vs tints/shades approach
+**Verdict**: TBD - simple same-color vs tints/shades with proper color math
 
 ---
 
