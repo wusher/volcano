@@ -28,7 +28,9 @@ func TestIntegrationMarkdown_WikiLinksComplex(t *testing.T) {
 [[page.with.dots]]
 `
 
-	os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(complexWikiLinks), 0644)
+	if err := os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(complexWikiLinks), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
 
 	// Create target files for validation
 	targetFiles := map[string]string{
@@ -99,7 +101,9 @@ func TestIntegrationMarkdown_AdmonitionEdgeCases(t *testing.T) {
 	// Create markdown with complex admonition scenarios
 	admonitionContent := "# Admonition Edge Cases\n\n## Basic Admonitions\n:::note Simple Note\nThis is a simple note.\n:::\n\n:::warning\nWarning without custom title.\n:::\n\n## Admonitions with Code Blocks\n:::tip Code Example\nHere's some code:\n\n```go\nfunc example() {\n    return \"nested code\"\n}\n```\n\nAnd more text.\n:::\n\n## Admonitions with Lists\n:::info Information\n- Item 1\n- Item 2\n  - Nested item\n- Item 3\n:::\n\n## Admonitions in Lists\n- Normal list item\n:::warning List Warning\nThis warning is inside a list.\n:::\n- Another normal item\n\n## Unclosed Admonition\n:::note Unclosed\nThis admonition block doesn't have proper closing."
 
-	os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(admonitionContent), 0644)
+	if err := os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(admonitionContent), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
 
 	// Generate site
 	var stdout, stderr bytes.Buffer
@@ -196,7 +200,9 @@ func mixed() {
 - Item 2
 `
 
-	os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(codeContent), 0644)
+	if err := os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(codeContent), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
 
 	// Generate site
 	var stdout, stderr bytes.Buffer
@@ -240,10 +246,14 @@ func TestIntegrationMarkdown_ExternalLinks(t *testing.T) {
 	// Create markdown with various external link scenarios
 	linkContent := "# External Links Test\n\n## Basic External Links\n[Google](https://www.google.com)\n[GitHub](https://github.com)\n\n## Links with Special Characters\n[Example with spaces & symbols](https://example.com/path?param=value&other=test)\n\n## Email Links\n[Contact me](mailto:test@example.com)\n[Mail with subject](mailto:test@example.com?subject=Hello%20World)\n\n## Protocol-relative Links\n[Protocol-relative](//example.com/resource)\n\n## Link with Title Attribute\n[Link with title](https://example.com \"This is a title\")\n\n## Image Links\n![Image Alt Text](https://example.com/image.jpg)\n![Image with title](https://example.com/image.png \"Image title\")\n\n## Mixed Internal and External\n[Internal](internal-page.md)\n[External](https://external.com)"
 
-	os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(linkContent), 0644)
+	if err := os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(linkContent), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
 
 	// Create the referenced internal page
-	os.WriteFile(filepath.Join(inputDir, "internal-page.md"), []byte("# Internal Page\n\nContent here."), 0644)
+	if err := os.WriteFile(filepath.Join(inputDir, "internal-page.md"), []byte("# Internal Page\n\nContent here."), 0644); err != nil {
+		t.Fatalf("Failed to create internal page file: %v", err)
+	}
 
 	// Generate site
 	var stdout, stderr bytes.Buffer

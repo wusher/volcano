@@ -30,7 +30,9 @@ func TestIntegrationError_FileInsteadOfDirectory(t *testing.T) {
 
 	// Create a file instead of directory
 	testFile := filepath.Join(inputDir, "not-a-dir.md")
-	os.WriteFile(testFile, []byte("# Test"), 0644)
+	if err := os.WriteFile(testFile, []byte("# Test"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
 
 	var stdout, stderr bytes.Buffer
 	exitCode := Run([]string{"-o", outputDir, testFile}, &stdout, &stderr)
@@ -43,7 +45,9 @@ func TestIntegrationError_InvalidOutputDirectory(t *testing.T) {
 	// Create a file where we want output directory
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "not-a-dir")
-	os.WriteFile(outputPath, []byte("occupied"), 0644)
+	if err := os.WriteFile(outputPath, []byte("occupied"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
 
 	var stdout, stderr bytes.Buffer
 	exitCode := Run([]string{"-o", outputPath, "./example"}, &stdout, &stderr)
@@ -62,9 +66,13 @@ func TestIntegrationError_UnreadableDirectory(t *testing.T) {
 
 	// Create a directory and remove read permissions
 	subDir := filepath.Join(inputDir, "noread")
-	os.Mkdir(subDir, 0755)
-	os.Chmod(subDir, 0000)
-	defer os.Chmod(subDir, 0755) // Restore for cleanup
+	if err := os.Mkdir(subDir, 0755); err != nil {
+		t.Fatalf("Failed to create test directory: %v", err)
+	}
+	if err := os.Chmod(subDir, 0000); err != nil {
+		t.Fatalf("Failed to change directory permissions: %v", err)
+	}
+	defer func() { _ = os.Chmod(subDir, 0755) }() // Restore for cleanup
 
 	var stdout, stderr bytes.Buffer
 	exitCode := Run([]string{"-o", outputDir, subDir}, &stdout, &stderr)
@@ -78,12 +86,14 @@ func TestIntegrationError_CorruptedMarkdown_UnclosedAdmonition(t *testing.T) {
 	outputDir := t.TempDir()
 
 	// Create markdown with unclosed admonition
-	os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(`
+	if err := os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(`
 # Test
 
 !!! note "This is not closed
 This admonition block doesn't have a closing !!!
-`), 0644)
+`), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
 
 	var stdout, stderr bytes.Buffer
 	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
@@ -102,7 +112,9 @@ func TestIntegrationError_CorruptedMarkdown_InvalidCodeBlock(t *testing.T) {
 	outputDir := t.TempDir()
 
 	// Create markdown with malformed code block
-	os.WriteFile(filepath.Join(inputDir, "test.md"), []byte("# Test\n\n```go\nfunc test() {\n    // Unclosed backticks\n"), 0644)
+	if err := os.WriteFile(filepath.Join(inputDir, "test.md"), []byte("# Test\n\n```go\nfunc test() {\n    // Unclosed backticks\n"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
 
 	var stdout, stderr bytes.Buffer
 	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
