@@ -53,7 +53,25 @@
 - Document custom CSS approach instead (already possible)
 - Skip this in favor of other features
 
-**Verdict**: TBD - discuss tradeoffs
+**Decision Direction**: Skip presets, allow custom brand colors
+
+**Two viable approaches**:
+
+**Option A: HSL Auto-adjustment**
+- Convert hex input to HSL (Hue, Saturation, Lightness)
+- For dark mode: automatically lighten the color (increase L value)
+- For light mode: use as-is or slightly darken if needed
+- Pros: One flag, smart adaptation
+- Cons: Need HSL conversion logic in Go, results may vary by color
+
+**Option B: Keep It Simple**
+- Single `--accent-color` flag
+- Use same color in both light and dark modes
+- Let user provide a color that works reasonably in both
+- Pros: Zero complexity, user has full control
+- Cons: User needs to test in both modes, some colors won't work well
+
+**Verdict**: TBD - HSL computation vs simple approach
 
 ---
 
