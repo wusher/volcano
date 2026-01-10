@@ -24,9 +24,6 @@ var posterRegex = regexp.MustCompile(`(?i)poster="(/[^"]*)"`)
 // dataRegex matches data-* attributes with URL values
 var dataRegex = regexp.MustCompile(`(?i)data-[a-z-]+="(/[^"]*)"`)
 
-// contentRegex matches content attributes in meta tags
-var contentRegex = regexp.MustCompile(`(?i)<meta\s+[^>]*content="(/[^"]*)"[^>]*>`)
-
 // ProcessExternalLinks modifies external links to open in new tab and add icons
 func ProcessExternalLinks(htmlContent string, siteURL string) string {
 	// Parse site URL for comparison
