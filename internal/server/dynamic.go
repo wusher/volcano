@@ -109,7 +109,7 @@ func (s *DynamicServer) loadFavicon() error {
 
 	// Get filename and MIME type
 	filename := filepath.Base(s.config.FaviconPath)
-	mimeType := getFaviconMimeType(filename)
+	mimeType := assets.GetFaviconMimeType(filename)
 	if mimeType == "" {
 		return fmt.Errorf("unsupported favicon format: %s", filename)
 	}
@@ -128,23 +128,6 @@ func (s *DynamicServer) loadFavicon() error {
 	s.faviconLinks = assets.RenderFaviconLinks(links)
 
 	return nil
-}
-
-// getFaviconMimeType returns MIME type for favicon file
-func getFaviconMimeType(filename string) string {
-	ext := strings.ToLower(filepath.Ext(filename))
-	switch ext {
-	case ".ico":
-		return "image/x-icon"
-	case ".png":
-		return "image/png"
-	case ".svg":
-		return "image/svg+xml"
-	case ".gif":
-		return "image/gif"
-	default:
-		return ""
-	}
 }
 
 // serveFavicon serves the favicon from memory

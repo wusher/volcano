@@ -60,7 +60,7 @@ func processSingleFavicon(sourcePath string, outputDir string) (FaviconLink, err
 
 	// Get filename and MIME type
 	filename := filepath.Base(sourcePath)
-	mimeType := getMimeType(filename)
+	mimeType := GetFaviconMimeType(filename)
 	if mimeType == "" {
 		return FaviconLink{}, fmt.Errorf("unsupported favicon format: %s", filename)
 	}
@@ -78,8 +78,9 @@ func processSingleFavicon(sourcePath string, outputDir string) (FaviconLink, err
 	}, nil
 }
 
-// getMimeType returns the MIME type for a favicon file
-func getMimeType(filename string) string {
+// GetFaviconMimeType returns the MIME type for a favicon file.
+// Exported for reuse by dynamic server.
+func GetFaviconMimeType(filename string) string {
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
 	case ".ico":

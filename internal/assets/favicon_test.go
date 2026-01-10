@@ -24,9 +24,9 @@ func TestGetMimeType(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.filename, func(t *testing.T) {
-			result := getMimeType(tc.filename)
+			result := GetFaviconMimeType(tc.filename)
 			if result != tc.expected {
-				t.Errorf("getMimeType(%q) = %q, want %q", tc.filename, result, tc.expected)
+				t.Errorf("GetFaviconMimeType(%q) = %q, want %q", tc.filename, result, tc.expected)
 			}
 		})
 	}
