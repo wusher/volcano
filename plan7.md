@@ -324,7 +324,95 @@
 - Docusaurus (Algolia or local search)
 - VuePress (built-in search)
 
-**Verdict**: TBD - is this worth the complexity?
+**Verdict**: **NO** - Not pursuing full-text search at this time due to complexity
+
+---
+
+### 5. SPA-like Page Transitions (Turbo/PJAX alternatives)
+
+**Concept**: Make static site feel like a SPA by intercepting navigation and doing client-side transitions
+
+**What This Does**:
+- Intercepts clicks on links
+- Fetches next page via AJAX/fetch
+- Swaps content in browser without full page reload
+- Updates URL with History API
+- Results: Faster navigation, no white flash between pages, can add custom transitions
+- Keeps JavaScript state between pages
+
+**Popular Libraries**:
+
+**1. Turbo (from Hotwire)** (~45KB with Stimulus)
+- Most popular for this pattern
+- Intercepts all links/forms automatically
+- Battle-tested (evolved from Turbolinks/PJAX)
+- Opinionated but smooth out-of-the-box experience
+- Pros: Comprehensive, well-documented, large community
+- Cons: Larger bundle, more opinionated, ties into Hotwire ecosystem
+
+**2. htmx** (~14KB)
+- Most popular alternative (90K+ weekly npm downloads, 46K+ GitHub stars)
+- Attribute-based: `<a href="/page" hx-boost="true">`
+- More flexible and transparent than Turbo
+- Can do partial updates, not just full page swaps
+- Pros: Smaller, more flexible, broader feature set (AJAX, WebSockets, SSE)
+- Cons: More manual setup, different paradigm
+
+**3. Unpoly** (Similar size to Turbo)
+- Like htmx but more Rails-like (opinionated, convention-based)
+- Has migration scripts for upgrading
+- Comprehensive like Turbo but more flexible
+- Pros: Good balance of opinions and flexibility
+- Cons: Smaller community than Turbo/htmx
+
+**4. Barba.js** (~9KB)
+- Focused specifically on page transitions with animations
+- Lightweight, flexible for custom transitions
+- Great for creative/portfolio sites
+- Pros: Small, focused, excellent animation support
+- Cons: Less comprehensive (just transitions, not forms/etc)
+
+**5. Swup** (Small)
+- Similar to Barba.js, focused on smooth animated transitions
+- Easy setup
+- Pros: Simple, works well with various frameworks
+- Cons: Less feature-rich than Turbo/htmx
+
+**6. InstantClick** (Tiny)
+- Preloads pages on hover, then swaps instantly on click
+- Extremely fast perceived performance
+- Pros: Tiny, clever approach, very fast
+- Cons: Limited to link navigation, no forms
+
+**Recommendation for Volcano**:
+- **htmx**: Best balance of size (~14KB), flexibility, and features. Attribute-based fits well with HTML-first philosophy
+- **Turbo**: If you want comprehensive, opinionated, battle-tested solution and don't mind the size
+- **Barba.js/Swup**: If you mainly want smooth transitions and don't need form handling
+- **InstantClick**: If you want the absolute smallest/simplest solution
+
+**Implementation Considerations**:
+- Would need to inject library into generated HTML
+- Could embed minified JS directly (like CSS) or link to CDN
+- May need special handling for theme toggle, search, and other JS state
+- Breaking change: users would need to opt-in via flag (e.g., `--spa-navigation`)
+
+**Zero-Dependency Trade-off**:
+- Adds runtime dependency (but not build dependency)
+- Could embed JS directly to keep "single binary" philosophy
+- This is a significant departure from current minimal JS approach
+
+**Pros**:
+- Much faster perceived performance
+- Modern, app-like feel
+- Better user experience for navigation-heavy sites
+
+**Cons**:
+- Adds JavaScript dependency (~14-45KB)
+- Can break assumptions (scripts run differently)
+- More complexity in testing
+- Need to handle edge cases (external links, downloads, etc.)
+
+**Verdict**: TBD - is this valuable enough to add runtime dependency?
 
 ---
 
