@@ -40,7 +40,7 @@ func TestIntegrationServer_Validation(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 
 	// Test server with non-existent directory
-	exitCode := Run([]string{"-s", "/non/existent/path"}, &stdout, &stderr)
+	exitCode := Run([]string{"serve", "/non/existent/path"}, &stdout, &stderr)
 	if exitCode == 0 {
 		t.Error("Server should fail with non-existent directory")
 	}
@@ -68,7 +68,7 @@ func TestIntegrationServer_PortValidation(t *testing.T) {
 
 	// Test server with invalid port
 	var serverStdout, serverStderr bytes.Buffer
-	serverExitCode := Run([]string{"-s", "-p", "invalid", outputDir}, &serverStdout, &serverStderr)
+	serverExitCode := Run([]string{"serve", "-p", "invalid", outputDir}, &serverStdout, &serverStderr)
 	if serverExitCode == 0 {
 		t.Error("Server should fail with invalid port")
 	}
@@ -159,12 +159,12 @@ func TestIntegrationServer_SpecialCharactersInPaths(t *testing.T) {
 
 	// Test server command can handle this output directory
 	// Just test that server can validate the directory without crashing
-	runServeForTest(t, []string{"-s", "-p", "0", outputDir})
+	runServeForTest(t, []string{"serve", "-p", "0", outputDir})
 }
 
 func TestIntegrationServer_EmptyDirectoryHandling(t *testing.T) {
 	// Test server with empty output directory
 	outputDir := t.TempDir()
 
-	runServeForTest(t, []string{"-s", "-p", "0", outputDir})
+	runServeForTest(t, []string{"serve", "-p", "0", outputDir})
 }
