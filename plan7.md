@@ -114,6 +114,40 @@
 
 ---
 
+### 2. Icon-Only Copy Buttons
+
+**Concept**: Remove "Copy" and "Copied!" text from code block copy buttons, show only icons
+
+**Current Behavior**:
+- Copy button shows text + icon: "Copy 📋" or "Copied! ✓"
+- Button toggles between these states on click
+
+**Proposed Change**:
+- Show only icons: 📋 → ✓
+- No text labels
+- Cleaner, more minimal appearance
+- Icons are already clear/universal
+
+**Pros**:
+- Cleaner visual design
+- Less visual clutter
+- Icons are self-explanatory
+- More modern pattern (GitHub, VS Code do this)
+- Smaller button footprint
+
+**Cons**:
+- Slightly less accessible (no explicit text label)
+- Could add aria-label for screen readers
+
+**Implementation**:
+- Remove text nodes from `.copy-button` in template
+- Keep icon swap logic (copy-icon ↔ check-icon)
+- Add `aria-label="Copy code"` / `aria-label="Copied!"` for accessibility
+
+**Complexity**: Very simple, probably 5 lines changed
+
+---
+
 ## Stories
 
 <!-- Stories will be formalized here once we've discussed the ideas -->
