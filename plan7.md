@@ -89,6 +89,11 @@
 - Pros: One input creates mini palette, subtle branded backgrounds, flexible, proper color mixing
 - Cons: Need color space conversion, more variables to manage, ~100 lines of code
 
+**When flag is NOT provided**:
+- **Option 1**: No accent color variables injected at all (themes use their defaults)
+- **Option 2**: Inject a default accent color value
+- **Leaning towards**: Option 1 (no default) - keeps themes working exactly as they do now, purely opt-in feature
+
 **Verdict**: TBD - simple same-color vs tints/shades with proper color math
 
 ---
