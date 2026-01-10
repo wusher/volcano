@@ -252,11 +252,15 @@
         (function() {
             const input = document.getElementById('nav-search-input');
             const clearBtn = document.querySelector('.search-clear');
-            const tree = document.querySelector('.tree-nav');
             const status = document.getElementById('search-results-status');
             const emptyState = document.querySelector('.search-empty');
-            const allNodes = tree ? tree.querySelectorAll('[data-search-text]') : [];
             let debounceTimer;
+            let allNodes = [];
+
+            function initializeSearch() {
+                const tree = document.querySelector('.tree-nav');
+                allNodes = tree ? tree.querySelectorAll('[data-search-text]') : [];
+            }
 
             function filter() {
                 const query = input.value.trim().toLowerCase();
@@ -317,6 +321,12 @@
             if (clearBtn) {
                 clearBtn.addEventListener('click', clear);
             }
+
+            // Initialize on page load
+            initializeSearch();
+
+            // Reinitialize after instant navigation
+            document.addEventListener('instant:navigated', initializeSearch);
         })();
 
         // Scroll progress indicator
