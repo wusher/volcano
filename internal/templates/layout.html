@@ -453,5 +453,53 @@
             if (modal && modal.close) modal.close();
         }
     </script>
+{{if .DevMode}}
+    <script>
+        // Dev mode: Server-Sent Events for live reload
+        (function() {
+            let reconnectAttempts = 0;
+            const maxReconnectDelay = 5000;
+
+            function connect() {
+                const eventSource = new EventSource('/__volcano/events');
+
+                eventSource.onopen = function() {
+                    console.log('[volcano] Connected to dev server');
+                    reconnectAttempts = 0;
+                };
+
+                eventSource.onerror = function() {
+                    eventSource.close();
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), maxReconnectDelay);
+                    reconnectAttempts++;
+                    console.log('[volcano] Reconnecting in ' + delay + 'ms...');
+                    setTimeout(connect, delay);
+                };
+
+                eventSource.addEventListener('theme', function(e) {
+                    console.log('[volcano] Theme changed, reloading...');
+                    window.location.reload();
+                });
+
+                eventSource.addEventListener('topNav', function(e) {
+                    console.log('[volcano] Top nav toggled, reloading...');
+                    window.location.reload();
+                });
+
+                eventSource.addEventListener('pageNav', function(e) {
+                    console.log('[volcano] Page nav toggled, reloading...');
+                    window.location.reload();
+                });
+
+                eventSource.addEventListener('reload', function(e) {
+                    console.log('[volcano] Reload requested...');
+                    window.location.reload();
+                });
+            }
+
+            connect();
+        })();
+    </script>
+{{end}}
 </body>
 </html>

@@ -71,16 +71,20 @@ type DynamicConfig struct {
 	ShowPageNav bool
 	Theme       string
 	CSSPath     string
+	DevMode     bool // Enable keyboard shortcuts for toggling settings
 }
 
 // DynamicServer serves markdown files with live rendering
 type DynamicServer struct {
-	config   DynamicConfig
-	renderer *templates.Renderer
-	writer   io.Writer
-	server   *http.Server
-	fs       FileSystem
-	scanner  TreeScanner
+	config      DynamicConfig
+	renderer    *templates.Renderer
+	writer      io.Writer
+	server      *http.Server
+	fs          FileSystem
+	scanner     TreeScanner
+	sse         *SSEBroadcaster
+	keyboard    *KeyboardHandler
+	validThemes []string
 }
 
 // NewDynamicServer creates a new dynamic server
@@ -95,13 +99,22 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 		return nil, fmt.Errorf("failed to create renderer: %w", err)
 	}
 
-	return &DynamicServer{
-		config:   config,
-		renderer: renderer,
-		writer:   writer,
-		fs:       osFileSystem{},
-		scanner:  defaultScanner{},
-	}, nil
+	srv := &DynamicServer{
+		config:      config,
+		renderer:    renderer,
+		writer:      writer,
+		fs:          osFileSystem{},
+		scanner:     defaultScanner{},
+		sse:         NewSSEBroadcaster(),
+		validThemes: []string{"docs", "blog", "vanilla"},
+	}
+
+	// Initialize keyboard handler for dev mode
+	if config.DevMode {
+		srv.keyboard = NewKeyboardHandler(writer, srv.handleKeyPress)
+	}
+
+	return srv, nil
 }
 
 // getCSSContent returns minified CSS from custom file or embedded theme
@@ -150,6 +163,7 @@ func (s *DynamicServer) WithScanner(scanner TreeScanner) *DynamicServer {
 // Handler returns the HTTP handler for this server
 func (s *DynamicServer) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/__volcano/events", s.sse.Handler())
 	mux.HandleFunc("/", s.handleRequest)
 	return mux
 }
@@ -165,6 +179,19 @@ func (s *DynamicServer) Start() error {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
+	// Start SSE broadcaster
+	s.sse.Start()
+	defer s.sse.Stop()
+
+	// Start keyboard handler if in dev mode
+	if s.keyboard != nil {
+		if err := s.keyboard.Start(); err != nil {
+			s.logError("Keyboard handler failed: %v", err)
+		} else {
+			defer s.keyboard.Stop()
+		}
+	}
+
 	// Set up graceful shutdown
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
@@ -173,7 +200,13 @@ func (s *DynamicServer) Start() error {
 	go func() {
 		s.log("Live server - changes are reflected immediately")
 		s.log("Serving %s at http://localhost:%d", s.config.SourceDir, s.config.Port)
-		s.log("Press Ctrl+C to stop")
+		if s.config.DevMode {
+			s.log("")
+			s.printDevModeHelp()
+			s.printCurrentSettings()
+		} else {
+			s.log("Press Ctrl+C to stop")
+		}
 		s.log("")
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			errCh <- err
@@ -387,6 +420,7 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 		HasTOC:      hasTOC,
 		ShowSearch:  true,
 		TopNavItems: topNavItems,
+		DevMode:     s.config.DevMode,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -627,6 +661,7 @@ func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage 
 		Content:     template.HTML(sb.String()),
 		Navigation:  nav,
 		CurrentPath: "",
+		DevMode:     s.config.DevMode,
 	}
 
 	// Get renderer
@@ -666,6 +701,7 @@ func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 		Content:     template.HTML(content),
 		Navigation:  nav,
 		CurrentPath: "",
+		DevMode:     s.config.DevMode,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -684,6 +720,122 @@ func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = w.Write(buf.Bytes())
+}
+
+// handleKeyPress handles keyboard input for toggling settings
+func (s *DynamicServer) handleKeyPress(key rune) {
+	switch key {
+	case '1':
+		s.setTheme("docs")
+	case '2':
+		s.setTheme("blog")
+	case '3':
+		s.setTheme("vanilla")
+	case 't', 'T':
+		s.cycleTheme()
+	case 'n', 'N':
+		s.config.TopNav = !s.config.TopNav
+		s.notifyReload("topNav", s.config.TopNav)
+		s.printSettingChange("top-nav", s.config.TopNav)
+	case 'p', 'P':
+		s.config.ShowPageNav = !s.config.ShowPageNav
+		s.notifyReload("pageNav", s.config.ShowPageNav)
+		s.printSettingChange("page-nav", s.config.ShowPageNav)
+	case 'h', 'H', '?':
+		s.printDevModeHelp()
+		s.printCurrentSettings()
+	case 'r', 'R':
+		s.notifyReload("reload", nil)
+		s.logRaw("\r\033[K\033[33m↻\033[0m Reload triggered")
+	}
+}
+
+// setTheme sets the theme and notifies clients
+func (s *DynamicServer) setTheme(theme string) {
+	if s.config.Theme == theme {
+		return
+	}
+	s.config.Theme = theme
+	s.updateRenderer()
+	s.notifyReload("theme", theme)
+	s.logRaw("\r\033[K\033[36m◆\033[0m Theme: %s", theme)
+}
+
+// cycleTheme cycles through available themes
+func (s *DynamicServer) cycleTheme() {
+	currentIdx := 0
+	for i, t := range s.validThemes {
+		if t == s.config.Theme {
+			currentIdx = i
+			break
+		}
+	}
+	nextIdx := (currentIdx + 1) % len(s.validThemes)
+	s.setTheme(s.validThemes[nextIdx])
+}
+
+// updateRenderer updates the renderer with new CSS
+func (s *DynamicServer) updateRenderer() {
+	css, err := getCSSContent(s.config)
+	if err != nil {
+		s.logError("Failed to load CSS: %v", err)
+		return
+	}
+	renderer, err := templates.NewRenderer(css)
+	if err != nil {
+		s.logError("Failed to create renderer: %v", err)
+		return
+	}
+	s.renderer = renderer
+}
+
+// notifyReload sends a reload notification to all connected browsers
+func (s *DynamicServer) notifyReload(eventType string, data interface{}) {
+	s.sse.Broadcast(eventType, map[string]interface{}{
+		"type":  eventType,
+		"value": data,
+	})
+}
+
+// printDevModeHelp prints the dev mode help
+func (s *DynamicServer) printDevModeHelp() {
+	s.logRaw("\033[1mDev Mode Shortcuts:\033[0m")
+	s.logRaw("  \033[33mt\033[0m       Cycle theme (docs → blog → vanilla)")
+	s.logRaw("  \033[33m1/2/3\033[0m   Switch to docs/blog/vanilla theme")
+	s.logRaw("  \033[33mn\033[0m       Toggle top navigation")
+	s.logRaw("  \033[33mp\033[0m       Toggle page navigation")
+	s.logRaw("  \033[33mr\033[0m       Force reload all browsers")
+	s.logRaw("  \033[33mh/?/\033[0m    Show this help")
+	s.logRaw("  \033[33mCtrl+C\033[0m  Stop server")
+}
+
+// printCurrentSettings prints the current settings
+func (s *DynamicServer) printCurrentSettings() {
+	s.logRaw("")
+	s.logRaw("\033[1mCurrent Settings:\033[0m")
+	s.logRaw("  theme:     \033[36m%s\033[0m", s.config.Theme)
+	s.logRaw("  top-nav:   %s", s.formatBool(s.config.TopNav))
+	s.logRaw("  page-nav:  %s", s.formatBool(s.config.ShowPageNav))
+}
+
+// printSettingChange prints a setting change notification
+func (s *DynamicServer) printSettingChange(setting string, value bool) {
+	s.logRaw("\r\033[K\033[36m◆\033[0m %s: %s", setting, s.formatBool(value))
+}
+
+// formatBool formats a boolean for display
+func (s *DynamicServer) formatBool(b bool) string {
+	if b {
+		return "\033[32mon\033[0m"
+	}
+	return "\033[90moff\033[0m"
+}
+
+// logRaw prints a message without newline handling (for raw terminal output)
+func (s *DynamicServer) logRaw(format string, args ...interface{}) {
+	if !s.config.Quiet {
+		_, _ = fmt.Fprintf(s.writer, format+"\n", args...)
+	}
 }
 
 // log prints a message if not in quiet mode
@@ -846,6 +998,7 @@ func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, n
 		Breadcrumbs: breadcrumbsHTML,
 		ShowSearch:  true,
 		TopNavItems: topNavItems,
+		DevMode:     s.config.DevMode,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)

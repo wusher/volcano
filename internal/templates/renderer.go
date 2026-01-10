@@ -40,6 +40,7 @@ type PageData struct {
 	ShowSearch   bool          // Whether to show nav search
 	TopNavItems  []TopNavItem  // Items for top navigation bar (when --top-nav enabled)
 	BaseURL      string        // Base URL path prefix for all links (e.g., "/volcano")
+	DevMode      bool          // Enable live reload via SSE when server settings change
 }
 
 // Renderer handles HTML template rendering

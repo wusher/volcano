@@ -20,6 +20,7 @@ type Config struct {
 	ShowPageNav bool   // Show previous/next page navigation
 	Theme       string // Theme name (docs, blog, vanilla)
 	CSSPath     string // Path to custom CSS file
+	DevMode     bool   // Enable keyboard shortcuts for toggling settings in server mode
 }
 
 // DefaultConfig returns a Config with default values
