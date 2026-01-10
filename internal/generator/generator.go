@@ -57,7 +57,7 @@ type generatedPage struct {
 type Generator struct {
 	config         Config
 	renderer       *templates.Renderer
-	parser         *markdown.Parser
+	transformer    *markdown.ContentTransformer
 	logger         *output.Logger
 	faviconLinks   template.HTML
 	topNavItems    []templates.TopNavItem
@@ -93,11 +93,11 @@ func New(config Config, writer io.Writer) (*Generator, error) {
 	}
 
 	return &Generator{
-		config:   config,
-		renderer: renderer,
-		parser:   markdown.NewParser(),
-		logger:   output.NewLogger(writer, config.Colored, config.Quiet, config.Verbose),
-		baseURL:  baseURL,
+		config:      config,
+		renderer:    renderer,
+		transformer: markdown.NewContentTransformer(config.SiteURL),
+		logger:      output.NewLogger(writer, config.Colored, config.Quiet, config.Verbose),
+		baseURL:     baseURL,
 	}, nil
 }
 
@@ -285,9 +285,6 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		return err
 	}
 
-	// Process admonitions before parsing
-	mdContent = []byte(markdown.ProcessAdmonitions(string(mdContent)))
-
 	// Compute source directory for wikilink resolution
 	// e.g., "guides/customizing-appearance.md" -> "/guides/"
 	relDir := filepath.Dir(node.Path)
@@ -296,30 +293,20 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		sourceDir = "/" + tree.SlugifyPath(relDir) + "/"
 	}
 
-	// Parse the preprocessed content
-	page, err := markdown.ParseContent(
+	// Transform markdown to HTML with all enhancements
+	page, err := g.transformer.TransformMarkdown(
 		mdContent,
+		sourceDir,
 		node.SourcePath,
 		outputPath,
 		urlPath,
-		sourceDir,
 		node.Name, // fallback title
 	)
 	if err != nil {
 		return err
 	}
 
-	// Process content enhancements
 	htmlContent := page.Content
-
-	// Add heading anchors
-	htmlContent = markdown.AddHeadingAnchors(htmlContent)
-
-	// Process external links
-	htmlContent = markdown.ProcessExternalLinks(htmlContent, g.config.SiteURL)
-
-	// Wrap code blocks with copy button
-	htmlContent = markdown.WrapCodeBlocks(htmlContent)
 
 	// Calculate reading time
 	rt := content.CalculateReadingTime(htmlContent)

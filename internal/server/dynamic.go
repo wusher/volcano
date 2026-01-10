@@ -41,13 +41,14 @@ type DynamicConfig struct {
 
 // DynamicServer serves markdown files with live rendering
 type DynamicServer struct {
-	config    DynamicConfig
-	renderer  *templates.Renderer
-	writer    io.Writer
-	server    *http.Server
-	fs        FileSystem
-	scanner   TreeScanner
-	cssLoader styles.CSSLoader
+	config      DynamicConfig
+	renderer    *templates.Renderer
+	transformer *markdown.ContentTransformer
+	writer      io.Writer
+	server      *http.Server
+	fs          FileSystem
+	scanner     TreeScanner
+	cssLoader   styles.CSSLoader
 }
 
 // NewDynamicServer creates a new dynamic server
@@ -68,12 +69,13 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 	}
 
 	return &DynamicServer{
-		config:    config,
-		renderer:  renderer,
-		writer:    writer,
-		fs:        osFileSystem{},
-		scanner:   defaultScanner{},
-		cssLoader: cssLoader,
+		config:      config,
+		renderer:    renderer,
+		transformer: markdown.NewContentTransformer(""), // Dynamic server doesn't use site URL for external links
+		writer:      writer,
+		fs:          osFileSystem{},
+		scanner:     defaultScanner{},
+		cssLoader:   cssLoader,
 	}, nil
 }
 
@@ -277,12 +279,20 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 		sourceDir = "/" + tree.SlugifyPath(relDir) + "/"
 	}
 
-	// Parse the markdown file
-	page, err := markdown.ParseFile(
+	// Read and transform the markdown file
+	mdContent, err := s.fs.ReadFile(fullMdPath)
+	if err != nil {
+		s.logError("Failed to read markdown: %v", err)
+		return false
+	}
+
+	// Transform markdown to HTML with all enhancements
+	page, err := s.transformer.TransformMarkdown(
+		mdContent,
+		sourceDir,
 		fullMdPath,
 		outputPath,
 		nodeURLPath,
-		sourceDir,
 		node.Name,
 	)
 	if err != nil {
@@ -290,11 +300,7 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 		return false
 	}
 
-	// Process the HTML content
 	htmlContent := page.Content
-
-	// Wrap code blocks with copy button
-	htmlContent = markdown.WrapCodeBlocks(htmlContent)
 
 	// Validate internal links
 	validURLs := tree.BuildValidURLMap(site)
