@@ -735,6 +735,59 @@
 - Alternative: skip minification, accept larger page sizes
 - Middle ground: make it opt-in with flag
 
-**Verdict**: TBD - worth adding Go module dependency for 70-80% JS size reduction?
+**Verdict**: **YES** - Always-on minification with tdewolff/minify
+
+**Final Decision**:
+- Use tdewolff/minify (pure Go)
+- Always minify (no flag, enabled by default)
+- Minify at build time (embed minified JS in binary)
+- Add as Story 5
+
+---
+
+### Story 5: JavaScript Minification
+
+**Feature**: Minify all inline JavaScript to reduce page size and improve performance
+
+**Requirements**:
+- Add `github.com/tdewolff/minify/v2` as Go module dependency
+- Minify JavaScript during template loading in `NewRenderer()`:
+  - Extract `<script>` blocks from `layout.html`
+  - Minify each block with `js.Minify()` from tdewolff/minify
+  - Replace original JS with minified version in template
+  - Preserve template variables (e.g., `{{.BaseURL}}`) during minification
+- Apply to both embedded JS blocks:
+  - Theme detection script (~415 bytes)
+  - Main script block (~10.5KB)
+- When instant-nav feature is added: minify idiomorph + instant.page before embedding
+- Error handling: if minification fails, fall back to unminified JS with warning
+- Update CLAUDE.md to document new dependency
+- Always enabled (no flag needed)
+- Optional: Add `--no-minify` flag for debugging if needed later
+
+**Acceptance Criteria**:
+- JavaScript size reduced by 70-80% (~11KB → ~2-3KB)
+- All JavaScript functionality works correctly (theme toggle, search, navigation, etc.)
+- No runtime errors from minification
+- Build completes successfully with minified JS
+- Template variables preserved and working
+- Generated HTML contains minified inline JS
+
+**Testing**:
+- Verify theme toggle works
+- Verify navigation search works
+- Verify copy buttons work
+- Verify keyboard shortcuts work
+- Verify TOC scroll spy works
+- Verify all interactive features function correctly
+- Test in multiple browsers (Chrome, Firefox, Safari)
+
+**Estimated Effort**: Small-Medium (~50-100 lines Go code + testing)
+
+**Performance Impact**:
+- Saves ~8KB per page load
+- Faster page loads (especially on mobile/slow connections)
+- Better Core Web Vitals scores
+- Improved SEO from page speed
 
 ---
