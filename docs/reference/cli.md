@@ -378,6 +378,23 @@ When broken links are found:
 
 When using `volcano -s ./docs` (dynamic serving), broken links are shown inline on the page with detailed error messages instead of failing silently.
 
+## Generated Files
+
+In addition to your pages, Volcano automatically generates:
+
+### 404 Page
+
+A `404.html` file is created in the output directory for custom error handling. Most web servers and hosting platforms (GitHub Pages, Netlify, Vercel) will automatically serve this page for missing URLs.
+
+The 404 page includes:
+- Full site navigation (so users can find their way)
+- Consistent styling with your theme
+- A simple "Page Not Found" message
+
+### Styles
+
+A `styles.css` file containing the combined and minified theme CSS.
+
 ## Exit Codes
 
 | Code | Meaning |
