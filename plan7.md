@@ -209,6 +209,98 @@
 
 ---
 
+### 4. Full-Text Search (Client-Side)
+
+**Concept**: Add full-text search across all page content, not just navigation titles
+
+**Current Search**:
+- Only searches navigation tree by page titles (`data-search-text` attribute)
+- Filters/hides nav items that don't match
+- No content search capability
+
+**Proposed Client-Side Search**:
+- Generate a search index at build time (JSON file)
+- Include page titles, content, URLs
+- **Lazy-load index**: Only fetch `search-index.json` when user opens search (not on every page load)
+- Search in browser using JavaScript
+- Display results in modal or dedicated UI
+
+**Lazy-Loading Strategy**:
+- Don't include search index in initial page load
+- When user presses `/` or clicks search button, fetch the index
+- Cache in memory for rest of session
+- First search has ~200ms delay (download), subsequent searches are instant
+- Only users who search pay the bandwidth cost
+
+**Implementation Approaches**:
+
+**Option A: Custom Lightweight Search**
+- Build simple JSON index: `[{title, url, content, excerpt}, ...]`
+- ~100 lines of custom JS for searching (string matching, ranking)
+- Pros: Zero dependencies (aligns with Volcano philosophy), small, full control
+- Cons: Basic ranking, slower on huge sites, need to write search logic
+
+**Option B: Lunr.js (Popular Static Site Library)**
+- Pre-build Lunr index at generation time
+- Bundle serialized index with site
+- Load and search with Lunr.js (~40KB minified)
+- Pros: Good ranking, stemming, fast, well-tested
+- Cons: Adds external dependency, larger index files
+
+**Option C: Fuse.js (Fuzzy Search)**
+- Generate simple JSON index
+- Include Fuse.js (~15KB minified) for fuzzy matching
+- Pros: Typo-tolerant, smaller than Lunr, simple
+- Cons: Still a dependency, less powerful ranking
+
+**Build-Time Index Generation**:
+1. During `generator.Generate()`, collect all page data:
+   - Title, URL, full text content (stripped HTML)
+   - Maybe first 200 chars as excerpt
+2. Write to `search-index.json` in output dir
+3. Estimate size: ~1-2KB per page (depends on content length)
+   - 100 pages = 100-200KB index (reasonable)
+   - 1000 pages = 1-2MB (might need optimization)
+
+**UI Considerations**:
+- Add search modal/overlay (triggered by existing `/` shortcut or new button)
+- Show results with title, excerpt, URL
+- Highlight search terms in results
+- Navigate to page on click
+- Keep existing nav search OR replace it with full-text search
+
+**Complexity**:
+- **Option A (Custom)**: ~200-300 lines Go (indexing) + ~100-150 lines JS (search UI)
+- **Option B/C (Library)**: ~150 lines Go + ~50-100 lines JS + external lib
+
+**Zero-Dependency Consideration**:
+- Volcano is marketed as "zero-dependency"
+- Adding Lunr/Fuse doesn't add a *build* dependency (just a runtime JS file)
+- Could bundle the JS directly (like CSS is embedded)
+- Or recommend CDN link
+- Custom implementation keeps it truly zero-dependency
+
+**Pros**:
+- Major feature for documentation sites
+- Makes large sites much more usable
+- Common user request for static site generators
+
+**Cons**:
+- Index file size grows with content
+- Adds complexity to build process
+- Slower builds (need to process all content)
+- Need to maintain search UI/logic
+
+**Similar SSGs that have this**:
+- Hugo (has built-in search index generation)
+- MkDocs (search plugin)
+- Docusaurus (Algolia or local search)
+- VuePress (built-in search)
+
+**Verdict**: TBD - is this worth the complexity?
+
+---
+
 ## Stories
 
 <!-- Stories will be formalized here once we've discussed the ideas -->
