@@ -208,7 +208,7 @@ func (g *Generator) Generate() (*Result, error) {
 
 	// Step 7: Verify all internal links in content resolve
 	g.logger.Verbose("Verifying internal links in content...")
-	validURLs := tree.BuildValidURLMapWithAutoIndex(site.AllPages, foldersNeedingIndex)
+	validURLs := tree.BuildValidURLMapWithAutoIndex(site.AllPages, foldersNeedingIndex, g.config.SiteURL)
 	brokenContentLinks := g.verifyContentLinks(validURLs)
 	if len(brokenContentLinks) > 0 {
 		g.logger.Println("")

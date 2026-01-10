@@ -378,8 +378,8 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 
 	htmlContent := page.Content
 
-	// Validate internal links
-	validURLs := tree.BuildValidURLMap(site)
+	// Validate internal links (no base URL for dev server)
+	validURLs := tree.BuildValidURLMap(site, "")
 	brokenLinks := markdown.ValidateLinks(htmlContent, nodeURLPath, validURLs)
 	if len(brokenLinks) > 0 {
 		s.serveBrokenLinksError(w, nodeURLPath, brokenLinks, site)
