@@ -148,6 +148,67 @@
 
 ---
 
+### 3. Missing Meta Tags - Browser Theme Color
+
+**Concept**: Add missing meta tags, particularly `theme-color` for mobile browser chrome
+
+**Current Meta Tags** (from `internal/seo/meta.go`):
+- ✅ `charset="UTF-8"`
+- ✅ `name="viewport"`
+- ✅ `name="description"`
+- ✅ `name="robots"`
+- ✅ `name="author"`
+- ✅ `rel="canonical"`
+- ✅ Open Graph tags (og:title, og:description, og:type, og:url, og:site_name, og:image)
+- ✅ Twitter Card tags (twitter:card, twitter:title, twitter:description, twitter:image)
+
+**Missing/Recommended Meta Tags**:
+
+1. **`theme-color`** (HIGH PRIORITY)
+   - Colors mobile browser's address bar/UI chrome
+   - Example: `<meta name="theme-color" content="#ffffff">`
+   - Should match theme background colors
+   - Can use `media` attribute for dark mode: `<meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">`
+
+2. **`color-scheme`** (MEDIUM PRIORITY)
+   - Tells browser the page supports light/dark mode
+   - Example: `<meta name="color-scheme" content="light dark">`
+   - Improves native browser UI consistency
+
+3. **Apple iOS Meta Tags** (NICE TO HAVE)
+   - `apple-mobile-web-app-capable` - enables iOS standalone mode
+   - `apple-mobile-web-app-status-bar-style` - iOS status bar styling
+   - Only useful if users want PWA-like behavior
+
+4. **Windows Tile Color** (NICE TO HAVE)
+   - `msapplication-TileColor` - Windows Start menu tile color
+   - Less critical nowadays
+
+**Proposed Implementation**:
+- Add `theme-color` meta tags to `RenderMetaTags()` in `internal/seo/meta.go`
+- Use light/dark variants:
+  - Light: `#ffffff` or match theme background
+  - Dark: `#1a1a1a` or match dark theme background
+- Add `color-scheme: light dark` meta tag
+- Make configurable via Config if needed (or use hardcoded theme colors)
+
+**Interaction with Accent Color Feature**:
+- If accent color flag is provided, could optionally use accent for theme-color
+- Or stick with neutral background colors (safer default)
+
+**Pros**:
+- Better mobile browser experience
+- Professional polish
+- Colors match site theme automatically
+
+**Cons**:
+- Need to maintain color values
+- Should match CSS theme colors
+
+**Complexity**: Simple, ~10-20 lines of code
+
+---
+
 ## Stories
 
 <!-- Stories will be formalized here once we've discussed the ideas -->
