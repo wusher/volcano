@@ -28,6 +28,7 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 	fs.StringVar(&cfg.Title, "title", cfg.Title, "Site title")
 	fs.StringVar(&cfg.Theme, "theme", "docs", "Theme name (docs, blog, vanilla)")
 	fs.StringVar(&cfg.CSSPath, "css", "", "Path to custom CSS file")
+	fs.StringVar(&cfg.FaviconPath, "favicon", "", "Path to favicon file")
 	fs.BoolVar(&cfg.TopNav, "top-nav", false, "Display root files in top navigation bar")
 	fs.BoolVar(&cfg.ShowPageNav, "page-nav", false, "Show previous/next page navigation")
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress non-error output")
@@ -92,6 +93,18 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 		cfg.Theme = ""
 	}
 
+	// Validate favicon path if provided
+	if cfg.FaviconPath != "" {
+		if _, err := os.Stat(cfg.FaviconPath); err != nil {
+			if os.IsNotExist(err) {
+				errLogger.Error("favicon file not found: %s", cfg.FaviconPath)
+				return fmt.Errorf("favicon file not found: %s", cfg.FaviconPath)
+			}
+			errLogger.Error("cannot access favicon file: %v", err)
+			return err
+		}
+	}
+
 	if err := Serve(cfg, stdout); err != nil {
 		errLogger.Error("%v", err)
 		return err
@@ -117,6 +130,7 @@ func Serve(cfg *Config, w io.Writer) error {
 			ShowPageNav: cfg.ShowPageNav,
 			Theme:       cfg.Theme,
 			CSSPath:     cfg.CSSPath,
+			FaviconPath: cfg.FaviconPath,
 		}
 
 		srv, err := server.NewDynamicServer(dynamicCfg, w)
@@ -175,6 +189,7 @@ func printServeUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  --title <title>      Site title (default: My Site)")
 	_, _ = fmt.Fprintln(w, "  --theme <name>       Theme (docs, blog, vanilla; default: docs)")
 	_, _ = fmt.Fprintln(w, "  --css <path>         Path to custom CSS file (overrides theme)")
+	_, _ = fmt.Fprintln(w, "  --favicon <path>     Path to favicon file (ico, png, svg, gif)")
 	_, _ = fmt.Fprintln(w, "  --top-nav            Display root files in top navigation bar")
 	_, _ = fmt.Fprintln(w, "  --page-nav           Show previous/next page navigation")
 	_, _ = fmt.Fprintln(w, "  -q, --quiet          Suppress non-error output")
@@ -189,5 +204,5 @@ func printServeUsage(w io.Writer) {
 // serveValueFlags is the set of flags that take values for the serve command
 var serveValueFlags = map[string]bool{
 	"p": true, "port": true,
-	"title": true, "theme": true, "css": true,
+	"title": true, "theme": true, "css": true, "favicon": true,
 }
