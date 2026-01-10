@@ -24,6 +24,8 @@ func Generate(cfg *Config, w io.Writer) error {
 		ShowPageNav: cfg.ShowPageNav,
 		Theme:       cfg.Theme,
 		CSSPath:     cfg.CSSPath,
+		AccentColor: cfg.AccentColor,
+		InstantNav:  cfg.InstantNav,
 	}
 
 	gen, err := generator.New(genConfig, w)

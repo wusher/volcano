@@ -1,5 +1,7 @@
 # Volcano
 
+![Volcano Logo](logo.png)
+
 A zero-dependency static site generator that transforms markdown folders into beautiful, navigable documentation sites.
 
 ## Why Volcano?

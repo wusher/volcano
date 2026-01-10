@@ -20,6 +20,8 @@ type Config struct {
 	ShowPageNav bool   // Show previous/next page navigation
 	Theme       string // Theme name (docs, blog, vanilla)
 	CSSPath     string // Path to custom CSS file
+	AccentColor string // Custom accent color in hex format (e.g., "#ff6600")
+	InstantNav  bool   // Enable instant navigation with hover prefetching
 }
 
 // DefaultConfig returns a Config with default values

@@ -4,6 +4,8 @@ package styles
 import (
 	_ "embed"
 	"fmt"
+
+	"github.com/wusher/volcano/internal/color"
 )
 
 // LayoutCSS is the embedded shared layout stylesheet.
@@ -71,8 +73,9 @@ type CSSLoader interface {
 
 // CSSConfig holds configuration for loading CSS
 type CSSConfig struct {
-	Theme   string // Theme name (docs, blog, vanilla)
-	CSSPath string // Path to custom CSS file (takes precedence over Theme)
+	Theme       string // Theme name (docs, blog, vanilla)
+	CSSPath     string // Path to custom CSS file (takes precedence over Theme)
+	AccentColor string // Custom accent color in hex format (e.g., "#ff6600")
 }
 
 // cssLoader implements CSSLoader
@@ -101,5 +104,15 @@ func (l *cssLoader) LoadCSS() (string, error) {
 	} else {
 		css = GetCSS(l.config.Theme)
 	}
+
+	// Append accent color CSS if configured
+	if l.config.AccentColor != "" {
+		accentCSS, err := color.GenerateAccentCSS(l.config.AccentColor)
+		if err != nil {
+			return "", fmt.Errorf("invalid accent color: %w", err)
+		}
+		css = css + "\n" + accentCSS
+	}
+
 	return MinifyCSS(css)
 }

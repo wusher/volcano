@@ -352,10 +352,10 @@
                 try {
                     await navigator.clipboard.writeText(code);
                     this.classList.add('copied');
-                    this.querySelector('.copy-text').textContent = 'Copied!';
+                    this.setAttribute('aria-label', 'Copied!');
                     setTimeout(function() {
                         button.classList.remove('copied');
-                        button.querySelector('.copy-text').textContent = 'Copy';
+                        button.setAttribute('aria-label', 'Copy code to clipboard');
                     }, 2000);
                 } catch (err) {
                     console.error('Failed to copy:', err);
@@ -472,5 +472,10 @@
             if (modal && modal.close) modal.close();
         }
     </script>
+{{if .InstantNavJS}}
+    <script>
+{{.InstantNavJS}}
+    </script>
+{{end}}
 </body>
 </html>

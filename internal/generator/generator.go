@@ -11,6 +11,7 @@ import (
 	"github.com/wusher/volcano/internal/assets"
 	"github.com/wusher/volcano/internal/autoindex"
 	"github.com/wusher/volcano/internal/content"
+	"github.com/wusher/volcano/internal/instant"
 	"github.com/wusher/volcano/internal/markdown"
 	"github.com/wusher/volcano/internal/navigation"
 	"github.com/wusher/volcano/internal/output"
@@ -39,6 +40,8 @@ type Config struct {
 	ShowPageNav bool   // Show previous/next page navigation
 	Theme       string // Theme name (docs, blog, vanilla)
 	CSSPath     string // Path to custom CSS file
+	AccentColor string // Custom accent color in hex format (e.g., "#ff6600")
+	InstantNav  bool   // Enable instant navigation with hover prefetching
 }
 
 // Result holds the result of generation
@@ -64,14 +67,16 @@ type Generator struct {
 	topNavItems    []templates.TopNavItem
 	generatedPages []generatedPage // Track pages for link validation
 	baseURL        string          // Base URL path prefix extracted from SiteURL
+	instantNavJS   template.JS     // Instant navigation JavaScript (if enabled)
 }
 
 // New creates a new Generator
 func New(config Config, writer io.Writer) (*Generator, error) {
 	// Get CSS content using the shared CSSLoader
 	cssConfig := styles.CSSConfig{
-		Theme:   config.Theme,
-		CSSPath: config.CSSPath,
+		Theme:       config.Theme,
+		CSSPath:     config.CSSPath,
+		AccentColor: config.AccentColor,
 	}
 	cssLoader := styles.NewCSSLoader(cssConfig, os.ReadFile)
 	css, err := cssLoader.LoadCSS()
@@ -93,13 +98,20 @@ func New(config Config, writer io.Writer) (*Generator, error) {
 		baseURL = baseURL[:len(baseURL)-1]
 	}
 
-	return &Generator{
+	gen := &Generator{
 		config:      config,
 		renderer:    renderer,
 		transformer: markdown.NewContentTransformer(config.SiteURL),
 		logger:      output.NewLogger(writer, config.Colored, config.Quiet, config.Verbose),
 		baseURL:     baseURL,
-	}, nil
+	}
+
+	// Initialize instant navigation JS if enabled
+	if config.InstantNav {
+		gen.instantNavJS = template.JS(instant.InstantNavJS)
+	}
+
+	return gen, nil
 }
 
 // Generate runs the full site generation
@@ -380,6 +392,7 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		ShowSearch:   true,
 		TopNavItems:  g.topNavItems,
 		BaseURL:      g.baseURL,
+		InstantNavJS: g.instantNavJS,
 	}
 
 	// Create output directory
@@ -422,12 +435,13 @@ func (g *Generator) generate404(root *tree.Node) error {
 	nav := templates.RenderNavigationWithBaseURL(root, "", g.config.SiteURL)
 
 	data := templates.PageData{
-		SiteTitle:   g.config.Title,
-		PageTitle:   "Page Not Found",
-		Content:     template.HTML(content),
-		Navigation:  nav,
-		CurrentPath: "",
-		BaseURL:     g.baseURL,
+		SiteTitle:    g.config.Title,
+		PageTitle:    "Page Not Found",
+		Content:      template.HTML(content),
+		Navigation:   nav,
+		CurrentPath:  "",
+		BaseURL:      g.baseURL,
+		InstantNavJS: g.instantNavJS,
 	}
 
 	fullPath := filepath.Join(g.config.OutputDir, "404.html")

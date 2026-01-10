@@ -28,9 +28,11 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 	fs.StringVar(&cfg.Title, "title", cfg.Title, "Site title")
 	fs.StringVar(&cfg.Theme, "theme", "docs", "Theme name (docs, blog, vanilla)")
 	fs.StringVar(&cfg.CSSPath, "css", "", "Path to custom CSS file")
+	fs.StringVar(&cfg.AccentColor, "accent-color", "", "Custom accent color (hex format, e.g., '#ff6600')")
 	fs.StringVar(&cfg.FaviconPath, "favicon", "", "Path to favicon file")
 	fs.BoolVar(&cfg.TopNav, "top-nav", false, "Display root files in top navigation bar")
 	fs.BoolVar(&cfg.ShowPageNav, "page-nav", false, "Show previous/next page navigation")
+	fs.BoolVar(&cfg.InstantNav, "instant-nav", false, "Enable instant navigation with hover prefetching")
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Enable debug output")
@@ -130,6 +132,8 @@ func Serve(cfg *Config, w io.Writer) error {
 			ShowPageNav: cfg.ShowPageNav,
 			Theme:       cfg.Theme,
 			CSSPath:     cfg.CSSPath,
+			AccentColor: cfg.AccentColor,
+			InstantNav:  cfg.InstantNav,
 			FaviconPath: cfg.FaviconPath,
 		}
 
@@ -189,9 +193,11 @@ func printServeUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  --title <title>      Site title (default: My Site)")
 	_, _ = fmt.Fprintln(w, "  --theme <name>       Theme (docs, blog, vanilla; default: docs)")
 	_, _ = fmt.Fprintln(w, "  --css <path>         Path to custom CSS file (overrides theme)")
+	_, _ = fmt.Fprintln(w, "  --accent-color <hex> Custom accent color (e.g., '#ff6600')")
 	_, _ = fmt.Fprintln(w, "  --favicon <path>     Path to favicon file (ico, png, svg, gif)")
 	_, _ = fmt.Fprintln(w, "  --top-nav            Display root files in top navigation bar")
 	_, _ = fmt.Fprintln(w, "  --page-nav           Show previous/next page navigation")
+	_, _ = fmt.Fprintln(w, "  --instant-nav        Enable instant navigation with hover prefetching")
 	_, _ = fmt.Fprintln(w, "  -q, --quiet          Suppress non-error output")
 	_, _ = fmt.Fprintln(w, "  --verbose            Enable debug output")
 	_, _ = fmt.Fprintln(w, "  -h, --help           Show help")
@@ -204,5 +210,5 @@ func printServeUsage(w io.Writer) {
 // serveValueFlags is the set of flags that take values for the serve command
 var serveValueFlags = map[string]bool{
 	"p": true, "port": true,
-	"title": true, "theme": true, "css": true, "favicon": true,
+	"title": true, "theme": true, "css": true, "accent-color": true, "favicon": true,
 }
