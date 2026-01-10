@@ -226,6 +226,14 @@
             li.classList.toggle('expanded');
         });
 
+        // Close drawer on mobile when navigation link is clicked
+        document.querySelector('.tree-nav').addEventListener('click', function(e) {
+            const link = e.target.closest('a.file-link, a.folder-link');
+            if (!link) return;
+            // Close the mobile drawer when a link is clicked
+            closeDrawer();
+        });
+
         // Expand path to current page
         function expandActivePath() {
             document.querySelectorAll('.tree-nav a.active').forEach(function(active) {
