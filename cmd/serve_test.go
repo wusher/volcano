@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -190,5 +191,146 @@ func TestIsSourceDirectory_NonexistentDir(t *testing.T) {
 	result := isSourceDirectory("/nonexistent/directory/path")
 	if result {
 		t.Error("isSourceDirectory should return false for nonexistent directory")
+	}
+}
+
+func TestServeCommandHelp(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	err := ServeCommand([]string{"-h"}, &stdout, &stderr)
+	if err != nil {
+		t.Errorf("ServeCommand with -h should not return error, got: %v", err)
+	}
+	output := stdout.String()
+	if !strings.Contains(output, "Usage:") {
+		t.Error("Help output should contain 'Usage:'")
+	}
+	if !strings.Contains(output, "volcano serve") {
+		t.Error("Help output should contain 'volcano serve'")
+	}
+}
+
+func TestServeCommandHelpLong(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	err := ServeCommand([]string{"--help"}, &stdout, &stderr)
+	if err != nil {
+		t.Errorf("ServeCommand with --help should not return error, got: %v", err)
+	}
+	output := stdout.String()
+	if !strings.Contains(output, "Usage:") {
+		t.Error("Help output should contain 'Usage:'")
+	}
+}
+
+func TestServeCommandMissingInput(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	err := ServeCommand([]string{}, &stdout, &stderr)
+	if err == nil {
+		t.Error("ServeCommand without input should return error")
+	}
+	if !strings.Contains(err.Error(), "input folder is required") {
+		t.Errorf("Error should mention 'input folder is required', got: %v", err)
+	}
+}
+
+func TestServeCommandNonexistentInput(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	err := ServeCommand([]string{"/nonexistent/directory"}, &stdout, &stderr)
+	if err == nil {
+		t.Error("ServeCommand with nonexistent input should return error")
+	}
+	if !strings.Contains(err.Error(), "does not exist") {
+		t.Errorf("Error should mention 'does not exist', got: %v", err)
+	}
+}
+
+func TestServeCommandInvalidTheme(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Test"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	err := ServeCommand([]string{"--theme=nonexistent", tmpDir}, &stdout, &stderr)
+	if err == nil {
+		t.Error("ServeCommand with invalid theme should return error")
+	}
+	if !strings.Contains(err.Error(), "invalid theme") {
+		t.Errorf("Error should mention 'invalid theme', got: %v", err)
+	}
+}
+
+func TestServeCommandNonexistentCSS(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Test"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	err := ServeCommand([]string{"--css=/nonexistent/style.css", tmpDir}, &stdout, &stderr)
+	if err == nil {
+		t.Error("ServeCommand with nonexistent CSS should return error")
+	}
+	if !strings.Contains(err.Error(), "CSS file not found") {
+		t.Errorf("Error should mention 'CSS file not found', got: %v", err)
+	}
+}
+
+func TestServeCommandNonexistentFavicon(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Test"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	err := ServeCommand([]string{"--favicon=/nonexistent/favicon.ico", tmpDir}, &stdout, &stderr)
+	if err == nil {
+		t.Error("ServeCommand with nonexistent favicon should return error")
+	}
+	if !strings.Contains(err.Error(), "favicon file not found") {
+		t.Errorf("Error should mention 'favicon file not found', got: %v", err)
+	}
+}
+
+func TestPrintServeUsage(t *testing.T) {
+	var buf bytes.Buffer
+	printServeUsage(&buf)
+	output := buf.String()
+
+	expectedPhrases := []string{
+		"Start development server",
+		"Usage:",
+		"volcano serve",
+		"volcano server",
+		"--port",
+		"--title",
+		"--theme",
+		"--css",
+		"--favicon",
+		"--quiet",
+		"--help",
+		"Examples:",
+	}
+
+	for _, phrase := range expectedPhrases {
+		if !strings.Contains(output, phrase) {
+			t.Errorf("Usage output should contain %q", phrase)
+		}
+	}
+}
+
+func TestServeCommandInputNotDirectory(t *testing.T) {
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "file.txt")
+	if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	err := ServeCommand([]string{filePath}, &stdout, &stderr)
+	if err == nil {
+		t.Error("ServeCommand with file as input should return error")
+	}
+	if !strings.Contains(err.Error(), "not a directory") {
+		t.Errorf("Error should mention 'not a directory', got: %v", err)
 	}
 }
