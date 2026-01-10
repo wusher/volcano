@@ -127,7 +127,7 @@ a:hover {
   border-radius: 6px;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .search-input:focus {
