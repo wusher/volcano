@@ -27,6 +27,7 @@ func Serve(cfg *Config, w io.Writer) error {
 			ShowPageNav: cfg.ShowPageNav,
 			Theme:       cfg.Theme,
 			CSSPath:     cfg.CSSPath,
+			DevMode:     cfg.DevMode,
 		}
 
 		srv, err := server.NewDynamicServer(dynamicCfg, w)
