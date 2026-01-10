@@ -100,3 +100,24 @@ func TestAddHeadingAnchorsMultiple(t *testing.T) {
 		t.Error("should contain second-section id")
 	}
 }
+
+func TestItoa(t *testing.T) {
+	tests := []struct {
+		input    int
+		expected string
+	}{
+		{0, "0"},
+		{7, "7"},
+		{42, "42"},
+		{-9, "-9"},
+		{-123, "-123"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.expected, func(t *testing.T) {
+			if got := itoa(tc.input); got != tc.expected {
+				t.Errorf("itoa(%d) = %q, want %q", tc.input, got, tc.expected)
+			}
+		})
+	}
+}

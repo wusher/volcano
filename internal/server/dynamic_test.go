@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"volcano/internal/markdown"
 	"volcano/internal/tree"
 )
 
@@ -41,7 +42,7 @@ func (m *mockFileSystem) Stat(name string) (os.FileInfo, error) {
 	return nil, os.ErrNotExist
 }
 
-func (m *mockFileSystem) ReadFile(name string) ([]byte, error) {
+func (m *mockFileSystem) ReadFile(_ string) ([]byte, error) {
 	return nil, os.ErrNotExist
 }
 
@@ -750,5 +751,124 @@ func TestDynamicServer_ServeStaticFile_WithMockFS(t *testing.T) {
 	result := srv.serveStaticFile(rec, req, "/assets")
 	if result {
 		t.Error("should not serve directory as static file")
+	}
+}
+
+func TestDynamicServer_ServeBrokenLinksError(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	var buf bytes.Buffer
+	config := DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test Site",
+	}
+
+	server, err := NewDynamicServer(config, &buf)
+	if err != nil {
+		t.Fatalf("NewDynamicServer() error = %v", err)
+	}
+
+	root := tree.NewNode("", "", true)
+	about := tree.NewNode("About", "about.md", false)
+	root.AddChild(about)
+	site := &tree.Site{Root: root}
+
+	broken := []markdown.BrokenLink{
+		{SourcePage: "/about/", LinkURL: "/missing/"},
+	}
+
+	rec := httptest.NewRecorder()
+
+	server.serveBrokenLinksError(rec, "/about/", broken, site)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("status code = %d, want %d", rec.Code, http.StatusInternalServerError)
+	}
+
+	body := rec.Body.String()
+	if !strings.Contains(body, "Broken Links") {
+		t.Error("response body should contain broken links header")
+	}
+	if !strings.Contains(body, "/missing/") {
+		t.Error("response body should list broken link URL")
+	}
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "broken internal links") {
+		t.Error("log should mention broken internal links")
+	}
+}
+
+func TestDynamicServer_GetRenderer_MissingCSS(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	var buf bytes.Buffer
+	server, err := NewDynamicServer(DynamicConfig{SourceDir: tmpDir}, &buf)
+	if err != nil {
+		t.Fatalf("NewDynamicServer() error = %v", err)
+	}
+
+	server.config.CSSPath = filepath.Join(tmpDir, "missing.css")
+	renderer, err := server.getRenderer()
+	if err != nil {
+		t.Fatalf("getRenderer() error = %v", err)
+	}
+	if renderer != server.renderer {
+		t.Error("getRenderer() should fall back to cached renderer on CSS read failure")
+	}
+
+	if !strings.Contains(buf.String(), "Failed to read CSS file") {
+		t.Error("getRenderer() should log CSS read failure")
+	}
+}
+
+func TestDynamicServer_Log(t *testing.T) {
+	var buf bytes.Buffer
+	server := &DynamicServer{
+		config: DynamicConfig{Quiet: false},
+		writer: &buf,
+	}
+
+	server.log("hello %s", "world")
+	if !strings.Contains(buf.String(), "hello world") {
+		t.Error("log should write when not quiet")
+	}
+
+	buf.Reset()
+	server.config.Quiet = true
+	server.log("should not write")
+	if buf.Len() != 0 {
+		t.Error("log should not write when quiet")
+	}
+}
+
+func TestDynamicServerStart_ShutdownWithSignal(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	server, err := NewDynamicServer(DynamicConfig{SourceDir: tmpDir, Port: 0, Quiet: true}, io.Discard)
+	if err != nil {
+		t.Fatalf("NewDynamicServer() error = %v", err)
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		done <- server.Start()
+	}()
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		process, err := os.FindProcess(os.Getpid())
+		if err == nil {
+			_ = process.Signal(os.Interrupt)
+		}
+	}()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Errorf("Start() error = %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Start() did not return after signal")
 	}
 }

@@ -6,14 +6,18 @@ import (
 	"fmt"
 )
 
-// Theme CSS files embedded from themes directory
+// DocsCSS is the embedded docs theme stylesheet.
 //
 //go:embed themes/docs.css
 var DocsCSS string
 
+// BlogCSS is the embedded blog theme stylesheet.
+//
 //go:embed themes/blog.css
 var BlogCSS string
 
+// VanillaCSS is the embedded vanilla theme stylesheet.
+//
 //go:embed themes/vanilla.css
 var VanillaCSS string
 

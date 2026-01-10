@@ -280,4 +280,3 @@ func renderNavNodeFiltered(buf *bytes.Buffer, nodes []*tree.Node, currentPath st
 
 	buf.WriteString("</ul>\n")
 }
-

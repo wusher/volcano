@@ -32,7 +32,7 @@ type FileMetadata struct {
 
 // ExtractFileMetadata parses date/number prefixes from filename
 // Only extracts date from filename prefix - does not use file modification time
-func ExtractFileMetadata(filename string, modTime time.Time) FileMetadata {
+func ExtractFileMetadata(filename string, _ time.Time) FileMetadata {
 	// Only strip known markdown extensions, not arbitrary "extensions"
 	// This prevents "0. Inbox" from being trimmed to "0"
 	stem := filename

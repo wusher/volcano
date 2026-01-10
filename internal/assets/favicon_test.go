@@ -140,6 +140,44 @@ func TestProcessFaviconEmpty(t *testing.T) {
 	}
 }
 
+func TestProcessFaviconWithAppleTouchIcon(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputDir := filepath.Join(tmpDir, "output")
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	iconPath := filepath.Join(tmpDir, "favicon.png")
+	if err := os.WriteFile(iconPath, []byte("png"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	applePath := filepath.Join(tmpDir, "apple-touch-icon.png")
+	if err := os.WriteFile(applePath, []byte("png"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	config := FaviconConfig{
+		IconPath:       iconPath,
+		AppleTouchIcon: applePath,
+	}
+	links, err := ProcessFavicon(config, outputDir)
+	if err != nil {
+		t.Fatalf("ProcessFavicon error: %v", err)
+	}
+
+	if len(links) != 2 {
+		t.Fatalf("expected 2 links, got %d", len(links))
+	}
+
+	if links[1].Rel != "apple-touch-icon" {
+		t.Errorf("Rel = %q, want %q", links[1].Rel, "apple-touch-icon")
+	}
+	if links[1].Sizes != "180x180" {
+		t.Errorf("Sizes = %q, want %q", links[1].Sizes, "180x180")
+	}
+}
+
 func TestRenderFaviconLinks(t *testing.T) {
 	links := []FaviconLink{
 		{Rel: "icon", Type: "image/x-icon", Href: "/favicon.ico"},

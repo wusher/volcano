@@ -211,4 +211,3 @@ func TestIsAllUppercase(t *testing.T) {
 		})
 	}
 }
-

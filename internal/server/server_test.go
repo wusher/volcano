@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestResolvePath(t *testing.T) {
@@ -196,6 +197,54 @@ func TestQuietMode(t *testing.T) {
 	output := buf.String()
 	if output != "" {
 		t.Errorf("Quiet mode should produce no output, got %q", output)
+	}
+}
+
+func TestServerStart_ShutdownWithSignal(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.html"), []byte("<html>Home</html>"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := New(Config{Dir: tmpDir, Port: 0, Quiet: true}, io.Discard)
+
+	done := make(chan error, 1)
+	go func() {
+		done <- srv.Start()
+	}()
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		process, err := os.FindProcess(os.Getpid())
+		if err == nil {
+			_ = process.Signal(os.Interrupt)
+		}
+	}()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Errorf("Start() error = %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Start() did not return after signal")
+	}
+}
+
+func TestOSFileSystemReadFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "test.txt")
+	if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fs := osFileSystem{}
+	data, err := fs.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if string(data) != "content" {
+		t.Errorf("ReadFile() = %q, want %q", string(data), "content")
 	}
 }
 

@@ -220,3 +220,123 @@ func TestPageDataWithEmptyTitle(t *testing.T) {
 		t.Errorf("Title should be just page title when site title is empty, got: %s", html)
 	}
 }
+
+func TestBuildTopNavItems(t *testing.T) {
+	root := tree.NewNode("", "", true)
+
+	index := tree.NewNode("Home", "index.md", false)
+	index.FileName = "index.md"
+	index.SourcePath = "index.md"
+	root.AddChild(index)
+
+	readme := tree.NewNode("Readme", "readme.md", false)
+	readme.FileName = "readme.md"
+	readme.SourcePath = "readme.md"
+	root.AddChild(readme)
+
+	alpha := tree.NewNode("Alpha", "2024-01-10-alpha.md", false)
+	alpha.FileName = "2024-01-10-alpha.md"
+	alpha.SourcePath = "2024-01-10-alpha.md"
+	root.AddChild(alpha)
+
+	beta := tree.NewNode("Beta", "2023-12-01-beta.md", false)
+	beta.FileName = "2023-12-01-beta.md"
+	beta.SourcePath = "2023-12-01-beta.md"
+	root.AddChild(beta)
+
+	chapter1 := tree.NewNode("Chapter 1", "01-chapter.md", false)
+	chapter1.FileName = "01-chapter.md"
+	chapter1.SourcePath = "01-chapter.md"
+	root.AddChild(chapter1)
+
+	chapter2 := tree.NewNode("Chapter 2", "02-chapter.md", false)
+	chapter2.FileName = "02-chapter.md"
+	chapter2.SourcePath = "02-chapter.md"
+	root.AddChild(chapter2)
+
+	gamma := tree.NewNode("Gamma", "gamma.md", false)
+	gamma.FileName = "gamma.md"
+	gamma.SourcePath = "gamma.md"
+	root.AddChild(gamma)
+
+	guides := tree.NewNode("Guides", "guides", true)
+	guides.SourcePath = "guides"
+	root.AddChild(guides)
+
+	items := BuildTopNavItems(root, true)
+	if len(items) != 6 {
+		t.Fatalf("BuildTopNavItems() length = %d, want 6", len(items))
+	}
+
+	gotNames := []string{items[0].Name, items[1].Name, items[2].Name, items[3].Name, items[4].Name, items[5].Name}
+	wantNames := []string{"Alpha", "Beta", "Chapter 1", "Chapter 2", "Gamma", "Guides"}
+	for i, want := range wantNames {
+		if gotNames[i] != want {
+			t.Errorf("items[%d].Name = %q, want %q", i, gotNames[i], want)
+		}
+	}
+}
+
+func TestBuildTopNavItemsLimits(t *testing.T) {
+	root := tree.NewNode("", "", true)
+	for i := 0; i < 9; i++ {
+		node := tree.NewNode("Page", "page.md", false)
+		node.FileName = "page.md"
+		node.SourcePath = "page.md"
+		root.AddChild(node)
+	}
+
+	if items := BuildTopNavItems(root, false); items != nil {
+		t.Error("BuildTopNavItems() should return nil when top nav disabled")
+	}
+
+	if items := BuildTopNavItems(root, true); items != nil {
+		t.Error("BuildTopNavItems() should return nil when more than 8 items")
+	}
+}
+
+func TestTopNavNumberForSort(t *testing.T) {
+	if got := topNavNumberForSort(nil); got != 999999 {
+		t.Errorf("topNavNumberForSort(nil) = %d, want 999999", got)
+	}
+	val := 3
+	if got := topNavNumberForSort(&val); got != 3 {
+		t.Errorf("topNavNumberForSort(3) = %d, want 3", got)
+	}
+}
+
+func TestRenderNavigationWithTopNav(t *testing.T) {
+	root := tree.NewNode("", "", true)
+
+	about := tree.NewNode("About", "about.md", false)
+	about.FileName = "about.md"
+	about.SourcePath = "about.md"
+	root.AddChild(about)
+
+	contact := tree.NewNode("Contact", "contact.md", false)
+	contact.FileName = "contact.md"
+	contact.SourcePath = "contact.md"
+	root.AddChild(contact)
+
+	guides := tree.NewNode("Guides", "guides", true)
+	guides.SourcePath = "guides"
+	intro := tree.NewNode("Intro", "guides/intro.md", false)
+	intro.FileName = "intro.md"
+	intro.SourcePath = "guides/intro.md"
+	guides.AddChild(intro)
+	root.AddChild(guides)
+
+	topNavItems := BuildTopNavItems(root, true)
+	html := RenderNavigationWithTopNav(root, "/guides/intro/", topNavItems)
+	htmlStr := string(html)
+
+	if strings.Contains(htmlStr, "About") || strings.Contains(htmlStr, "Contact") {
+		t.Error("RenderNavigationWithTopNav() should filter top nav files from sidebar")
+	}
+	if !strings.Contains(htmlStr, "Guides") {
+		t.Error("RenderNavigationWithTopNav() should include folders in sidebar")
+	}
+	if !strings.Contains(htmlStr, "Intro") {
+		t.Error("RenderNavigationWithTopNav() should include folder children")
+	}
+}

@@ -105,3 +105,25 @@ func TestApplyLineHighlightingEmpty(t *testing.T) {
 		t.Error("with no lines to highlight, should return original")
 	}
 }
+
+func TestParseCodeBlockInfo(t *testing.T) {
+	tests := []struct {
+		info      string
+		wantLang  string
+		wantLines string
+	}{
+		{"go {3,5-7}", "go", "3,5-7"},
+		{"python", "python", ""},
+		{"  js  ", "js", ""},
+		{"", "", ""},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.info, func(t *testing.T) {
+			lang, lines := ParseCodeBlockInfo(tc.info)
+			if lang != tc.wantLang || lines != tc.wantLines {
+				t.Errorf("ParseCodeBlockInfo(%q) = (%q, %q), want (%q, %q)", tc.info, lang, lines, tc.wantLang, tc.wantLines)
+			}
+		})
+	}
+}

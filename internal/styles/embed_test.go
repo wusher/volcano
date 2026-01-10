@@ -80,7 +80,7 @@ func TestGetCSS(t *testing.T) {
 		{"docs", &DocsCSS},
 		{"blog", &BlogCSS},
 		{"vanilla", &VanillaCSS},
-		{"", &DocsCSS},       // Default
+		{"", &DocsCSS},        // Default
 		{"invalid", &DocsCSS}, // Unknown falls back to docs
 	}
 
@@ -103,9 +103,9 @@ func TestValidateTheme(t *testing.T) {
 		{"docs", false},
 		{"blog", false},
 		{"vanilla", false},
-		{"", false},         // Empty is valid (defaults to docs)
+		{"", false}, // Empty is valid (defaults to docs)
 		{"invalid", true},
-		{"DOCS", true},      // Case sensitive
+		{"DOCS", true}, // Case sensitive
 	}
 
 	for _, tt := range tests {

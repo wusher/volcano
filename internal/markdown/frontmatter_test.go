@@ -59,7 +59,7 @@ Some content with --- dashes`,
 			expected: `Some content with --- dashes`,
 		},
 		{
-			name: "windows line endings",
+			name:     "windows line endings",
 			input:    "---\r\ntitle: Test\r\n---\r\n\r\nContent",
 			expected: "Content",
 		},

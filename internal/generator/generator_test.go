@@ -192,6 +192,63 @@ func TestGenerateMultipleFiles(t *testing.T) {
 	}
 }
 
+func TestPrepareOutputDirWithClean(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "stale.txt"), []byte("stale"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	g, err := New(Config{OutputDir: outputDir, Clean: true}, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	if err := g.prepareOutputDir(); err != nil {
+		t.Fatalf("prepareOutputDir() error = %v", err)
+	}
+
+	if _, err := os.Stat(outputDir); err != nil {
+		t.Fatalf("output dir should exist, error: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "stale.txt")); !os.IsNotExist(err) {
+		t.Errorf("stale file should be removed, got error: %v", err)
+	}
+}
+
+func TestGetCSS(t *testing.T) {
+	tmpDir := t.TempDir()
+	cssPath := filepath.Join(tmpDir, "custom.css")
+	if err := os.WriteFile(cssPath, []byte("body { color: red; }"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	customCSS, err := getCSS(Config{CSSPath: cssPath})
+	if err != nil {
+		t.Fatalf("getCSS() error = %v", err)
+	}
+	if !strings.Contains(customCSS, "body") {
+		t.Error("getCSS() should include custom CSS content")
+	}
+
+	themeCSS, err := getCSS(Config{Theme: "vanilla"})
+	if err != nil {
+		t.Fatalf("getCSS() error = %v", err)
+	}
+	if themeCSS == "" {
+		t.Error("getCSS() should return theme CSS")
+	}
+
+	if _, err := getCSS(Config{CSSPath: filepath.Join(tmpDir, "missing.css")}); err == nil {
+		t.Error("getCSS() should return error for missing CSS file")
+	}
+}
+
 func TestGenerateWithClean(t *testing.T) {
 	tmpDir := t.TempDir()
 	inputDir := filepath.Join(tmpDir, "input")

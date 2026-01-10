@@ -28,3 +28,6 @@ vendor/
 
 # Generated output
 output/
+
+# Playwright MCP cache
+.playwright-mcp/
