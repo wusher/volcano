@@ -1,56 +1,45 @@
 # Volcano
 
-![Volcano Logo](docs/logo.png)
+<p align="center">
+  <img src="docs/logo.png" alt="Volcano Logo" width="200">
+</p>
 
-[![CI](https://github.com/wusher/volcano/actions/workflows/ci.yml/badge.svg)](https://github.com/wusher/volcano/actions/workflows/ci.yml)
+<p align="center">
+  <strong>Turn your markdown folders into websites. No config required.</strong>
+</p>
 
-A Go CLI static site generator that converts a folder of markdown files into a styled static website with a tree navigation layout.
+<p align="center">
+  <a href="https://github.com/wusher/volcano/actions/workflows/ci.yml"><img src="https://github.com/wusher/volcano/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+</p>
+
+---
+
+Volcano is an opinionated static site generator for people who just want their markdown files on the web. Point it at a folder—your Obsidian vault, your notes directory, your documentation—and get a beautiful, navigable website. No configuration files. No frontmatter. No build pipelines. Just markdown in, website out.
+
+## Why Volcano?
+
+**Your folder structure is your site structure.** Volcano reads your directories and creates matching navigation automatically. No need to define routes, menus, or page hierarchies in config files.
+
+**Zero configuration by design.** Other generators ask you to learn their templating language, configure plugins, and maintain YAML files. Volcano has one command: point it at markdown, get a website.
+
+**Works with your existing notes.** Have an Obsidian vault? A folder of documentation? Meeting notes organized by date? Volcano handles them all without requiring you to restructure anything.
+
+**Single binary, no dependencies.** No Node.js, Python, or Ruby. Download one file and run it. Works offline, builds fast, deploys anywhere.
 
 ## Features
 
-### Core Features
-- **No frontmatter** - Simple markdown files, no YAML required
-- **Alphabetical ordering** by filename
-- **Clean URLs** - `guides/intro.md` → `/guides/intro/`
-- **Tree navigation** - Collapsible folder structure in sidebar
-- **Light/dark mode** - With browser preference detection
-- **Responsive design** - Desktop sidebar, mobile drawer
-- **Embedded styling** - No external dependencies
-- **Fast builds** - Simple, efficient Go implementation
-
-### Navigation & UX (Stories 14-20)
-- **Table of Contents** - Auto-generated from h2-h4 headings with scroll spy highlighting
-- **Breadcrumb Navigation** - With schema.org structured data for SEO
-- **Previous/Next Navigation** - Page-level navigation in depth-first order
-- **Heading Anchor Links** - Clickable anchors with unique IDs for all headings
-- **External Link Indicators** - Visual icon and `target="_blank"` for external links
-- **Code Block Copy Button** - One-click copy to clipboard for code blocks
-- **Keyboard Shortcuts** - Press `?` to see all shortcuts (/, t, n, p, h)
-
-### Display Features (Stories 21-25)
-- **Print Stylesheet** - Optimized print layout hiding navigation
-- **Reading Time** - Estimated reading time based on word count
-- **Last Modified Date** - Shows when content was last updated (git or filesystem)
-- **Scroll Progress** - Visual indicator of page scroll position
-- **Back to Top Button** - Smooth scroll back to page top
-
-### SEO & Meta (Stories 26-28)
-- **SEO Meta Tags** - Description, robots, author, canonical URL
-- **Open Graph Support** - Full og:title, og:description, og:image, etc.
-- **Custom Favicon** - Support for .ico, .png, and .svg favicons
-
-### Content Features (Stories 29-31)
-- **Admonition Blocks** - Note, tip, warning, danger, info callout blocks
-- **Code Line Highlighting** - Highlight specific lines in code blocks
-- **Smooth Scroll** - Smooth scrolling with reduced-motion support
-
-### Advanced Navigation (Stories 32-37)
-- **Clickable Folders** - Folders with index files are clickable in navigation
-- **Navigation Search** - Filter navigation tree by typing
-- **Top Navigation Bar** - Optional horizontal nav for root-level files
-- **Auto-Generated Index** - Folders without index.md get automatic listings
-- **H1-Based Labels** - Navigation uses H1 titles instead of filenames
-- **Filename Prefixes** - Date (2024-01-01-) and number (01-) prefixes stripped from URLs
+- **Tree navigation** — Collapsible sidebar mirrors your folder structure
+- **Clean URLs** — `guides/intro.md` → `/guides/intro/`
+- **Table of contents** — Auto-generated from headings with scroll tracking
+- **Dark mode** — Automatic detection with manual toggle
+- **Admonitions** — Note, tip, warning, and info callout blocks
+- **Code highlighting** — Syntax highlighting with copy button
+- **SEO ready** — Meta tags, Open Graph, and sitemaps
+- **Keyboard shortcuts** — Press `?` to see all navigation shortcuts
+- **Reading time** — Estimated time displayed on each page
+- **Breadcrumbs** — Always know where you are in the hierarchy
+- **Search** — Filter navigation by typing
+- **Mobile responsive** — Drawer navigation on small screens
 
 ## Installation
 

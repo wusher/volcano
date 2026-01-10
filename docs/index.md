@@ -2,49 +2,39 @@
 
 ![Volcano Logo](logo.png)
 
-A zero-dependency static site generator that transforms markdown folders into beautiful, navigable documentation sites.
+**Turn your markdown folders into websites. No config required.**
+
+---
+
+Volcano is an opinionated static site generator for people who just want their markdown files on the web. Point it at a folder—your Obsidian vault, your notes directory, your documentation—and get a beautiful, navigable website.
+
+No configuration files. No frontmatter. No build pipelines. Just markdown in, website out.
 
 ## Why Volcano?
 
-Volcano is built for developers and writers who want to turn a folder of markdown files into a polished website without configuration files, complex setups, or external dependencies.
+**Your folder structure is your site structure.** Volcano reads your directories and creates matching navigation automatically. No need to define routes, menus, or page hierarchies in config files.
 
-**Zero Configuration** — Just point Volcano at your markdown folder and get a site. No YAML files, no plugins to install, no build pipelines to configure.
+**Works with your existing notes.** Have an Obsidian vault? A folder of documentation? Meeting notes organized by date? Volcano handles them all without requiring you to restructure anything or add metadata.
 
-**Instant Navigation** — Automatically generates a hierarchical sidebar, breadcrumbs, and table of contents from your folder structure.
+**Single binary, no dependencies.** No Node.js, Python, or Ruby. Download one file and run it. Works offline, builds fast, deploys anywhere.
 
-**Beautiful by Default** — Ships with carefully designed themes that look professional out of the box, with full dark mode support.
-
-**Single Binary** — One executable file. No Node.js, no Python, no Ruby. Download and run.
-
-## Key Features
-
-- **GitHub Flavored Markdown** — Tables, task lists, strikethrough, footnotes, and more
-- **Wiki-Style Links** — Use `[[Page Name]]` syntax for easy cross-referencing
-- **Admonitions** — Create note, tip, warning, and info callout blocks
-- **Syntax Highlighting** — Automatic code highlighting for 200+ languages
-- **SEO Ready** — Auto-generated meta tags, Open Graph, and Twitter Cards
-- **Fast Dev Server** — Preview your site locally with live rendering
-- **Clean URLs** — `docs/guide.md` becomes `/guide/` automatically
-- **Link Validation** — Broken internal links detected during build
-- **Keyboard Shortcuts** — Navigate efficiently with keyboard shortcuts
-
-## Quick Example
+## Quick Start
 
 ```bash
 # Install
 go install github.com/wusher/volcano@latest
 
-# Generate a site
-volcano ./my-docs --title="My Documentation"
+# Generate a site from your markdown folder
+volcano ./my-notes --title="My Site"
 
-# Preview it
+# Preview it locally
 volcano -s ./output
 ```
 
-Your markdown files:
+That's it. Your folder:
 
 ```
-my-docs/
+my-notes/
 ├── index.md
 ├── getting-started.md
 └── guides/
@@ -52,7 +42,20 @@ my-docs/
     └── configuration.md
 ```
 
-Become a fully navigable site with sidebar, breadcrumbs, and search.
+Becomes a website with tree navigation, breadcrumbs, table of contents, and search—all generated from your folder structure.
+
+## Features
+
+- **Tree navigation** — Collapsible sidebar mirrors your folder structure
+- **Clean URLs** — `guides/intro.md` → `/guides/intro/`
+- **Table of contents** — Auto-generated from headings
+- **Dark mode** — Automatic detection with toggle
+- **Admonitions** — Note, tip, warning, and info callouts
+- **Code highlighting** — Syntax highlighting with copy button
+- **SEO ready** — Meta tags, Open Graph support
+- **Keyboard shortcuts** — Press `?` for all shortcuts
+- **Search** — Filter navigation by typing
+- **Mobile responsive** — Works on any screen size
 
 ## Get Started
 
@@ -60,7 +63,7 @@ Ready to build your first site? Head to the [[Getting Started]] guide.
 
 ## Documentation
 
-- **[[guides/index|Guides]]** — Step-by-step tutorials for common tasks
-- **[[features/index|Features]]** — Deep dives into Volcano's capabilities
-- **[[reference/index|Reference]]** — CLI flags, URL structure, and technical details
-- **[[examples/index|Examples]]** — Real-world site configurations
+- **[[guides/index|Guides]]** — Step-by-step tutorials
+- **[[features/index|Features]]** — Deep dives into capabilities
+- **[[reference/index|Reference]]** — CLI flags and technical details
+- **[[examples/index|Examples]]** — Real-world configurations
