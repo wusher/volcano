@@ -94,7 +94,23 @@
 - **Option 2**: Inject a default accent color value
 - **Leaning towards**: Option 1 (no default) - keeps themes working exactly as they do now, purely opt-in feature
 
-**Verdict**: TBD - simple same-color vs tints/shades with proper color math
+**Verdict**: **OPTION C** - Generate tints & shades using HSL
+
+**Decision**:
+- Single `--accent-color="#ff6600"` flag
+- Convert to HSL and generate 3 variants:
+  - `--accent`: Original color (or normalized to 50% lightness)
+  - `--accent-dark`: ~10% lightness (for dark mode backgrounds/accents)
+  - `--accent-light`: ~95% lightness (for light mode backgrounds/accents)
+- Themes can use these variables where appropriate
+- No variables injected if flag not provided (purely opt-in)
+
+**Next Steps**:
+1. Implement HSL conversion utilities (hex → HSL → hex)
+2. Add `--accent-color` flag to Config struct
+3. Generate 3 CSS variables in template
+4. Update themes to use accent variables
+5. Test with various brand colors in both modes
 
 ---
 
