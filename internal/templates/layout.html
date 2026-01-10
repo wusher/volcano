@@ -217,23 +217,28 @@
             document.body.classList.remove('drawer-open');
         }
 
-        // Tree navigation toggle
-        document.querySelectorAll('.folder-toggle').forEach(function(toggle) {
-            toggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                const li = this.closest('li');
-                li.classList.toggle('expanded');
-            });
+        // Tree navigation toggle (uses event delegation to survive instant nav)
+        document.querySelector('.tree-nav').addEventListener('click', function(e) {
+            const toggle = e.target.closest('.folder-toggle');
+            if (!toggle) return;
+            e.preventDefault();
+            const li = toggle.closest('li');
+            li.classList.toggle('expanded');
         });
 
         // Expand path to current page
-        document.querySelectorAll('.tree-nav a.active').forEach(function(active) {
-            let parent = active.closest('li');
-            while (parent) {
-                parent.classList.add('expanded');
-                parent = parent.parentElement.closest('li');
-            }
-        });
+        function expandActivePath() {
+            document.querySelectorAll('.tree-nav a.active').forEach(function(active) {
+                let parent = active.closest('li');
+                while (parent) {
+                    parent.classList.add('expanded');
+                    parent = parent.parentElement.closest('li');
+                }
+            });
+        }
+        expandActivePath();
+        // Re-run after instant navigation
+        document.addEventListener('instant:navigated', expandActivePath);
 
         // Navigation search
         (function() {
