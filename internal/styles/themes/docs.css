@@ -30,7 +30,7 @@
   --link-hover: #333333;
   --code-bg: #f5f5f5;
 
-  /* Accent colors - dynamically derived from --accent if provided */
+  /* Accent colors - derived from --accent via color-mix() */
   --accent-background: color-mix(in srgb, var(--accent) 8%, white);
   --accent-foreground: color-mix(in srgb, var(--accent) 15%, black 85%);
 }
@@ -140,8 +140,8 @@ a:hover {
 
 .search-input:focus {
   outline: none;
-  border-color: var(--accent-foreground, var(--text-muted));
-  box-shadow: 0 0 0 3px var(--accent-background, rgba(0, 0, 0, 0.05));
+  border-color: var(--accent, var(--text-muted));
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
 }
 
 .search-input::placeholder {
@@ -176,7 +176,7 @@ a:hover {
 }
 
 [data-theme="dark"] .mobile-header {
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(26, 26, 26, 0.8);
 }
 
 .mobile-header .mobile-menu-btn,
@@ -211,15 +211,34 @@ a:hover {
    ========================================================================== */
 
 .theme-toggle {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 0.375rem;
+  background: none;
+  border: none;
   cursor: pointer;
-  color: var(--text-primary);
+  color: var(--text-muted);
 }
 
 .theme-toggle:hover {
-  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+@keyframes spin-in {
+  from {
+    transform: rotate(-180deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.theme-toggle:focus .sun-icon,
+.theme-toggle:focus .moon-icon {
+  animation: spin-in 0.4s ease;
+}
+
+.theme-toggle:focus {
+  outline: none;
 }
 
 /* ==========================================================================
@@ -270,8 +289,8 @@ a:hover {
 }
 
 .top-nav-list li a.active {
-  color: var(--accent-foreground, var(--text-primary));
-  border-bottom-color: var(--accent-foreground, var(--text-primary));
+  color: var(--accent, var(--text-primary));
+  border-bottom-color: var(--accent, var(--text-primary));
   border-bottom-width: 3px;
 }
 
@@ -293,9 +312,9 @@ a:hover {
 
 .tree-nav a.active {
   background-color: var(--bg-tertiary);
-  color: var(--text-primary);
+  color: var(--accent, var(--text-primary));
   font-weight: 600;
-  border-left: 3px solid var(--text-primary);
+  border-left: 3px solid var(--accent, var(--text-primary));
   padding-left: calc(0.5rem - 3px);
 }
 
@@ -425,8 +444,8 @@ a:hover {
 
 .page-nav-prev:hover,
 .page-nav-next:hover {
-  background-color: var(--accent-background, var(--bg-secondary));
-  border-color: var(--accent-foreground, var(--text-muted));
+  background-color: var(--bg-secondary);
+  border-color: var(--accent, var(--text-muted));
   text-decoration: none;
 }
 
@@ -606,7 +625,7 @@ kbd {
 
 .prose h2 {
   font-size: 1.5rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--accent, var(--border-color));
   padding-bottom: 0.25em;
 }
 
@@ -642,7 +661,7 @@ kbd {
 }
 
 .prose blockquote {
-  border-left: 4px solid var(--border-color);
+  border-left: 4px solid var(--accent, var(--border-color));
   color: var(--text-muted);
   font-style: italic;
 }
@@ -665,10 +684,12 @@ kbd {
 }
 
 .prose a {
+  color: var(--accent, var(--link-color));
   text-decoration: underline;
 }
 
 .prose a:hover {
+  color: var(--accent, var(--link-hover));
   text-decoration: none;
 }
 

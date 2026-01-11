@@ -102,7 +102,13 @@ func (l *cssLoader) LoadCSS() (string, error) {
 		}
 		css = string(content)
 	} else {
-		css = GetCSS(l.config.Theme)
+		// Try to load theme from filesystem first (for development)
+		// This enables live reload during development
+		css = l.loadThemeFromFilesystem()
+		if css == "" {
+			// Fall back to embedded theme
+			css = GetCSS(l.config.Theme)
+		}
 	}
 
 	// Append accent color CSS if configured
@@ -115,4 +121,30 @@ func (l *cssLoader) LoadCSS() (string, error) {
 	}
 
 	return MinifyCSS(css)
+}
+
+// loadThemeFromFilesystem tries to load theme CSS from local files (development mode)
+// Returns empty string if files don't exist (fall back to embedded)
+func (l *cssLoader) loadThemeFromFilesystem() string {
+	// Determine theme name
+	theme := l.config.Theme
+	if theme == "" {
+		theme = "docs"
+	}
+
+	// Try to read from internal/styles/themes/ directory
+	layoutPath := "internal/styles/themes/layout.css"
+	themePath := fmt.Sprintf("internal/styles/themes/%s.css", theme)
+
+	layoutContent, err := l.readFile(layoutPath)
+	if err != nil {
+		return "" // Files don't exist, use embedded
+	}
+
+	themeContent, err := l.readFile(themePath)
+	if err != nil {
+		return "" // Files don't exist, use embedded
+	}
+
+	return string(layoutContent) + "\n" + string(themeContent)
 }

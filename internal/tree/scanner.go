@@ -84,10 +84,9 @@ func scanDirectory(basePath, currentPath string, parent *Node, allPages *[]*Node
 				parent.IndexPath = relPath
 			}
 
-			// Skip adding root-level index/readme files to the tree
-			// (site title already links to home page)
-			isRootIndex := IsIndexFile(name) && filepath.Dir(relPath) == "."
-			if !isRootIndex {
+			// Skip adding index files to the tree navigation
+			// They're already represented by their parent folder
+			if !IsIndexFile(name) {
 				parent.AddChild(fileNode)
 			}
 			*allPages = append(*allPages, fileNode)

@@ -159,20 +159,16 @@ func (s *DynamicServer) serveFavicon(w http.ResponseWriter, urlPath string) bool
 	return true
 }
 
-// getRenderer returns a renderer, re-reading CSS file if using custom CSS
+// getRenderer returns a renderer, re-reading CSS on each request for live reload
 func (s *DynamicServer) getRenderer() (*templates.Renderer, error) {
-	// If using custom CSS, re-read on each request for live reload
-	if s.config.CSSPath != "" {
-		css, err := s.cssLoader.LoadCSS()
-		if err != nil {
-			// Fall back to cached renderer if file read fails
-			s.logError("Failed to read CSS file, using cached: %v", err)
-			return s.renderer, nil
-		}
-		return templates.NewRenderer(css)
+	// Always reload CSS for live reload (works for both custom CSS and theme files in development)
+	css, err := s.cssLoader.LoadCSS()
+	if err != nil {
+		// Fall back to cached renderer if CSS load fails
+		s.logError("Failed to load CSS, using cached: %v", err)
+		return s.renderer, nil
 	}
-	// Use cached renderer for embedded themes
-	return s.renderer, nil
+	return templates.NewRenderer(css)
 }
 
 // WithFileSystem sets a custom FileSystem (for testing)

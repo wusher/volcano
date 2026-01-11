@@ -1,8 +1,21 @@
 # Volcano
 
-![Volcano Logo](logo.png)
-
 **Turn your markdown folders into websites. No config required.**
+
+<style>
+.logo-float {
+  max-width: 260px;
+}
+
+@media (min-width: 768px) {
+  .logo-float {
+    float: right;
+  }
+}
+</style>
+
+<img src="logo.png" alt="Volcano Logo" class="logo-float">
+
 
 ---
 
