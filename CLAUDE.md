@@ -91,3 +91,13 @@ type Node struct {
 Templates and CSS use Go's `//go:embed` directive:
 - `internal/templates/layout.html` - main HTML structure
 - `internal/styles/themes/*.css` - theme stylesheets
+
+### Test Fixtures
+
+When fixing wiki link or markdown processing bugs, always store test fixtures in the `testdata/` folder:
+
+1. Create a folder under `testdata/` with markdown files that reproduce the issue
+2. Add an integration test that references the testdata folder
+3. Update `testdata/README.md` to document the test scenario
+
+This keeps test fixtures as real files (easier to inspect/debug) rather than inline strings in test code.

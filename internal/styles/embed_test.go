@@ -1,6 +1,7 @@
 package styles
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -152,5 +153,192 @@ func TestCSSBackwardCompat(t *testing.T) {
 	expected := LayoutCSS + "\n" + DocsCSS
 	if CSS != expected {
 		t.Error("CSS should equal LayoutCSS + DocsCSS for backward compatibility")
+	}
+}
+
+func TestNewCSSLoader(t *testing.T) {
+	config := CSSConfig{
+		Theme:       "docs",
+		CSSPath:     "",
+		AccentColor: "",
+	}
+
+	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+		return []byte("test css"), nil
+	})
+
+	if loader == nil {
+		t.Error("NewCSSLoader should return non-nil loader")
+	}
+}
+
+func TestCSSLoader_LoadCSS_EmbeddedTheme(t *testing.T) {
+	config := CSSConfig{
+		Theme:       "blog",
+		CSSPath:     "",
+		AccentColor: "",
+	}
+
+	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+		// Return error so it falls back to embedded
+		return nil, errors.New("file not found")
+	})
+
+	css, err := loader.LoadCSS()
+	if err != nil {
+		t.Fatalf("LoadCSS() error = %v", err)
+	}
+
+	if css == "" {
+		t.Error("LoadCSS() should return non-empty CSS for embedded theme")
+	}
+
+	// Should contain blog theme content
+	if !strings.Contains(css, "background") {
+		t.Error("LoadCSS() should contain CSS content")
+	}
+}
+
+func TestCSSLoader_LoadCSS_CustomFile(t *testing.T) {
+	customCSS := "body { color: blue; }"
+
+	config := CSSConfig{
+		Theme:       "docs",
+		CSSPath:     "custom.css",
+		AccentColor: "",
+	}
+
+	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+		if path == "custom.css" {
+			return []byte(customCSS), nil
+		}
+		t.Errorf("Unexpected file path: %s", path)
+		return nil, nil
+	})
+
+	css, err := loader.LoadCSS()
+	if err != nil {
+		t.Fatalf("LoadCSS() error = %v", err)
+	}
+
+	if !strings.Contains(css, "color:blue") {
+		t.Error("LoadCSS() should return minified custom CSS")
+	}
+}
+
+func TestCSSLoader_LoadCSS_WithAccentColor(t *testing.T) {
+	config := CSSConfig{
+		Theme:       "docs",
+		CSSPath:     "",
+		AccentColor: "#ff0000",
+	}
+
+	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+		// Return error so it falls back to embedded
+		return nil, errors.New("file not found")
+	})
+
+	css, err := loader.LoadCSS()
+	if err != nil {
+		t.Fatalf("LoadCSS() error = %v", err)
+	}
+
+	if !strings.Contains(css, "#ff0000") {
+		t.Error("LoadCSS() should contain accent color")
+	}
+}
+
+func TestCSSLoader_LoadCSS_InvalidAccentColor(t *testing.T) {
+	config := CSSConfig{
+		Theme:       "docs",
+		CSSPath:     "",
+		AccentColor: "not-a-color",
+	}
+
+	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+		// Return error so it falls back to embedded
+		return nil, errors.New("file not found")
+	})
+
+	_, err := loader.LoadCSS()
+	if err == nil {
+		t.Error("LoadCSS() should return error for invalid accent color")
+	}
+}
+
+func TestCSSLoader_LoadCSS_FileReadError(t *testing.T) {
+	config := CSSConfig{
+		Theme:       "docs",
+		CSSPath:     "missing.css",
+		AccentColor: "",
+	}
+
+	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+		return nil, errors.New("file not found")
+	})
+
+	_, err := loader.LoadCSS()
+	if err == nil {
+		t.Error("LoadCSS() should return error when custom CSS file cannot be read")
+	}
+}
+
+func TestCSSLoader_LoadThemeFromFilesystem(t *testing.T) {
+	config := CSSConfig{
+		Theme:       "docs",
+		CSSPath:     "",
+		AccentColor: "",
+	}
+
+	// Test with files that exist
+	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+		if path == "internal/styles/themes/layout.css" {
+			return []byte("body { margin: 0; /* layout */ }"), nil
+		}
+		if path == "internal/styles/themes/docs.css" {
+			return []byte(".docs { color: red; /* docs */ }"), nil
+		}
+		t.Errorf("Unexpected file path: %s", path)
+		return nil, nil
+	})
+
+	css, err := loader.LoadCSS()
+	if err != nil {
+		t.Fatalf("LoadCSS() error = %v", err)
+	}
+
+	// Should contain both layout and docs theme
+	if !strings.Contains(css, "margin") || !strings.Contains(css, ".docs") {
+		t.Error("LoadCSS() should load theme from filesystem when files exist")
+	}
+}
+
+func TestCSSLoader_LoadThemeFromFilesystem_Fallback(t *testing.T) {
+	config := CSSConfig{
+		Theme:       "docs",
+		CSSPath:     "",
+		AccentColor: "",
+	}
+
+	// Test with files that don't exist - should fall back to embedded
+	fileReadCount := 0
+	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+		fileReadCount++
+		// Return error to simulate files not existing
+		return nil, errors.New("file not found")
+	})
+
+	css, err := loader.LoadCSS()
+	if err != nil {
+		t.Fatalf("LoadCSS() error = %v", err)
+	}
+
+	if css == "" {
+		t.Error("LoadCSS() should fall back to embedded theme when files don't exist")
+	}
+
+	// Should have tried to read layout.css at least
+	if fileReadCount == 0 {
+		t.Error("LoadCSS() should attempt to read filesystem files before falling back")
 	}
 }

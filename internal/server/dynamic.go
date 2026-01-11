@@ -386,7 +386,7 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 
 	// Validate internal links (no base URL for dev server)
 	validURLs := tree.BuildValidURLMap(site, "")
-	brokenLinks := markdown.ValidateLinks(htmlContent, nodeURLPath, validURLs)
+	brokenLinks := markdown.ValidateLinksWithSource(htmlContent, nodeURLPath, fullMdPath, string(mdContent), validURLs)
 	if len(brokenLinks) > 0 {
 		s.serveBrokenLinksError(w, nodeURLPath, brokenLinks, site)
 		return true // We handled the request (with an error page)
@@ -640,7 +640,11 @@ func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage 
 	// Log the error
 	s.logError("Page %s has %d broken internal links:", sourcePage, len(brokenLinks))
 	for _, bl := range brokenLinks {
-		s.logError("  -> %s", bl.LinkURL)
+		if bl.SourceFile != "" && bl.LineNumber > 0 {
+			s.logError("  -> %s:%d - %s (resolves to: %s)", bl.SourceFile, bl.LineNumber, bl.OriginalSyntax, bl.LinkURL)
+		} else {
+			s.logError("  -> %s", bl.LinkURL)
+		}
 	}
 
 	// Build error content
@@ -649,19 +653,77 @@ func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage 
 	sb.WriteString("\n")
 	sb.WriteString(`<p>The page <code>`)
 	sb.WriteString(template.HTMLEscapeString(sourcePage))
-	sb.WriteString(`</code> contains broken internal links:</p>`)
+	sb.WriteString(`</code> contains `)
+	sb.WriteString(fmt.Sprintf("%d", len(brokenLinks)))
+	sb.WriteString(` broken internal link`)
+	if len(brokenLinks) != 1 {
+		sb.WriteString(`s`)
+	}
+	sb.WriteString(`:</p>`)
 	sb.WriteString("\n")
-	sb.WriteString(`<ul class="broken-links-list">`)
+	sb.WriteString(`<div class="broken-links-list">`)
 	sb.WriteString("\n")
-	for _, bl := range brokenLinks {
-		sb.WriteString(`<li><code>`)
+
+	for i, bl := range brokenLinks {
+		sb.WriteString(`<div class="broken-link-item" style="margin: 1.5rem 0; padding: 1rem; background: #2a2a2a; border-left: 4px solid #ff4444; border-radius: 4px;">`)
+		sb.WriteString("\n")
+
+		// Link number
+		sb.WriteString(fmt.Sprintf(`<div style="color: #ff4444; font-weight: bold; margin-bottom: 0.5rem;">Link #%d</div>`, i+1))
+		sb.WriteString("\n")
+
+		// File and line number
+		if bl.SourceFile != "" {
+			sb.WriteString(`<div style="margin-bottom: 0.5rem;"><strong>File:</strong> <code style="background: #1a1a1a; padding: 2px 6px; border-radius: 3px;">`)
+			sb.WriteString(template.HTMLEscapeString(bl.SourceFile))
+			if bl.LineNumber > 0 {
+				sb.WriteString(fmt.Sprintf(":%d", bl.LineNumber))
+			}
+			sb.WriteString(`</code></div>`)
+			sb.WriteString("\n")
+		}
+
+		// Original syntax
+		if bl.OriginalSyntax != "" {
+			sb.WriteString(`<div style="margin-bottom: 0.5rem;"><strong>Link Syntax:</strong> <code style="background: #1a1a1a; padding: 2px 6px; border-radius: 3px;">`)
+			sb.WriteString(template.HTMLEscapeString(bl.OriginalSyntax))
+			sb.WriteString(`</code></div>`)
+			sb.WriteString("\n")
+		}
+
+		// Link text
+		if bl.LinkText != "" && bl.LinkText != bl.LinkURL {
+			sb.WriteString(`<div style="margin-bottom: 0.5rem;"><strong>Link Text:</strong> <span style="color: #aaa;">`)
+			sb.WriteString(template.HTMLEscapeString(bl.LinkText))
+			sb.WriteString(`</span></div>`)
+			sb.WriteString("\n")
+		}
+
+		// Resolved URL
+		sb.WriteString(`<div style="margin-bottom: 0.5rem;"><strong>Broken URL:</strong> <code style="background: #1a1a1a; padding: 2px 6px; border-radius: 3px; color: #ff6666;">`)
 		sb.WriteString(template.HTMLEscapeString(bl.LinkURL))
-		sb.WriteString(`</code></li>`)
+		sb.WriteString(`</code></div>`)
+		sb.WriteString("\n")
+
+		// Suggestions
+		if len(bl.Suggestions) > 0 {
+			sb.WriteString(`<div style="margin-top: 0.75rem;"><strong style="color: #88ff88;">Suggestions:</strong><ul style="margin: 0.25rem 0; padding-left: 1.5rem;">`)
+			for _, suggestion := range bl.Suggestions {
+				sb.WriteString(`<li style="color: #aaa;"><code style="background: #1a1a1a; padding: 2px 6px; border-radius: 3px;">`)
+				sb.WriteString(template.HTMLEscapeString(suggestion))
+				sb.WriteString(`</code></li>`)
+			}
+			sb.WriteString(`</ul></div>`)
+			sb.WriteString("\n")
+		}
+
+		sb.WriteString(`</div>`)
 		sb.WriteString("\n")
 	}
-	sb.WriteString(`</ul>`)
+
+	sb.WriteString(`</div>`)
 	sb.WriteString("\n")
-	sb.WriteString(`<p>Please fix these links to continue.</p>`)
+	sb.WriteString(`<p style="margin-top: 2rem; padding: 1rem; background: #2a2a2a; border-radius: 4px;">💡 <strong>Tip:</strong> Fix these links in your markdown files and refresh the page.</p>`)
 
 	// Render navigation
 	var nav template.HTML

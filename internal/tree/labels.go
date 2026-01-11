@@ -40,33 +40,87 @@ func CleanLabel(filename string) string {
 	return name
 }
 
-// removeLeadingNumbers removes leading numeric prefixes like "01-", "001_", "0. ", "2024-01-01-"
+// removeLeadingNumbers removes leading numeric prefixes like "01-", "001_", "0. ", "01 ", "6 - ", "2024-01-01-"
+// Does NOT strip year-like numbers (4 digits, no leading zeros) followed by just space
 func removeLeadingNumbers(s string) string {
-	// Handle date-like prefixes (YYYY-MM-DD-)
+	// Handle date-like prefixes (YYYY-MM-DD- or YYYY-MM-DD )
 	if len(s) >= 11 && isDatePrefix(s[:11]) {
 		return s[11:]
 	}
+	// Also check for date with space separator (YYYY-MM-DD )
+	if len(s) >= 11 && isDatePrefixWithSpace(s[:11]) {
+		return strings.TrimLeft(s[11:], " ")
+	}
 
-	// Handle simple numeric prefixes (01-, 001_, 0. , etc.)
+	// Find where the leading digits end
+	digitEnd := 0
 	for i, r := range s {
 		if !unicode.IsDigit(r) {
-			if r == '-' || r == '_' {
-				// Skip the separator too
-				if i+1 < len(s) {
-					return s[i+1:]
-				}
+			digitEnd = i
+			break
+		}
+		digitEnd = i + 1
+	}
+
+	// No digits at start
+	if digitEnd == 0 {
+		return s
+	}
+
+	// No separator after digits
+	if digitEnd >= len(s) {
+		return s
+	}
+
+	numStr := s[:digitEnd]
+	sep := s[digitEnd]
+
+	// Handle dash or underscore separator: "01-title", "01_title"
+	if sep == '-' || sep == '_' {
+		if digitEnd+1 < len(s) {
+			return s[digitEnd+1:]
+		}
+		return s
+	}
+
+	// Handle dot separator: "0. title", "0.title"
+	if sep == '.' {
+		rest := s[digitEnd+1:]
+		rest = strings.TrimLeft(rest, " ")
+		if len(rest) > 0 {
+			return rest
+		}
+		return s
+	}
+
+	// Handle space separator: "01 title", "6 - title"
+	if sep == ' ' {
+		rest := s[digitEnd+1:]
+
+		// Check for space-dash-space pattern: "6 - title"
+		if len(rest) > 0 && (rest[0] == '-' || rest[0] == '_') {
+			rest = strings.TrimLeft(rest[1:], " ")
+			if len(rest) > 0 {
+				return rest
 			}
-			// Handle "0. " style prefix (number followed by dot)
-			if r == '.' {
-				// Skip dot and any following space
-				rest := s[i+1:]
-				rest = strings.TrimLeft(rest, " ")
-				if len(rest) > 0 {
-					return rest
-				}
-			}
-			// Not a numeric prefix, return as-is
 			return s
+		}
+
+		// For space-only separator, check if number looks like a year
+		// Year-like: 4 digits, starts with 1-9 (no leading zeros), like 2023, 1999
+		// NOT year-like: 01, 001, 0001, 1, 12 (ordering prefixes)
+		isYearLike := len(numStr) == 4 && numStr[0] >= '1' && numStr[0] <= '9'
+
+		if isYearLike {
+			// Don't strip year-like numbers with space-only separator
+			// "2023 Goals" stays as "2023 Goals"
+			return s
+		}
+
+		// Strip ordering prefixes like "01 title"
+		rest = strings.TrimLeft(rest, " ")
+		if len(rest) > 0 {
+			return rest
 		}
 	}
 
@@ -87,6 +141,31 @@ func isDatePrefix(s string) bool {
 			}
 		case 10:
 			if r != '-' {
+				return false
+			}
+		default:
+			if !unicode.IsDigit(r) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// isDatePrefixWithSpace checks if the string looks like "YYYY-MM-DD " (space at end)
+func isDatePrefixWithSpace(s string) bool {
+	if len(s) != 11 {
+		return false
+	}
+	// Format: YYYY-MM-DD (space at position 10)
+	for i, r := range s {
+		switch i {
+		case 4, 7:
+			if r != '-' {
+				return false
+			}
+		case 10:
+			if r != ' ' {
 				return false
 			}
 		default:

@@ -718,7 +718,15 @@ func TestDynamicServer_ServeBrokenLinksError(t *testing.T) {
 	site := &tree.Site{Root: root}
 
 	broken := []markdown.BrokenLink{
-		{SourcePage: "/about/", LinkURL: "/missing/"},
+		{
+			SourcePage:     "/about/",
+			SourceFile:     "/tmp/about.md",
+			LineNumber:     42,
+			LinkURL:        "/missing/",
+			OriginalSyntax: "[[missing]]",
+			LinkText:       "Missing Page",
+			Suggestions:    []string{"/contact/", "/help/"},
+		},
 	}
 
 	rec := httptest.NewRecorder()
@@ -735,6 +743,22 @@ func TestDynamicServer_ServeBrokenLinksError(t *testing.T) {
 	}
 	if !strings.Contains(body, "/missing/") {
 		t.Error("response body should list broken link URL")
+	}
+	// Check for detailed error information
+	if !strings.Contains(body, "/tmp/about.md") {
+		t.Error("response body should contain source file path")
+	}
+	if !strings.Contains(body, ":42") {
+		t.Error("response body should contain line number")
+	}
+	if !strings.Contains(body, "[[missing]]") {
+		t.Error("response body should contain original syntax")
+	}
+	if !strings.Contains(body, "Missing Page") {
+		t.Error("response body should contain link text")
+	}
+	if !strings.Contains(body, "/contact/") || !strings.Contains(body, "/help/") {
+		t.Error("response body should contain suggestions")
 	}
 
 	logOutput := buf.String()
@@ -771,8 +795,8 @@ func TestDynamicServer_GetRenderer_MissingCSS(t *testing.T) {
 		t.Error("getRenderer() should fall back to cached renderer on CSS read failure")
 	}
 
-	if !strings.Contains(buf.String(), "Failed to read CSS file") {
-		t.Error("getRenderer() should log CSS read failure")
+	if !strings.Contains(buf.String(), "Failed to load CSS") {
+		t.Error("getRenderer() should log CSS load failure")
 	}
 }
 

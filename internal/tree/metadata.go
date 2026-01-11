@@ -14,9 +14,13 @@ var (
 	// datePrefix matches YYYY-MM-DD followed by separator (-, _, or space)
 	// Supports: 2024-01-15-title, 2024_01_15_title, "2024-01-15 title"
 	datePrefixRegex = regexp.MustCompile(`^(\d{4})[-_](\d{2})[-_](\d{2})[-_\s](.+)$`)
-	// numberPrefix matches leading digits followed by separator (-, _, ., or space)
-	// Supports: 01-title, 01_title, "01 title", "0. title"
+	// numberPrefix matches leading digits followed by separator
+	// Supports: 01-title, 01_title, "0. title", "01 title", "6 - title"
+	// Pattern: number + (dash|underscore|dot+space|space+dash|space for leading-zero numbers)
 	numberPrefixRegex = regexp.MustCompile(`^(\d+)[-_.\s]\s*(.+)$`)
+	// yearLikeRegex matches 4-digit numbers that look like years (not ordering prefixes)
+	// Used to distinguish "2023 Goals" (keep year) from "01 Intro" (strip number)
+	yearLikeRegex = regexp.MustCompile(`^[1-9]\d{3}$`)
 )
 
 // FileMetadata holds parsed metadata from a filename
@@ -68,9 +72,24 @@ func ExtractFileMetadata(filename string, _ time.Time) FileMetadata {
 
 	// Try to extract number prefix from remaining
 	if matches := numberPrefixRegex.FindStringSubmatch(remaining); len(matches) == 3 {
-		num, _ := strconv.Atoi(matches[1])
-		meta.Number = &num
-		remaining = matches[2]
+		numStr := matches[1]
+		// Check if this looks like a year (4 digits starting with 1-9, no leading zeros)
+		// and if the separator is just a space (no dash/underscore/dot before the rest)
+		// If so, DON'T strip it - it's likely content like "2023 Goals"
+		isYearLike := yearLikeRegex.MatchString(numStr)
+		restPart := matches[2]
+		// Check if separator was just space (rest doesn't start with stripped separator chars)
+		separatorWasSpaceOnly := len(remaining) > len(numStr) &&
+			remaining[len(numStr)] == ' ' &&
+			(len(restPart) == 0 || (restPart[0] != '-' && restPart[0] != '_'))
+
+		// Don't strip year-like numbers with space-only separator
+		// "2023 Goals" stays as "2023 Goals"
+		if !isYearLike || !separatorWasSpaceOnly {
+			num, _ := strconv.Atoi(numStr)
+			meta.Number = &num
+			remaining = restPart
+		}
 	}
 
 	meta.Slug = Slugify(remaining)

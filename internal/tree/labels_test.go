@@ -123,9 +123,27 @@ func TestRemoveLeadingNumbers(t *testing.T) {
 		{"01-intro", "intro"},
 		{"001_setup", "setup"},
 		{"2024-01-01-post", "post"},
+		{"2023-06-19 California Real Estate Law", "California Real Estate Law"}, // Date with space separator
+		{"2023-06-19 Law sections", "Law sections"},                             // Date with space separator
 		{"no-numbers", "no-numbers"},
 		{"123", "123"},
 		{"12-34-56-test", "34-56-test"},
+		// Space-dash-space number prefixes (Obsidian style)
+		{"6 - Sign Up for Ramp", "Sign Up for Ramp"},
+		{"1 - Bamboo Onboarding", "Bamboo Onboarding"},
+		{"10 - New Hire Tasks", "New Hire Tasks"},
+		// Space-underscore-space number prefixes
+		{"6 _ Sign Up for Ramp", "Sign Up for Ramp"},
+		// Dot-space number prefixes
+		{"0. Inbox", "Inbox"},
+		{"1. Projects", "Projects"},
+		// Years should NOT be stripped (4 digits, no leading zeros, space separator)
+		{"2023 Goals", "2023 Goals"},
+		{"1999 Report", "1999 Report"},
+		// Ordering prefixes with space SHOULD be stripped (leading zeros or short numbers)
+		{"01 getting-started", "getting-started"},
+		{"001 chapter one", "chapter one"},
+		{"1 introduction", "introduction"},
 	}
 
 	for _, tt := range tests {
@@ -133,6 +151,41 @@ func TestRemoveLeadingNumbers(t *testing.T) {
 			result := removeLeadingNumbers(tt.input)
 			if result != tt.expected {
 				t.Errorf("removeLeadingNumbers(%q) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestSlugify(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"Hello World", "hello-world"},
+		{"API Reference", "api-reference"},
+		{"0. Inbox", "inbox"},
+		{"01-introduction", "introduction"},
+		{"2024-01-01-my-post", "my-post"},
+		// Space-dash-space number prefixes (Obsidian style)
+		{"6 - Sign Up for Ramp", "sign-up-for-ramp"},
+		{"1 - Bamboo Onboarding", "bamboo-onboarding"},
+		{"10 - New Hire Tasks", "new-hire-tasks"},
+		{"1. Projects", "projects"},
+		// Years should NOT be stripped
+		{"2023 Goals", "2023-goals"},
+		{"1999 Report", "1999-report"},
+		// Edge cases
+		{"simple", "simple"},
+		{"UPPERCASE", "uppercase"},
+		{"with   multiple   spaces", "with-multiple-spaces"},
+		{"special!@#chars", "specialchars"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			result := Slugify(tt.input)
+			if result != tt.expected {
+				t.Errorf("Slugify(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
 		})
 	}

@@ -53,6 +53,8 @@ type Result struct {
 // generatedPage tracks a page and its content for link validation
 type generatedPage struct {
 	urlPath     string
+	sourceFile  string
+	mdContent   string
 	htmlContent string
 }
 
@@ -224,9 +226,30 @@ func (g *Generator) Generate() (*Result, error) {
 	brokenContentLinks := g.verifyContentLinks(validURLs)
 	if len(brokenContentLinks) > 0 {
 		g.logger.Println("")
-		g.logger.Error("Found %d broken internal links:", len(brokenContentLinks))
-		for _, bl := range brokenContentLinks {
-			g.logger.Error("  %s: link to %s", bl.SourcePage, bl.LinkURL)
+		g.logger.Error("Found %d broken internal link(s):", len(brokenContentLinks))
+		for i, bl := range brokenContentLinks {
+			g.logger.Error("")
+			g.logger.Error("Link #%d:", i+1)
+			if bl.SourceFile != "" {
+				if bl.LineNumber > 0 {
+					g.logger.Error("  File: %s:%d", bl.SourceFile, bl.LineNumber)
+				} else {
+					g.logger.Error("  File: %s", bl.SourceFile)
+				}
+			}
+			if bl.OriginalSyntax != "" {
+				g.logger.Error("  Syntax: %s", bl.OriginalSyntax)
+			}
+			if bl.LinkText != "" && bl.LinkText != bl.LinkURL {
+				g.logger.Error("  Text: %s", bl.LinkText)
+			}
+			g.logger.Error("  Broken URL: %s", bl.LinkURL)
+			if len(bl.Suggestions) > 0 {
+				g.logger.Error("  Suggestions:")
+				for _, suggestion := range bl.Suggestions {
+					g.logger.Error("    - %s", suggestion)
+				}
+			}
 		}
 		return nil, fmt.Errorf("build failed: %d broken internal links found", len(brokenContentLinks))
 	}
@@ -275,7 +298,7 @@ func (g *Generator) verifyContentLinks(validURLs map[string]bool) []markdown.Bro
 	var allBroken []markdown.BrokenLink
 
 	for _, page := range g.generatedPages {
-		broken := markdown.ValidateLinks(page.htmlContent, page.urlPath, validURLs)
+		broken := markdown.ValidateLinksWithSource(page.htmlContent, page.urlPath, page.sourceFile, page.mdContent, validURLs)
 		allBroken = append(allBroken, broken...)
 	}
 
@@ -415,6 +438,8 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 	// Track page for link validation
 	g.generatedPages = append(g.generatedPages, generatedPage{
 		urlPath:     urlPath,
+		sourceFile:  node.SourcePath,
+		mdContent:   string(mdContent),
 		htmlContent: htmlContent,
 	})
 

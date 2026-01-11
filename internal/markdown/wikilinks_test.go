@@ -58,6 +58,16 @@ func TestConvertWikiLinks(t *testing.T) {
 		{"page with anchor and display text", "[[faq#help|Get Help]]", "", "[Get Help](/faq/#help)"},
 		{"explicit path with anchor", "[[reference/api#methods]]", "/guides/", "[api#methods](/reference/api/#methods)"},
 		{"just anchor (same page)", "[[#section]]", "/guides/", "[#section](#section)"},
+
+		// Attachments preserve file extension and don't get trailing slash
+		{"image png", "[[pasted-image-20251226101657.png]]", "", "[pasted-image-20251226101657.png](/pasted-image-20251226101657.png)"},
+		{"image with spaces", "[[My Screenshot.png]]", "", "[My Screenshot.png](/my-screenshot.png)"},
+		{"image in folder", "[[attachments/image.jpg]]", "", "[image.jpg](/attachments/image.jpg)"},
+		{"image relative", "[[screenshot.png]]", "/system/attachments/", "[screenshot.png](/system/attachments/screenshot.png)"},
+		{"pdf attachment", "[[documents/report.pdf]]", "", "[report.pdf](/documents/report.pdf)"},
+		{"video attachment", "[[videos/demo.mp4]]", "", "[demo.mp4](/videos/demo.mp4)"},
+		{"embed image", "![[image.png]]", "/assets/", "[image.png](/assets/image.png)"},
+		{"image with display text", "[[photo.jpg|My Photo]]", "", "[My Photo](/photo.jpg)"},
 	}
 
 	for _, tt := range tests {

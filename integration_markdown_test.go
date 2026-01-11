@@ -306,3 +306,165 @@ func TestIntegrationMarkdown_ExternalLinks(t *testing.T) {
 		t.Error("Expected URLs in code to remain as code, not converted to links")
 	}
 }
+
+// TestIntegrationMarkdown_WikiLinksWithNumberPrefixes tests that wiki links to files
+// with number prefixes (like "6 - Sign Up.md") resolve correctly.
+// This was a bug where wiki link URLs didn't match the actual generated file URLs
+// because Slugify didn't handle "N - Name" patterns the same as file metadata extraction.
+//
+// Test fixtures are in testdata/number-prefixes/
+func TestIntegrationMarkdown_WikiLinksWithNumberPrefixes(t *testing.T) {
+	inputDir := "testdata/number-prefixes"
+	outputDir := t.TempDir()
+
+	// Generate site from testdata fixtures
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Failed to generate site (exit code %d):\nstdout: %s\nstderr: %s",
+			exitCode, stdout.String(), stderr.String())
+	}
+
+	// Verify the index page is generated and contains correct links
+	indexPagePath := filepath.Join(outputDir, "index.html")
+	content, err := os.ReadFile(indexPagePath)
+	if err != nil {
+		t.Fatalf("Failed to read generated index page: %v", err)
+	}
+
+	html := string(content)
+
+	// These links should resolve correctly (numbers stripped from URL)
+	expectedLinks := []string{
+		`href="/tasks/sign-up-for-ramp/"`,  // "6 - Sign Up for Ramp" -> sign-up-for-ramp
+		`href="/tasks/bamboo-onboarding/"`, // "1 - Bamboo Onboarding" -> bamboo-onboarding
+		`href="/tasks/new-hire-tasks/"`,    // "10 - New Hire Tasks" -> new-hire-tasks
+		`href="/tasks/dashboard/"`,         // "01-dashboard" -> dashboard
+		`href="/tasks/introduction/"`,      // "02 introduction" -> introduction
+		`href="/tasks/2023-goals/"`,        // "2023 Goals" -> 2023-goals (year preserved)
+		`href="/tasks/1999-report/"`,       // "1999 Report" -> 1999-report (year preserved)
+		`href="/tasks/inbox/"`,             // "0. Inbox" -> inbox
+	}
+
+	for _, link := range expectedLinks {
+		if !strings.Contains(html, link) {
+			t.Errorf("Expected HTML to contain link: %s", link)
+		}
+	}
+
+	// Verify the target pages exist at the expected paths
+	expectedOutputPaths := []string{
+		"tasks/sign-up-for-ramp/index.html",
+		"tasks/bamboo-onboarding/index.html",
+		"tasks/new-hire-tasks/index.html",
+		"tasks/dashboard/index.html",
+		"tasks/introduction/index.html",
+		"tasks/2023-goals/index.html",
+		"tasks/1999-report/index.html",
+		"tasks/inbox/index.html",
+	}
+
+	for _, outputPath := range expectedOutputPaths {
+		fullPath := filepath.Join(outputDir, outputPath)
+		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+			t.Errorf("Expected output file to exist: %s", outputPath)
+		}
+	}
+}
+
+// TestIntegrationMarkdown_WikiLinksWithMdAnchor tests that wiki links with both
+// .md extension AND an anchor (e.g., [[file.md#section]]) work correctly.
+// This was a bug where the .md extension wasn't stripped when an anchor was present.
+//
+// Test fixtures are in testdata/wikilinks-md-anchor/
+func TestIntegrationMarkdown_WikiLinksWithMdAnchor(t *testing.T) {
+	inputDir := "testdata/wikilinks-md-anchor"
+	outputDir := t.TempDir()
+
+	// Generate site from testdata fixtures
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Failed to generate site (exit code %d):\nstdout: %s\nstderr: %s",
+			exitCode, stdout.String(), stderr.String())
+	}
+
+	// Verify the index page contains correct links (no .md in URLs)
+	indexPagePath := filepath.Join(outputDir, "index.html")
+	content, err := os.ReadFile(indexPagePath)
+	if err != nil {
+		t.Fatalf("Failed to read generated index page: %v", err)
+	}
+
+	html := string(content)
+
+	// These links should have .md stripped even with anchors
+	expectedLinks := []string{
+		`href="/target/#section-one"`,    // [[target.md#section-one]] -> /target/#section-one
+		`href="/folder/nested/#details"`, // [[folder/nested.md#details]] -> /folder/nested/#details
+		`href="/target/#section-two"`,    // [[target#section-two]] -> /target/#section-two
+		`href="/target/"`,                // [[target.md]] -> /target/
+	}
+
+	for _, link := range expectedLinks {
+		if !strings.Contains(html, link) {
+			t.Errorf("Expected HTML to contain link: %s", link)
+		}
+	}
+
+	// Should NOT contain .md in any href
+	if strings.Contains(html, `href="/target.md`) || strings.Contains(html, `href="/targetmd`) {
+		t.Error("HTML should not contain .md in href URLs")
+	}
+}
+
+// TestIntegrationMarkdown_WikiLinksWithAttachments tests that wiki links to
+// attachments (images, PDFs, etc.) preserve file extensions and don't get trailing slashes.
+// This was a bug where .png became png (dot removed) due to Slugify() removing dots.
+//
+// Test fixtures are in testdata/wikilinks-attachments/
+func TestIntegrationMarkdown_WikiLinksWithAttachments(t *testing.T) {
+	inputDir := "testdata/wikilinks-attachments"
+	outputDir := t.TempDir()
+
+	// Generate site from testdata fixtures
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Failed to generate site (exit code %d):\nstdout: %s\nstderr: %s",
+			exitCode, stdout.String(), stderr.String())
+	}
+
+	// Verify the index page contains correct links with extensions preserved
+	indexPagePath := filepath.Join(outputDir, "index.html")
+	content, err := os.ReadFile(indexPagePath)
+	if err != nil {
+		t.Fatalf("Failed to read generated index page: %v", err)
+	}
+
+	html := string(content)
+
+	// Attachment links should preserve extension and NOT have trailing slash
+	expectedLinks := []string{
+		`href="/attachments/screenshot.png"`, // [[attachments/screenshot.png]]
+		`href="/attachments/photo.jpg"`,      // [[attachments/photo.jpg]]
+		`href="/my-image.png"`,               // [[My Image.png]] (spaces -> dashes, ext preserved)
+		`href="/attachments/document.pdf"`,   // [[attachments/document.pdf]]
+	}
+
+	for _, link := range expectedLinks {
+		if !strings.Contains(html, link) {
+			t.Errorf("Expected HTML to contain attachment link: %s", link)
+		}
+	}
+
+	// Should NOT contain broken extension patterns (extension without dot)
+	if strings.Contains(html, "screenshotpng") || strings.Contains(html, "photojpg") {
+		t.Error("HTML should not contain extensions without dots")
+	}
+
+	// Display text should work for attachments
+	if !strings.Contains(html, ">View Photo</a>") {
+		t.Error("Expected display text for attachment link")
+	}
+}
