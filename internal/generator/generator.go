@@ -43,6 +43,7 @@ type Config struct {
 	CSSPath         string // Path to custom CSS file
 	AccentColor     string // Custom accent color in hex format (e.g., "#ff6600")
 	InstantNav      bool   // Enable instant navigation with hover prefetching
+	ViewTransitions bool   // Enable browser view transitions API
 }
 
 // Result holds the result of generation
@@ -61,16 +62,17 @@ type generatedPage struct {
 
 // Generator handles static site generation
 type Generator struct {
-	config         Config
-	renderer       *templates.Renderer
-	transformer    *markdown.ContentTransformer
-	logger         *output.Logger
-	faviconLinks   template.HTML
-	ogImageURL     string // Processed OG image URL (absolute if BaseURL provided)
-	topNavItems    []templates.TopNavItem
-	generatedPages []generatedPage // Track pages for link validation
-	baseURL        string          // Base URL path prefix extracted from SiteURL
-	instantNavJS   template.JS     // Instant navigation JavaScript (if enabled)
+	config          Config
+	renderer        *templates.Renderer
+	transformer     *markdown.ContentTransformer
+	logger          *output.Logger
+	faviconLinks    template.HTML
+	ogImageURL      string // Processed OG image URL (absolute if BaseURL provided)
+	topNavItems     []templates.TopNavItem
+	generatedPages  []generatedPage // Track pages for link validation
+	baseURL         string          // Base URL path prefix extracted from SiteURL
+	instantNavJS    template.JS     // Instant navigation JavaScript (if enabled)
+	viewTransitions bool            // Enable browser view transitions API
 }
 
 // New creates a new Generator
@@ -102,11 +104,12 @@ func New(config Config, writer io.Writer) (*Generator, error) {
 	}
 
 	gen := &Generator{
-		config:      config,
-		renderer:    renderer,
-		transformer: markdown.NewContentTransformer(config.SiteURL),
-		logger:      output.NewLogger(writer, config.Colored, config.Quiet, config.Verbose),
-		baseURL:     baseURL,
+		config:          config,
+		renderer:        renderer,
+		transformer:     markdown.NewContentTransformer(config.SiteURL),
+		logger:          output.NewLogger(writer, config.Colored, config.Quiet, config.Verbose),
+		baseURL:         baseURL,
+		viewTransitions: config.ViewTransitions,
 	}
 
 	// Initialize instant navigation JS if enabled
@@ -403,23 +406,24 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 
 	// Prepare template data
 	data := templates.PageData{
-		SiteTitle:    g.config.Title,
-		PageTitle:    page.Title,
-		Content:      template.HTML(htmlContent),
-		Navigation:   nav,
-		CurrentPath:  urlPath,
-		Breadcrumbs:  breadcrumbsHTML,
-		PageNav:      pageNavHTML,
-		TOC:          tocHTML,
-		MetaTags:     metaTagsHTML,
-		FaviconLinks: g.faviconLinks,
-		ReadingTime:  readingTime,
-		LastModified: lastModified,
-		HasTOC:       hasTOC,
-		ShowSearch:   true,
-		TopNavItems:  g.topNavItems,
-		BaseURL:      g.baseURL,
-		InstantNavJS: g.instantNavJS,
+		SiteTitle:       g.config.Title,
+		PageTitle:       page.Title,
+		Content:         template.HTML(htmlContent),
+		Navigation:      nav,
+		CurrentPath:     urlPath,
+		Breadcrumbs:     breadcrumbsHTML,
+		PageNav:         pageNavHTML,
+		TOC:             tocHTML,
+		MetaTags:        metaTagsHTML,
+		FaviconLinks:    g.faviconLinks,
+		ReadingTime:     readingTime,
+		LastModified:    lastModified,
+		HasTOC:          hasTOC,
+		ShowSearch:      true,
+		TopNavItems:     g.topNavItems,
+		BaseURL:         g.baseURL,
+		InstantNavJS:    g.instantNavJS,
+		ViewTransitions: g.viewTransitions,
 	}
 
 	// Create output directory
@@ -464,13 +468,14 @@ func (g *Generator) generate404(root *tree.Node) error {
 	nav := templates.RenderNavigationWithBaseURL(root, "", g.config.SiteURL)
 
 	data := templates.PageData{
-		SiteTitle:    g.config.Title,
-		PageTitle:    "Page Not Found",
-		Content:      template.HTML(content),
-		Navigation:   nav,
-		CurrentPath:  "",
-		BaseURL:      g.baseURL,
-		InstantNavJS: g.instantNavJS,
+		SiteTitle:       g.config.Title,
+		PageTitle:       "Page Not Found",
+		Content:         template.HTML(content),
+		Navigation:      nav,
+		CurrentPath:     "",
+		BaseURL:         g.baseURL,
+		InstantNavJS:    g.instantNavJS,
+		ViewTransitions: g.viewTransitions,
 	}
 
 	fullPath := filepath.Join(g.config.OutputDir, "404.html")

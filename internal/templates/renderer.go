@@ -23,24 +23,25 @@ type TopNavItem struct {
 
 // PageData contains all data needed to render a page
 type PageData struct {
-	SiteTitle    string        // Site title for header
-	PageTitle    string        // Current page title
-	Content      template.HTML // Rendered HTML content
-	Navigation   template.HTML // Rendered navigation HTML
-	CurrentPath  string        // Current page URL path for active state
-	CSS          template.CSS  // Embedded CSS styles
-	Breadcrumbs  template.HTML // Breadcrumb navigation
-	PageNav      template.HTML // Previous/Next navigation
-	TOC          template.HTML // Table of contents
-	MetaTags     template.HTML // SEO meta tags
-	FaviconLinks template.HTML // Favicon link tags
-	ReadingTime  string        // Reading time display (e.g., "5 min read")
-	LastModified string        // Last modified date (e.g., "January 5, 2025")
-	HasTOC       bool          // Whether to show TOC sidebar
-	ShowSearch   bool          // Whether to show nav search
-	TopNavItems  []TopNavItem  // Items for top navigation bar (when --top-nav enabled)
-	BaseURL      string        // Base URL path prefix for all links (e.g., "/volcano")
-	InstantNavJS template.JS   // Instant navigation JavaScript (when --instant-nav enabled)
+	SiteTitle       string        // Site title for header
+	PageTitle       string        // Current page title
+	Content         template.HTML // Rendered HTML content
+	Navigation      template.HTML // Rendered navigation HTML
+	CurrentPath     string        // Current page URL path for active state
+	CSS             template.CSS  // Embedded CSS styles
+	Breadcrumbs     template.HTML // Breadcrumb navigation
+	PageNav         template.HTML // Previous/Next navigation
+	TOC             template.HTML // Table of contents
+	MetaTags        template.HTML // SEO meta tags
+	FaviconLinks    template.HTML // Favicon link tags
+	ReadingTime     string        // Reading time display (e.g., "5 min read")
+	LastModified    string        // Last modified date (e.g., "January 5, 2025")
+	HasTOC          bool          // Whether to show TOC sidebar
+	ShowSearch      bool          // Whether to show nav search
+	TopNavItems     []TopNavItem  // Items for top navigation bar (when --top-nav enabled)
+	BaseURL         string        // Base URL path prefix for all links (e.g., "/volcano")
+	InstantNavJS    template.JS   // Instant navigation JavaScript (when --instant-nav enabled)
+	ViewTransitions bool          // Enable browser view transitions API (when --view-transitions enabled)
 }
 
 // Renderer handles HTML template rendering

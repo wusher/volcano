@@ -23,6 +23,7 @@ type Config struct {
 	CSSPath         string // Path to custom CSS file
 	AccentColor     string // Custom accent color in hex format (e.g., "#ff6600")
 	InstantNav      bool   // Enable instant navigation with hover prefetching
+	ViewTransitions bool   // Enable browser view transitions API
 }
 
 // DefaultConfig returns a Config with default values
