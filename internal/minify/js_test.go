@@ -148,3 +148,40 @@ func TestJSInvalidInput(t *testing.T) {
 		}
 	}
 }
+
+func TestJSErrorHandling(t *testing.T) {
+	// Test that JS function handles errors gracefully
+	// Most inputs will minify successfully, but we test various edge cases
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{
+			name:  "empty string",
+			input: "",
+		},
+		{
+			name:  "whitespace only",
+			input: "   \n\t  ",
+		},
+		{
+			name:  "unicode characters",
+			input: "const msg = '你好世界';",
+		},
+		{
+			name:  "mixed content",
+			input: "/* comment */ const x = 1; // inline comment\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Should not panic
+			output := JS(tt.input)
+			// Empty input should return empty output
+			if tt.input == "" && output != "" {
+				t.Errorf("Expected empty output for empty input, got: %q", output)
+			}
+		})
+	}
+}

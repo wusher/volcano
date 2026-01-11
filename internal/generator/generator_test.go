@@ -577,3 +577,111 @@ func TestGenerateWithNestedFolders(t *testing.T) {
 		t.Error("Deeply nested file should exist")
 	}
 }
+
+func TestGenerateWithAllOptionsEnabled(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create test files with links to exercise link validation
+	files := map[string]string{
+		"index.md":       "# Home\n\nSee [[about]] and [[guides/intro]]",
+		"about.md":       "# About\n\nBack to [[index|Home]]",
+		"guides/index.md": "# Guides",
+		"guides/intro.md": "# Introduction\n\nVisit [[/about/]]",
+	}
+
+	for path, content := range files {
+		fullPath := filepath.Join(inputDir, path)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:    inputDir,
+		OutputDir:   outputDir,
+		Title:       "Full Test",
+		SiteURL:     "https://example.com",
+		Theme:       "docs",
+		ShowPageNav: true,
+		ShowLastMod: true,
+		InstantNav:  true,
+		AccentColor: "#ff0000",
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	if result.PagesGenerated < 4 {
+		t.Errorf("PagesGenerated = %d, want at least 4", result.PagesGenerated)
+	}
+
+	// Verify base URL is used in generated files
+	indexPath := filepath.Join(outputDir, "index.html")
+	content, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatalf("Failed to read index.html: %v", err)
+	}
+
+	if !bytes.Contains(content, []byte("https://example.com")) {
+		t.Error("Generated HTML should contain base URL")
+	}
+
+	// Verify accent color is applied
+	if !bytes.Contains(content, []byte("#ff0000")) {
+		t.Error("Generated HTML should contain accent color")
+	}
+}
+
+func TestGenerateWithBrokenLinks(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create test files with broken links
+	files := map[string]string{
+		"index.md": "# Home\n\nSee [[missing]] page",
+	}
+
+	for path, content := range files {
+		fullPath := filepath.Join(inputDir, path)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Broken Links Test",
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err == nil {
+		t.Error("Generate() should return error for broken links")
+	}
+	if err != nil && !strings.Contains(err.Error(), "broken") {
+		t.Errorf("Error should mention broken links, got: %v", err)
+	}
+}
