@@ -32,6 +32,7 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 	fs.StringVar(&cfg.FaviconPath, "favicon", "", "Path to favicon file")
 	fs.BoolVar(&cfg.TopNav, "top-nav", false, "Display root files in top navigation bar")
 	fs.BoolVar(&cfg.ShowPageNav, "page-nav", false, "Show previous/next page navigation")
+	fs.BoolVar(&cfg.ShowBreadcrumbs, "breadcrumbs", cfg.ShowBreadcrumbs, "Show breadcrumb navigation")
 	fs.BoolVar(&cfg.InstantNav, "instant-nav", false, "Enable instant navigation with hover prefetching")
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress non-error output")
@@ -123,18 +124,19 @@ func Serve(cfg *Config, w io.Writer) error {
 	if isSourceDirectory(cfg.InputDir) {
 		// Use dynamic server for live rendering
 		dynamicCfg := server.DynamicConfig{
-			SourceDir:   cfg.InputDir,
-			Title:       cfg.Title,
-			Port:        cfg.Port,
-			Quiet:       cfg.Quiet,
-			Verbose:     cfg.Verbose,
-			TopNav:      cfg.TopNav,
-			ShowPageNav: cfg.ShowPageNav,
-			Theme:       cfg.Theme,
-			CSSPath:     cfg.CSSPath,
-			AccentColor: cfg.AccentColor,
-			InstantNav:  cfg.InstantNav,
-			FaviconPath: cfg.FaviconPath,
+			SourceDir:       cfg.InputDir,
+			Title:           cfg.Title,
+			Port:            cfg.Port,
+			Quiet:           cfg.Quiet,
+			Verbose:         cfg.Verbose,
+			TopNav:          cfg.TopNav,
+			ShowPageNav:     cfg.ShowPageNav,
+			ShowBreadcrumbs: cfg.ShowBreadcrumbs,
+			Theme:           cfg.Theme,
+			CSSPath:         cfg.CSSPath,
+			AccentColor:     cfg.AccentColor,
+			InstantNav:      cfg.InstantNav,
+			FaviconPath:     cfg.FaviconPath,
 		}
 
 		srv, err := server.NewDynamicServer(dynamicCfg, w)
@@ -188,23 +190,34 @@ func printServeUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  volcano serve [flags] <input>")
 	_, _ = fmt.Fprintln(w, "  volcano server [flags] <input>   (alias)")
 	_, _ = fmt.Fprintln(w, "")
-	_, _ = fmt.Fprintln(w, "Flags:")
+	_, _ = fmt.Fprintln(w, "Server:")
 	_, _ = fmt.Fprintln(w, "  -p, --port <port>    Server port (default: 1776)")
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "Site Configuration:")
 	_, _ = fmt.Fprintln(w, "  --title <title>      Site title (default: My Site)")
-	_, _ = fmt.Fprintln(w, "  --theme <name>       Theme (docs, blog, vanilla; default: docs)")
-	_, _ = fmt.Fprintln(w, "  --css <path>         Path to custom CSS file (overrides theme)")
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "Appearance:")
+	_, _ = fmt.Fprintln(w, "  --theme <name>       Theme: docs, blog, vanilla (default: docs)")
+	_, _ = fmt.Fprintln(w, "  --css <path>         Custom CSS file (overrides theme)")
 	_, _ = fmt.Fprintln(w, "  --accent-color <hex> Custom accent color (e.g., '#ff6600')")
-	_, _ = fmt.Fprintln(w, "  --favicon <path>     Path to favicon file (ico, png, svg, gif)")
-	_, _ = fmt.Fprintln(w, "  --top-nav            Display root files in top navigation bar")
-	_, _ = fmt.Fprintln(w, "  --page-nav           Show previous/next page navigation")
-	_, _ = fmt.Fprintln(w, "  --instant-nav        Enable instant navigation with hover prefetching")
+	_, _ = fmt.Fprintln(w, "  --favicon <path>     Favicon file (ico, png, svg, gif)")
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "Navigation:")
+	_, _ = fmt.Fprintln(w, "  --top-nav            Show root files in top navigation bar")
+	_, _ = fmt.Fprintln(w, "  --breadcrumbs        Show breadcrumb trail (default: true)")
+	_, _ = fmt.Fprintln(w, "  --page-nav           Show previous/next page links")
+	_, _ = fmt.Fprintln(w, "  --instant-nav        Enable hover prefetching for faster navigation")
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "Logging:")
 	_, _ = fmt.Fprintln(w, "  -q, --quiet          Suppress non-error output")
-	_, _ = fmt.Fprintln(w, "  --verbose            Enable debug output")
-	_, _ = fmt.Fprintln(w, "  -h, --help           Show help")
+	_, _ = fmt.Fprintln(w, "  --verbose            Show detailed server logs")
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "Other:")
+	_, _ = fmt.Fprintln(w, "  -h, --help           Show this help message")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Examples:")
 	_, _ = fmt.Fprintln(w, "  volcano serve ./docs -p 8080")
-	_, _ = fmt.Fprintln(w, "  volcano server --theme=blog ./posts")
+	_, _ = fmt.Fprintln(w, "  volcano serve --theme=blog --instant-nav ./posts")
 }
 
 // serveValueFlags is the set of flags that take values for the serve command

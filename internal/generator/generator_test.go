@@ -685,3 +685,223 @@ func TestGenerateWithBrokenLinks(t *testing.T) {
 		t.Errorf("Error should mention broken links, got: %v", err)
 	}
 }
+
+func TestGenerateWithBreadcrumbsDisabled(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create test files
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home\n\nTest page"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:        inputDir,
+		OutputDir:       outputDir,
+		Title:           "Test",
+		ShowBreadcrumbs: false, // Disable breadcrumbs
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check that generated HTML doesn't contain breadcrumbs
+	indexPath := filepath.Join(outputDir, "index.html")
+	content, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if strings.Contains(string(content), "class=\"breadcrumbs\"") {
+		t.Error("Generated HTML should not contain breadcrumbs when disabled")
+	}
+}
+
+func TestGenerateWithBreadcrumbsEnabled(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create test files with a subdirectory
+	if err := os.MkdirAll(filepath.Join(inputDir, "guides"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "guides", "intro.md"), []byte("# Introduction"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:        inputDir,
+		OutputDir:       outputDir,
+		Title:           "Test",
+		ShowBreadcrumbs: true, // Enable breadcrumbs
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check that generated HTML contains breadcrumbs for the nested page
+	guidePath := filepath.Join(outputDir, "guides", "intro", "index.html")
+	content, err := os.ReadFile(guidePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(string(content), "class=\"breadcrumbs\"") {
+		t.Error("Generated HTML should contain breadcrumbs when enabled")
+	}
+}
+
+func TestGenerateWithTopNav(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create test files - TopNav requires root files
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "about.md"), []byte("# About"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "docs.md"), []byte("# Docs"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Test",
+		TopNav:    true, // Enable top navigation
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check that generated HTML contains top nav
+	indexPath := filepath.Join(outputDir, "index.html")
+	content, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// TopNav should include links to About and Docs
+	contentStr := string(content)
+	if !strings.Contains(contentStr, "About") {
+		t.Error("Generated HTML with TopNav should contain About link")
+	}
+	if !strings.Contains(contentStr, "Docs") {
+		t.Error("Generated HTML with TopNav should contain Docs link")
+	}
+}
+
+func TestGenerateWithFaviconAndOGImage(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create favicon file
+	faviconPath := filepath.Join(tmpDir, "favicon.ico")
+	if err := os.WriteFile(faviconPath, []byte("fake-icon"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create OG image file
+	ogImagePath := filepath.Join(tmpDir, "og-image.png")
+	if err := os.WriteFile(ogImagePath, []byte("fake-image"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create markdown file
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:    inputDir,
+		OutputDir:   outputDir,
+		Title:       "Test",
+		FaviconPath: faviconPath,
+		OGImage:     ogImagePath,
+		Author:      "Test Author",
+		SiteURL:     "https://example.com",
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check that favicon was copied
+	faviconDest := filepath.Join(outputDir, "favicon.ico")
+	if _, err := os.Stat(faviconDest); os.IsNotExist(err) {
+		t.Error("Favicon should be copied to output directory")
+	}
+
+	// Check that OG image was copied
+	ogImageDest := filepath.Join(outputDir, "og-image.png")
+	if _, err := os.Stat(ogImageDest); os.IsNotExist(err) {
+		t.Error("OG image should be copied to output directory")
+	}
+
+	// Check that HTML contains favicon and OG image references
+	indexPath := filepath.Join(outputDir, "index.html")
+	content, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	contentStr := string(content)
+	if !strings.Contains(contentStr, "favicon") {
+		t.Error("Generated HTML should contain favicon link")
+	}
+	if !strings.Contains(contentStr, "og:image") {
+		t.Error("Generated HTML should contain OG image meta tag")
+	}
+	if !strings.Contains(contentStr, "Test Author") {
+		t.Error("Generated HTML should contain author meta tag")
+	}
+}

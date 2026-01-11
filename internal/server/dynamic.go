@@ -29,18 +29,19 @@ import (
 
 // DynamicConfig holds configuration for the dynamic server
 type DynamicConfig struct {
-	SourceDir   string
-	Title       string
-	Port        int
-	Quiet       bool
-	Verbose     bool
-	TopNav      bool
-	ShowPageNav bool
-	Theme       string
-	CSSPath     string
-	AccentColor string // Custom accent color in hex format (e.g., "#ff6600")
-	FaviconPath string // Path to favicon file
-	InstantNav  bool   // Enable instant navigation with hover prefetching
+	SourceDir       string
+	Title           string
+	Port            int
+	Quiet           bool
+	Verbose         bool
+	TopNav          bool
+	ShowPageNav     bool
+	ShowBreadcrumbs bool   // Show breadcrumb navigation
+	Theme           string
+	CSSPath         string
+	AccentColor     string // Custom accent color in hex format (e.g., "#ff6600")
+	FaviconPath     string // Path to favicon file
+	InstantNav      bool   // Enable instant navigation with hover prefetching
 }
 
 // DynamicServer serves markdown files with live rendering
@@ -396,9 +397,12 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 	rt := content.CalculateReadingTime(htmlContent)
 	readingTime := content.FormatReadingTime(rt)
 
-	// Build breadcrumbs
-	breadcrumbs := navigation.BuildBreadcrumbs(node, s.config.Title)
-	breadcrumbsHTML := navigation.RenderBreadcrumbs(breadcrumbs)
+	// Build breadcrumbs - only if enabled
+	var breadcrumbsHTML template.HTML
+	if s.config.ShowBreadcrumbs {
+		breadcrumbs := navigation.BuildBreadcrumbs(node, s.config.Title)
+		breadcrumbsHTML = navigation.RenderBreadcrumbs(breadcrumbs)
+	}
 
 	// Build page navigation (only if enabled)
 	var pageNavHTML template.HTML
@@ -434,6 +438,7 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 		HasTOC:       hasTOC,
 		ShowSearch:   true,
 		TopNavItems:  topNavItems,
+		BaseURL:      "",          // Empty for dev server (no base URL prefix)
 		InstantNavJS: s.instantNavJS,
 	}
 
@@ -738,6 +743,7 @@ func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage 
 		Navigation:   nav,
 		CurrentPath:  "",
 		FaviconLinks: s.faviconLinks,
+		BaseURL:      "",          // Empty for dev server (no base URL prefix)
 		InstantNavJS: s.instantNavJS,
 	}
 
@@ -779,6 +785,7 @@ func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 		Navigation:   nav,
 		CurrentPath:  "",
 		FaviconLinks: s.faviconLinks,
+		BaseURL:      "",          // Empty for dev server (no base URL prefix)
 		InstantNavJS: s.instantNavJS,
 	}
 
@@ -874,9 +881,12 @@ func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, n
 	index := autoindex.Build(node)
 	htmlContent := autoindex.RenderContent(index)
 
-	// Build breadcrumbs
-	breadcrumbs := navigation.BuildBreadcrumbs(node, s.config.Title)
-	breadcrumbsHTML := navigation.RenderBreadcrumbs(breadcrumbs)
+	// Build breadcrumbs - only if enabled
+	var breadcrumbsHTML template.HTML
+	if s.config.ShowBreadcrumbs {
+		breadcrumbs := navigation.BuildBreadcrumbs(node, s.config.Title)
+		breadcrumbsHTML = navigation.RenderBreadcrumbs(breadcrumbs)
+	}
 
 	// Build top nav items if enabled
 	topNavItems := templates.BuildTopNavItems(site.Root, s.config.TopNav)
@@ -895,6 +905,7 @@ func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, n
 		FaviconLinks: s.faviconLinks,
 		ShowSearch:   true,
 		TopNavItems:  topNavItems,
+		BaseURL:      "",          // Empty for dev server (no base URL prefix)
 		InstantNavJS: s.instantNavJS,
 	}
 
