@@ -42,23 +42,25 @@ type DynamicConfig struct {
 	AccentColor     string // Custom accent color in hex format (e.g., "#ff6600")
 	FaviconPath     string // Path to favicon file
 	InstantNav      bool   // Enable instant navigation with hover prefetching
+	ViewTransitions bool   // Enable browser view transitions API
 }
 
 // DynamicServer serves markdown files with live rendering
 type DynamicServer struct {
-	config       DynamicConfig
-	renderer     *templates.Renderer
-	transformer  *markdown.ContentTransformer
-	writer       io.Writer
-	server       *http.Server
-	fs           FileSystem
-	scanner      TreeScanner
-	cssLoader    styles.CSSLoader
-	faviconLinks template.HTML // Favicon HTML tags
-	faviconData  []byte        // Favicon file content (in memory)
-	faviconMime  string        // Favicon MIME type
-	faviconName  string        // Favicon filename (e.g., "logo.png")
-	instantNavJS template.JS   // Instant navigation JavaScript (if enabled)
+	config          DynamicConfig
+	renderer        *templates.Renderer
+	transformer     *markdown.ContentTransformer
+	writer          io.Writer
+	server          *http.Server
+	fs              FileSystem
+	scanner         TreeScanner
+	cssLoader       styles.CSSLoader
+	faviconLinks    template.HTML // Favicon HTML tags
+	faviconData     []byte        // Favicon file content (in memory)
+	faviconMime     string        // Favicon MIME type
+	faviconName     string        // Favicon filename (e.g., "logo.png")
+	instantNavJS    template.JS   // Instant navigation JavaScript (if enabled)
+	viewTransitions bool          // Enable browser view transitions API
 }
 
 // NewDynamicServer creates a new dynamic server
@@ -80,13 +82,14 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 	}
 
 	srv := &DynamicServer{
-		config:      config,
-		renderer:    renderer,
-		transformer: markdown.NewContentTransformer(""), // Dynamic server doesn't use site URL for external links
-		writer:      writer,
-		fs:          osFileSystem{},
-		scanner:     defaultScanner{},
-		cssLoader:   cssLoader,
+		config:          config,
+		renderer:        renderer,
+		transformer:     markdown.NewContentTransformer(""), // Dynamic server doesn't use site URL for external links
+		writer:          writer,
+		fs:              osFileSystem{},
+		scanner:         defaultScanner{},
+		cssLoader:       cssLoader,
+		viewTransitions: config.ViewTransitions,
 	}
 
 	// Initialize instant navigation JS if enabled
@@ -425,21 +428,22 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 
 	// Prepare template data
 	data := templates.PageData{
-		SiteTitle:    s.config.Title,
-		PageTitle:    page.Title,
-		Content:      template.HTML(htmlContent),
-		Navigation:   nav,
-		CurrentPath:  nodeURLPath,
-		Breadcrumbs:  breadcrumbsHTML,
-		PageNav:      pageNavHTML,
-		TOC:          tocHTML,
-		FaviconLinks: s.faviconLinks,
-		ReadingTime:  readingTime,
-		HasTOC:       hasTOC,
-		ShowSearch:   true,
-		TopNavItems:  topNavItems,
-		BaseURL:      "", // Empty for dev server (no base URL prefix)
-		InstantNavJS: s.instantNavJS,
+		SiteTitle:       s.config.Title,
+		PageTitle:       page.Title,
+		Content:         template.HTML(htmlContent),
+		Navigation:      nav,
+		CurrentPath:     nodeURLPath,
+		Breadcrumbs:     breadcrumbsHTML,
+		PageNav:         pageNavHTML,
+		TOC:             tocHTML,
+		FaviconLinks:    s.faviconLinks,
+		ReadingTime:     readingTime,
+		HasTOC:          hasTOC,
+		ShowSearch:      true,
+		TopNavItems:     topNavItems,
+		BaseURL:         "", // Empty for dev server (no base URL prefix)
+		InstantNavJS:    s.instantNavJS,
+		ViewTransitions: s.viewTransitions,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -737,14 +741,15 @@ func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage 
 	}
 
 	data := templates.PageData{
-		SiteTitle:    s.config.Title,
-		PageTitle:    "Build Error",
-		Content:      template.HTML(sb.String()),
-		Navigation:   nav,
-		CurrentPath:  "",
-		FaviconLinks: s.faviconLinks,
-		BaseURL:      "", // Empty for dev server (no base URL prefix)
-		InstantNavJS: s.instantNavJS,
+		SiteTitle:       s.config.Title,
+		PageTitle:       "Build Error",
+		Content:         template.HTML(sb.String()),
+		Navigation:      nav,
+		CurrentPath:     "",
+		FaviconLinks:    s.faviconLinks,
+		BaseURL:         "", // Empty for dev server (no base URL prefix)
+		InstantNavJS:    s.instantNavJS,
+		ViewTransitions: s.viewTransitions,
 	}
 
 	// Get renderer
@@ -779,14 +784,15 @@ func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 <p><a href="/">Return to home</a></p>`
 
 	data := templates.PageData{
-		SiteTitle:    s.config.Title,
-		PageTitle:    "Page Not Found",
-		Content:      template.HTML(content),
-		Navigation:   nav,
-		CurrentPath:  "",
-		FaviconLinks: s.faviconLinks,
-		BaseURL:      "", // Empty for dev server (no base URL prefix)
-		InstantNavJS: s.instantNavJS,
+		SiteTitle:       s.config.Title,
+		PageTitle:       "Page Not Found",
+		Content:         template.HTML(content),
+		Navigation:      nav,
+		CurrentPath:     "",
+		FaviconLinks:    s.faviconLinks,
+		BaseURL:         "", // Empty for dev server (no base URL prefix)
+		InstantNavJS:    s.instantNavJS,
+		ViewTransitions: s.viewTransitions,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -896,17 +902,18 @@ func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, n
 
 	// Prepare template data
 	data := templates.PageData{
-		SiteTitle:    s.config.Title,
-		PageTitle:    node.Name,
-		Content:      htmlContent,
-		Navigation:   nav,
-		CurrentPath:  urlPath,
-		Breadcrumbs:  breadcrumbsHTML,
-		FaviconLinks: s.faviconLinks,
-		ShowSearch:   true,
-		TopNavItems:  topNavItems,
-		BaseURL:      "", // Empty for dev server (no base URL prefix)
-		InstantNavJS: s.instantNavJS,
+		SiteTitle:       s.config.Title,
+		PageTitle:       node.Name,
+		Content:         htmlContent,
+		Navigation:      nav,
+		CurrentPath:     urlPath,
+		Breadcrumbs:     breadcrumbsHTML,
+		FaviconLinks:    s.faviconLinks,
+		ShowSearch:      true,
+		TopNavItems:     topNavItems,
+		BaseURL:         "", // Empty for dev server (no base URL prefix)
+		InstantNavJS:    s.instantNavJS,
+		ViewTransitions: s.viewTransitions,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)

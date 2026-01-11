@@ -6,8 +6,30 @@
     <title>{{.PageTitle}}{{if .SiteTitle}} - {{.SiteTitle}}{{end}}</title>
 {{.MetaTags}}
 {{.FaviconLinks}}
+{{if .ViewTransitions}}    <meta name="view-transition" content="same-origin">
+{{end}}
     <style>
 {{.CSS}}
+{{if .ViewTransitions}}
+        /* View Transitions API styles */
+        @view-transition {
+            navigation: auto;
+        }
+
+        /* Customize the default crossfade animation */
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+            animation-duration: 0.2s;
+        }
+
+        /* Respect reduced motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+            ::view-transition-old(root),
+            ::view-transition-new(root) {
+                animation-duration: 0s;
+            }
+        }
+{{end}}
     </style>
     <script>
         // Detect theme before page renders to prevent flash

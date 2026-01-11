@@ -34,6 +34,7 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 	fs.BoolVar(&cfg.ShowPageNav, "page-nav", false, "Show previous/next page navigation")
 	fs.BoolVar(&cfg.ShowBreadcrumbs, "breadcrumbs", cfg.ShowBreadcrumbs, "Show breadcrumb navigation")
 	fs.BoolVar(&cfg.InstantNav, "instant-nav", false, "Enable instant navigation with hover prefetching")
+	fs.BoolVar(&cfg.ViewTransitions, "view-transitions", false, "Enable browser view transitions API")
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Enable debug output")
@@ -136,6 +137,7 @@ func Serve(cfg *Config, w io.Writer) error {
 			CSSPath:         cfg.CSSPath,
 			AccentColor:     cfg.AccentColor,
 			InstantNav:      cfg.InstantNav,
+			ViewTransitions: cfg.ViewTransitions,
 			FaviconPath:     cfg.FaviconPath,
 		}
 
@@ -207,6 +209,7 @@ func printServeUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  --breadcrumbs        Show breadcrumb trail (default: true)")
 	_, _ = fmt.Fprintln(w, "  --page-nav           Show previous/next page links")
 	_, _ = fmt.Fprintln(w, "  --instant-nav        Enable hover prefetching for faster navigation")
+	_, _ = fmt.Fprintln(w, "  --view-transitions   Enable browser view transitions API")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Logging:")
 	_, _ = fmt.Fprintln(w, "  -q, --quiet          Suppress non-error output")
