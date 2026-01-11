@@ -31,8 +31,10 @@
   --code-bg: #f5f5f5;
 
   /* Accent colors - dynamically derived from --accent if provided */
+  /* These stay the same in both light and dark modes */
   --accent-background: color-mix(in srgb, var(--accent) 8%, white);
   --accent-foreground: color-mix(in srgb, var(--accent) 100%, black 70%);
+
   /* Semantic accent aliases */
   --accent-light: var(--accent-background);  /* lighter in light mode */
   --accent-dark: var(--accent-foreground);   /* darker in light mode */
@@ -50,9 +52,6 @@
   --link-hover: #cccccc;
   --code-bg: #1a1a1a;
 
-  /* Accent colors - dynamically derived from --accent if provided */
-  --accent-background: color-mix(in srgb, var(--accent) 15%, black);
-  --accent-foreground: color-mix(in srgb, var(--accent) 100%, white 80%);
   /* Semantic accent aliases (swapped for dark mode) */
   --accent-light: var(--accent-foreground);  /* lighter in dark mode */
   --accent-dark: var(--accent-background);   /* darker in dark mode */
