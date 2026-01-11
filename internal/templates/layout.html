@@ -369,22 +369,30 @@
         })();
 
         // Copy code button
-        document.querySelectorAll('.copy-button').forEach(function(button) {
-            button.addEventListener('click', async function() {
-                const code = this.parentElement.querySelector('code').textContent;
-                try {
-                    await navigator.clipboard.writeText(code);
-                    this.classList.add('copied');
-                    this.setAttribute('aria-label', 'Copied!');
-                    setTimeout(function() {
-                        button.classList.remove('copied');
-                        button.setAttribute('aria-label', 'Copy code to clipboard');
-                    }, 2000);
-                } catch (err) {
-                    console.error('Failed to copy:', err);
-                }
+        function initializeCopyButtons() {
+            document.querySelectorAll('.copy-button').forEach(function(button) {
+                button.addEventListener('click', async function() {
+                    const code = this.parentElement.querySelector('code').textContent;
+                    try {
+                        await navigator.clipboard.writeText(code);
+                        this.classList.add('copied');
+                        this.setAttribute('aria-label', 'Copied!');
+                        setTimeout(function() {
+                            button.classList.remove('copied');
+                            button.setAttribute('aria-label', 'Copy code to clipboard');
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy:', err);
+                    }
+                });
             });
-        });
+        }
+
+        // Initialize on page load
+        initializeCopyButtons();
+
+        // Reinitialize after instant navigation
+        document.addEventListener('instant:navigated', initializeCopyButtons);
 
         // TOC scroll spy
         (function() {
