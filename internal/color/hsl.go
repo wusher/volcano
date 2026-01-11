@@ -159,6 +159,7 @@ func GenerateAccentVariants(hexColor string) (*AccentVariants, error) {
 
 // GenerateAccentCSS generates CSS custom properties for accent colors
 // Returns empty string if accentColor is empty
+// Note: accent-background and accent-foreground are derived via CSS color-mix()
 func GenerateAccentCSS(accentColor string) (string, error) {
 	if accentColor == "" {
 		return "", nil
@@ -169,11 +170,10 @@ func GenerateAccentCSS(accentColor string) (string, error) {
 		return "", err
 	}
 
+	// Only output --accent; variants are derived in CSS via color-mix()
 	css := fmt.Sprintf(`:root {
   --accent: %s;
-  --accent-dark: %s;
-  --accent-light: %s;
-}`, variants.Accent, variants.AccentDark, variants.AccentLight)
+}`, variants.Accent)
 
 	return css, nil
 }

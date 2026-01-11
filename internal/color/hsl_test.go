@@ -286,14 +286,12 @@ func TestGenerateAccentCSS(t *testing.T) {
 		if !strings.Contains(css, "--accent:") {
 			t.Errorf("CSS missing --accent: %q", css)
 		}
-		if !strings.Contains(css, "--accent-dark:") {
-			t.Errorf("CSS missing --accent-dark: %q", css)
-		}
-		if !strings.Contains(css, "--accent-light:") {
-			t.Errorf("CSS missing --accent-light: %q", css)
-		}
 		if !strings.Contains(css, ":root") {
 			t.Errorf("CSS missing :root: %q", css)
+		}
+		// accent-background and accent-foreground are now derived via CSS color-mix()
+		if strings.Contains(css, "--accent-dark:") || strings.Contains(css, "--accent-light:") {
+			t.Errorf("CSS should not contain --accent-dark or --accent-light (now derived via color-mix): %q", css)
 		}
 	})
 
