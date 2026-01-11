@@ -32,7 +32,7 @@
 
   /* Accent colors - dynamically derived from --accent if provided */
   --accent-background: color-mix(in srgb, var(--accent) 8%, white);
-  --accent-foreground: color-mix(in srgb, var(--accent) 100%, black 70%);
+  --accent-foreground: color-mix(in srgb, var(--accent) 15%, black 85%);
 }
 
 [data-theme="dark"] {
@@ -48,7 +48,7 @@
   --code-bg: #1a1a1a;
 
   /* Accent colors - swapped for dark mode */
-  --accent-background: color-mix(in srgb, var(--accent) 100%, black 70%);
+  --accent-background: color-mix(in srgb, var(--accent) 15%, black 85%);
   --accent-foreground: color-mix(in srgb, var(--accent) 8%, white);
 }
 
