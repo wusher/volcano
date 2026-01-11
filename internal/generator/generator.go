@@ -24,24 +24,25 @@ import (
 
 // Config holds configuration for the generator
 type Config struct {
-	InputDir    string
-	OutputDir   string
-	Title       string
-	Clean       bool
-	Quiet       bool
-	Verbose     bool
-	Colored     bool
-	SiteURL     string // Base URL for canonical links
-	Author      string // Site author
-	OGImage     string // Path to local OG image file (copied to output)
-	FaviconPath string // Path to favicon file
-	ShowLastMod bool   // Show last modified date
-	TopNav      bool   // Display root files in top navigation bar
-	ShowPageNav bool   // Show previous/next page navigation
-	Theme       string // Theme name (docs, blog, vanilla)
-	CSSPath     string // Path to custom CSS file
-	AccentColor string // Custom accent color in hex format (e.g., "#ff6600")
-	InstantNav  bool   // Enable instant navigation with hover prefetching
+	InputDir        string
+	OutputDir       string
+	Title           string
+	Clean           bool
+	Quiet           bool
+	Verbose         bool
+	Colored         bool
+	SiteURL         string // Base URL for canonical links
+	Author          string // Site author
+	OGImage         string // Path to local OG image file (copied to output)
+	FaviconPath     string // Path to favicon file
+	ShowLastMod     bool   // Show last modified date
+	TopNav          bool   // Display root files in top navigation bar
+	ShowPageNav     bool   // Show previous/next page navigation
+	ShowBreadcrumbs bool   // Show breadcrumb navigation
+	Theme           string // Theme name (docs, blog, vanilla)
+	CSSPath         string // Path to custom CSS file
+	AccentColor     string // Custom accent color in hex format (e.g., "#ff6600")
+	InstantNav      bool   // Enable instant navigation with hover prefetching
 }
 
 // Result holds the result of generation
@@ -368,9 +369,12 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		lastModified = content.FormatLastModified(mod, false) // Use absolute format
 	}
 
-	// Build breadcrumbs (with base URL prefixing)
-	breadcrumbs := navigation.BuildBreadcrumbsWithBaseURL(node, g.config.Title, g.config.SiteURL)
-	breadcrumbsHTML := navigation.RenderBreadcrumbs(breadcrumbs)
+	// Build breadcrumbs (with base URL prefixing) - only if enabled
+	var breadcrumbsHTML template.HTML
+	if g.config.ShowBreadcrumbs {
+		breadcrumbs := navigation.BuildBreadcrumbsWithBaseURL(node, g.config.Title, g.config.SiteURL)
+		breadcrumbsHTML = navigation.RenderBreadcrumbs(breadcrumbs)
+	}
 
 	// Build page navigation (only if enabled, with base URL prefixing)
 	var pageNavHTML template.HTML

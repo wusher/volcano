@@ -51,6 +51,12 @@ Breadcrumbs show the current page's location in the hierarchy:
 My Site > Guides > Installation
 ```
 
+Breadcrumbs are **enabled by default**. To disable them:
+
+```bash
+volcano ./docs --breadcrumbs=false
+```
+
 ### Features
 
 - Links to each ancestor level
@@ -172,6 +178,33 @@ Navigate efficiently with keyboard shortcuts. Press `?` anywhere to see the shor
 :::note
 Previous/next shortcuts (`n` and `p`) require the `--page-nav` flag to be enabled.
 :::
+
+## Instant Navigation
+
+Enable instant navigation with hover prefetching for near-instant page loads:
+
+```bash
+volcano ./docs --instant-nav
+```
+
+### How It Works
+
+When enabled, Volcano prefetches pages when you hover over links. By the time you click, the page is often already loaded, making navigation feel instantaneous.
+
+### Features
+
+- Prefetches pages on hover with a 65ms delay
+- Smart throttling prevents excessive requests
+- Works with all internal links (sidebar, breadcrumbs, content)
+- Respects browser cache
+- No configuration needed
+
+### Performance
+
+Instant navigation uses minimal bandwidth because:
+- Only prefetches when hovering (not all links at once)
+- Respects the browser's cache
+- Throttles multiple hovers on the same link
 
 ## Scroll Progress Indicator
 
