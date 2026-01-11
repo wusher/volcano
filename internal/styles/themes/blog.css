@@ -190,11 +190,20 @@ a:hover {
 }
 
 .mobile-header .mobile-menu-btn,
+.mobile-header .mobile-toc-toggle,
 .mobile-header .mobile-theme-toggle {
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-primary);
+}
+
+.mobile-header .mobile-toc-toggle:hover {
+  color: var(--text-secondary);
+}
+
+body.toc-open .mobile-toc-toggle {
+  color: var(--accent, var(--text-primary));
 }
 
 .mobile-header .mobile-site-title {
@@ -405,6 +414,14 @@ a:hover {
   border: none;
   border-radius: 6px;
   box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .toc-sidebar {
+    border-radius: 0;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
 }
 
 .toc-title {
