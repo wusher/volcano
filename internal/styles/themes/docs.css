@@ -66,21 +66,6 @@ html {
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: var(--bg-primary);
-  background-image:
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 20px,
-      var(--accent-background) 20px,
-      var(--accent-background) 21px
-    ),
-    repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 20px,
-      var(--accent-background) 20px,
-      var(--accent-background) 21px
-    );
   color: var(--text-primary);
   transition: background-color var(--transition-speed), color var(--transition-speed);
 }
@@ -105,7 +90,7 @@ a:hover {
 }
 
 .scroll-progress-bar {
-  background: var(--accent-foreground, var(--accent, var(--text-primary)));
+  background: var(--accent, var(--text-primary));
 }
 
 /* ==========================================================================
@@ -114,11 +99,11 @@ a:hover {
 
 .sidebar {
   background: var(--bg-primary);
-  border-right: 2px solid var(--accent-background, var(--border-color));
+  border-right: 1px solid var(--border-color);
 }
 
 .sidebar-header {
-  border-bottom: 1px solid var(--accent-background, var(--border-color));
+  border-bottom: 1px solid var(--border-color);
 }
 
 .site-title {
@@ -138,7 +123,7 @@ a:hover {
    ========================================================================== */
 
 .nav-search {
-  border-bottom: 1px solid var(--accent-background, var(--border-color));
+  border-bottom: 1px solid var(--border-color);
 }
 
 .search-icon {
@@ -301,16 +286,16 @@ a:hover {
 }
 
 .tree-nav a:hover {
-  background-color: var(--accent-background, var(--bg-tertiary));
+  background-color: var(--bg-tertiary);
   text-decoration: none;
   color: var(--text-primary);
 }
 
 .tree-nav a.active {
-  background-color: var(--accent-background, var(--bg-tertiary));
-  color: var(--accent-foreground, var(--text-primary));
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
   font-weight: 600;
-  border-left: 3px solid var(--accent-foreground, var(--text-primary));
+  border-left: 3px solid var(--text-primary);
   padding-left: calc(0.5rem - 3px);
 }
 
@@ -337,7 +322,7 @@ a:hover {
 }
 
 .folder-link:hover {
-  background-color: var(--accent-background, var(--bg-tertiary));
+  background-color: var(--bg-tertiary);
   border-radius: 0.25rem;
 }
 
@@ -391,7 +376,7 @@ a:hover {
 .toc-sidebar {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-left: 3px solid var(--accent-foreground, var(--accent, var(--border-color)));
+  border-left: 3px solid var(--accent, var(--border-color));
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
@@ -418,9 +403,9 @@ a:hover {
 }
 
 .toc a.active {
-  color: var(--accent-foreground, var(--text-primary));
+  color: var(--accent, var(--text-primary));
   font-weight: 600;
-  border-left-color: var(--accent-foreground, var(--text-primary));
+  border-left-color: var(--accent, var(--text-primary));
 }
 
 /* ==========================================================================
