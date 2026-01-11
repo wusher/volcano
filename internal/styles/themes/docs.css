@@ -31,13 +31,8 @@
   --code-bg: #f5f5f5;
 
   /* Accent colors - dynamically derived from --accent if provided */
-  /* These stay the same in both light and dark modes */
   --accent-background: color-mix(in srgb, var(--accent) 8%, white);
   --accent-foreground: color-mix(in srgb, var(--accent) 100%, black 70%);
-
-  /* Semantic accent aliases */
-  --accent-light: var(--accent-background);  /* lighter in light mode */
-  --accent-dark: var(--accent-foreground);   /* darker in light mode */
 }
 
 [data-theme="dark"] {
@@ -52,9 +47,9 @@
   --link-hover: #cccccc;
   --code-bg: #1a1a1a;
 
-  /* Semantic accent aliases (swapped for dark mode) */
-  --accent-light: var(--accent-foreground);  /* lighter in dark mode */
-  --accent-dark: var(--accent-background);   /* darker in dark mode */
+  /* Accent colors - swapped for dark mode */
+  --accent-background: color-mix(in srgb, var(--accent) 100%, black 70%);
+  --accent-foreground: color-mix(in srgb, var(--accent) 8%, white);
 }
 
 /* ==========================================================================
@@ -105,9 +100,8 @@ a:hover {
 .sidebar {
   background: linear-gradient(90deg,
     var(--accent-background) 0%,
-    var(--accent-light) 30%,
-    var(--bg-secondary) 100%);
-  border-right: 2px solid var(--accent-light, var(--border-color));
+    var(--bg-secondary) 50%);
+  border-right: 2px solid var(--accent-background, var(--border-color));
 }
 
 .sidebar-header {
@@ -149,7 +143,7 @@ a:hover {
 .search-input:focus {
   outline: none;
   border-color: var(--accent-foreground, var(--text-muted));
-  box-shadow: 0 0 0 3px var(--accent-light, rgba(0, 0, 0, 0.05));
+  box-shadow: 0 0 0 3px var(--accent-background, rgba(0, 0, 0, 0.05));
 }
 
 .search-input::placeholder {
@@ -278,8 +272,8 @@ a:hover {
 }
 
 .top-nav-list li a.active {
-  color: var(--accent-dark, var(--accent-foreground, var(--text-primary)));
-  border-bottom-color: var(--accent-dark, var(--accent-foreground, var(--text-primary)));
+  color: var(--accent-foreground, var(--text-primary));
+  border-bottom-color: var(--accent-foreground, var(--text-primary));
   border-bottom-width: 3px;
 }
 
@@ -294,14 +288,14 @@ a:hover {
 }
 
 .tree-nav a:hover {
-  background-color: var(--accent-light, var(--bg-tertiary));
+  background-color: var(--accent-background, var(--bg-tertiary));
   text-decoration: none;
   color: var(--text-primary);
 }
 
 .tree-nav a.active {
   background-color: var(--accent-background, var(--bg-tertiary));
-  color: var(--accent-dark, var(--accent-foreground, var(--text-primary)));
+  color: var(--accent-foreground, var(--text-primary));
   font-weight: 600;
   border-left: 3px solid var(--accent-foreground, var(--text-primary));
   padding-left: calc(0.5rem - 3px);
@@ -330,7 +324,7 @@ a:hover {
 }
 
 .folder-link:hover {
-  background-color: var(--accent-light, var(--bg-tertiary));
+  background-color: var(--accent-background, var(--bg-tertiary));
   border-radius: 0.25rem;
 }
 
@@ -411,9 +405,9 @@ a:hover {
 }
 
 .toc a.active {
-  color: var(--accent-dark, var(--accent-foreground, var(--text-primary)));
+  color: var(--accent-foreground, var(--text-primary));
   font-weight: 600;
-  border-left-color: var(--accent-dark, var(--accent-foreground, var(--text-primary)));
+  border-left-color: var(--accent-foreground, var(--text-primary));
 }
 
 /* ==========================================================================
@@ -433,7 +427,7 @@ a:hover {
 
 .page-nav-prev:hover,
 .page-nav-next:hover {
-  background-color: var(--accent-light, var(--bg-secondary));
+  background-color: var(--accent-background, var(--bg-secondary));
   border-color: var(--accent-foreground, var(--text-muted));
   text-decoration: none;
 }
