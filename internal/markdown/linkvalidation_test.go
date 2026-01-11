@@ -331,7 +331,7 @@ func TestGenerateWikilinkURLVariations(t *testing.T) {
 
 func TestValidateLinksWithSource(t *testing.T) {
 	validURLs := map[string]bool{
-		"/":      true,
+		"/":       true,
 		"/about/": true,
 	}
 
@@ -361,22 +361,22 @@ func TestValidateLinksWithSource(t *testing.T) {
 
 func TestFindSimilarURLs(t *testing.T) {
 	validURLs := map[string]bool{
-		"/":                  true,
-		"/about/":            true,
-		"/about-us/":         true,
-		"/contact/":          true,
-		"/guides/intro/":     true,
-		"/guides/advanced/":  true,
+		"/":                 true,
+		"/about/":           true,
+		"/about-us/":        true,
+		"/contact/":         true,
+		"/guides/intro/":    true,
+		"/guides/advanced/": true,
 	}
 
 	tests := []struct {
 		brokenURL       string
 		wantSuggestions int
 	}{
-		{"/about-page/", 1},        // Should suggest /about/ or /about-us/
-		{"/guides/", 2},            // Should suggest /guides/intro/ and /guides/advanced/
-		{"/xyz/", 0},               // No similar URLs
-		{"/intro/", 1},             // Should suggest /guides/intro/
+		{"/about-page/", 1}, // Should suggest /about/ or /about-us/
+		{"/guides/", 2},     // Should suggest /guides/intro/ and /guides/advanced/
+		{"/xyz/", 0},        // No similar URLs
+		{"/intro/", 1},      // Should suggest /guides/intro/
 	}
 
 	for _, tt := range tests {

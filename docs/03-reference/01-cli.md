@@ -197,6 +197,32 @@ Show previous/next page navigation at the bottom of each page.
 volcano ./docs --page-nav
 ```
 
+#### `--breadcrumbs`
+
+Show breadcrumb trail navigation at the top of each page. Breadcrumbs help users understand their location in the site hierarchy and provide quick navigation to parent pages.
+
+- **Default:** `true`
+- **Type:** Boolean
+
+```bash
+# Enable breadcrumbs (default)
+volcano ./docs --breadcrumbs
+
+# Disable breadcrumbs
+volcano ./docs --breadcrumbs=false
+```
+
+#### `--instant-nav`
+
+Enable instant navigation with hover prefetching. When enabled, pages are prefetched when users hover over links, making navigation feel instantaneous.
+
+- **Default:** `false`
+- **Type:** Boolean
+
+```bash
+volcano ./docs --instant-nav
+```
+
 #### `--last-modified`
 
 Show last modified date on pages.
@@ -231,6 +257,18 @@ Path to custom CSS file. When specified, overrides the `--theme` flag.
 
 ```bash
 volcano ./docs --css ./my-theme.css
+```
+
+#### `--accent-color <hex>`
+
+Custom accent color in hex format. This overrides the theme's default accent color for links, buttons, and other UI elements.
+
+- **Default:** (none, uses theme default)
+- **Type:** Hex color string
+
+```bash
+volcano ./docs --accent-color="#ff6600"
+volcano ./docs --accent-color="#3b82f6"
 ```
 
 ### Output Control
@@ -337,6 +375,8 @@ volcano ./docs --css ./my-theme.css
 volcano ./docs \
   --top-nav \
   --page-nav \
+  --breadcrumbs \
+  --instant-nav \
   --last-modified
 ```
 

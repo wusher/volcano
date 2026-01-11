@@ -36,7 +36,7 @@ type DynamicConfig struct {
 	Verbose         bool
 	TopNav          bool
 	ShowPageNav     bool
-	ShowBreadcrumbs bool   // Show breadcrumb navigation
+	ShowBreadcrumbs bool // Show breadcrumb navigation
 	Theme           string
 	CSSPath         string
 	AccentColor     string // Custom accent color in hex format (e.g., "#ff6600")
@@ -438,7 +438,7 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 		HasTOC:       hasTOC,
 		ShowSearch:   true,
 		TopNavItems:  topNavItems,
-		BaseURL:      "",          // Empty for dev server (no base URL prefix)
+		BaseURL:      "", // Empty for dev server (no base URL prefix)
 		InstantNavJS: s.instantNavJS,
 	}
 
@@ -743,7 +743,7 @@ func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage 
 		Navigation:   nav,
 		CurrentPath:  "",
 		FaviconLinks: s.faviconLinks,
-		BaseURL:      "",          // Empty for dev server (no base URL prefix)
+		BaseURL:      "", // Empty for dev server (no base URL prefix)
 		InstantNavJS: s.instantNavJS,
 	}
 
@@ -785,7 +785,7 @@ func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 		Navigation:   nav,
 		CurrentPath:  "",
 		FaviconLinks: s.faviconLinks,
-		BaseURL:      "",          // Empty for dev server (no base URL prefix)
+		BaseURL:      "", // Empty for dev server (no base URL prefix)
 		InstantNavJS: s.instantNavJS,
 	}
 
@@ -905,7 +905,7 @@ func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, n
 		FaviconLinks: s.faviconLinks,
 		ShowSearch:   true,
 		TopNavItems:  topNavItems,
-		BaseURL:      "",          // Empty for dev server (no base URL prefix)
+		BaseURL:      "", // Empty for dev server (no base URL prefix)
 		InstantNavJS: s.instantNavJS,
 	}
 
