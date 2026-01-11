@@ -163,7 +163,7 @@ func TestNewCSSLoader(t *testing.T) {
 		AccentColor: "",
 	}
 
-	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+	loader := NewCSSLoader(config, func(_ string) ([]byte, error) {
 		return []byte("test css"), nil
 	})
 
@@ -179,7 +179,7 @@ func TestCSSLoader_LoadCSS_EmbeddedTheme(t *testing.T) {
 		AccentColor: "",
 	}
 
-	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+	loader := NewCSSLoader(config, func(_ string) ([]byte, error) {
 		// Return error so it falls back to embedded
 		return nil, errors.New("file not found")
 	})
@@ -233,7 +233,7 @@ func TestCSSLoader_LoadCSS_WithAccentColor(t *testing.T) {
 		AccentColor: "#ff0000",
 	}
 
-	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+	loader := NewCSSLoader(config, func(_ string) ([]byte, error) {
 		// Return error so it falls back to embedded
 		return nil, errors.New("file not found")
 	})
@@ -255,7 +255,7 @@ func TestCSSLoader_LoadCSS_InvalidAccentColor(t *testing.T) {
 		AccentColor: "not-a-color",
 	}
 
-	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+	loader := NewCSSLoader(config, func(_ string) ([]byte, error) {
 		// Return error so it falls back to embedded
 		return nil, errors.New("file not found")
 	})
@@ -273,7 +273,7 @@ func TestCSSLoader_LoadCSS_FileReadError(t *testing.T) {
 		AccentColor: "",
 	}
 
-	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+	loader := NewCSSLoader(config, func(_ string) ([]byte, error) {
 		return nil, errors.New("file not found")
 	})
 
@@ -322,7 +322,7 @@ func TestCSSLoader_LoadThemeFromFilesystem_Fallback(t *testing.T) {
 
 	// Test with files that don't exist - should fall back to embedded
 	fileReadCount := 0
-	loader := NewCSSLoader(config, func(path string) ([]byte, error) {
+	loader := NewCSSLoader(config, func(_ string) ([]byte, error) {
 		fileReadCount++
 		// Return error to simulate files not existing
 		return nil, errors.New("file not found")

@@ -585,8 +585,8 @@ func TestGenerateWithAllOptionsEnabled(t *testing.T) {
 
 	// Create test files with links to exercise link validation
 	files := map[string]string{
-		"index.md":       "# Home\n\nSee [[about]] and [[guides/intro]]",
-		"about.md":       "# About\n\nBack to [[index|Home]]",
+		"index.md":        "# Home\n\nSee [[about]] and [[guides/intro]]",
+		"about.md":        "# About\n\nBack to [[index|Home]]",
 		"guides/index.md": "# Guides",
 		"guides/intro.md": "# Introduction\n\nVisit [[/about/]]",
 	}
