@@ -118,19 +118,29 @@ const instantNavJSRaw = `
             const parser = new DOMParser();
             const newDoc = parser.parseFromString(html, 'text/html');
 
-            // Update page content
-            updateContent(newDoc);
+            // Function to perform the actual DOM updates
+            const performUpdate = () => {
+                // Update page content
+                updateContent(newDoc);
 
-            // Update URL (unless this is a popstate event)
-            if (!isPop) {
-                history.pushState(null, '', url);
+                // Update URL (unless this is a popstate event)
+                if (!isPop) {
+                    history.pushState(null, '', url);
+                }
+
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'instant' });
+
+                // Re-initialize page-specific features
+                reinitialize();
+            };
+
+            // Use View Transitions API if available for smooth animations
+            if (document.startViewTransition) {
+                document.startViewTransition(performUpdate);
+            } else {
+                performUpdate();
             }
-
-            // Scroll to top
-            window.scrollTo({ top: 0, behavior: 'instant' });
-
-            // Re-initialize page-specific features
-            reinitialize();
 
             // Reset cursor
             document.body.style.cursor = '';
