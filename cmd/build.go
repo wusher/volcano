@@ -20,6 +20,7 @@ func Build(args []string, stdout, stderr io.Writer) error {
 
 	// Define build-specific flags
 	var showHelp bool
+	var viewTransitionsFlag bool // Deprecated flag, kept for backwards compatibility
 
 	fs.StringVar(&cfg.OutputDir, "o", cfg.OutputDir, "Output directory for generated site")
 	fs.StringVar(&cfg.OutputDir, "output", cfg.OutputDir, "Output directory for generated site")
@@ -36,7 +37,7 @@ func Build(args []string, stdout, stderr io.Writer) error {
 	fs.StringVar(&cfg.CSSPath, "css", "", "Path to custom CSS file")
 	fs.StringVar(&cfg.AccentColor, "accent-color", "", "Custom accent color (hex format, e.g., '#ff6600')")
 	fs.BoolVar(&cfg.InstantNav, "instant-nav", false, "Enable instant navigation with hover prefetching")
-	fs.BoolVar(&cfg.ViewTransitions, "view-transitions", false, "Enable browser view transitions API")
+	fs.BoolVar(&viewTransitionsFlag, "view-transitions", false, "Deprecated: view transitions are now enabled by default")
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Enable debug output")
@@ -61,6 +62,11 @@ func Build(args []string, stdout, stderr io.Writer) error {
 	}
 
 	errLogger := output.NewLogger(stderr, output.IsStderrTTY(), false, false)
+
+	// Check if deprecated --view-transitions flag was used
+	if viewTransitionsFlag {
+		errLogger.Warning("--view-transitions is deprecated: view transitions are now enabled by default")
+	}
 
 	// Get input directory from positional arguments
 	remainingArgs := fs.Args()
@@ -151,7 +157,6 @@ func printBuildUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  --breadcrumbs        Show breadcrumb trail (default: true)")
 	_, _ = fmt.Fprintln(w, "  --page-nav           Show previous/next page links")
 	_, _ = fmt.Fprintln(w, "  --instant-nav        Enable hover prefetching for faster navigation")
-	_, _ = fmt.Fprintln(w, "  --view-transitions   Enable browser view transitions API")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Content:")
 	_, _ = fmt.Fprintln(w, "  --last-modified      Show last modified date on pages")
@@ -169,7 +174,7 @@ func printBuildUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Examples:")
 	_, _ = fmt.Fprintln(w, "  volcano build ./docs -o ./public --title=\"My Docs\"")
 	_, _ = fmt.Fprintln(w, "  volcano build --theme=blog --accent-color='#ff6600' ./posts")
-	_, _ = fmt.Fprintln(w, "  volcano build --top-nav --page-nav --instant-nav --view-transitions ./docs")
+	_, _ = fmt.Fprintln(w, "  volcano build --top-nav --page-nav --instant-nav ./docs")
 }
 
 // buildValueFlags is the set of flags that take values for the build command
