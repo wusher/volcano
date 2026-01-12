@@ -59,6 +59,10 @@
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const theme = stored || (prefersDark ? 'dark' : 'light');
             document.documentElement.setAttribute('data-theme', theme);
+            // Update browser theme-color meta tag to match
+            const themeColor = theme === 'dark' ? '#1a1a1a' : '#ffffff';
+            const meta = document.querySelector('meta[name="theme-color"]:not([media])');
+            if (meta) meta.setAttribute('content', themeColor);
         })();
     </script>
 </head>
@@ -257,6 +261,10 @@
             const next = current === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', next);
             localStorage.setItem('theme', next);
+            // Update browser theme-color meta tag
+            const themeColor = next === 'dark' ? '#1a1a1a' : '#ffffff';
+            const meta = document.querySelector('meta[name="theme-color"]:not([media])');
+            if (meta) meta.setAttribute('content', themeColor);
         }
 
         // Mobile drawer
