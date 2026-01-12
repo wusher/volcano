@@ -22,6 +22,7 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 
 	// Define serve-specific flags
 	var showHelp bool
+	var viewTransitionsFlag bool // Deprecated flag, kept for backwards compatibility
 
 	fs.IntVar(&cfg.Port, "p", cfg.Port, "Server port")
 	fs.IntVar(&cfg.Port, "port", cfg.Port, "Server port")
@@ -34,7 +35,7 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 	fs.BoolVar(&cfg.ShowPageNav, "page-nav", false, "Show previous/next page navigation")
 	fs.BoolVar(&cfg.ShowBreadcrumbs, "breadcrumbs", cfg.ShowBreadcrumbs, "Show breadcrumb navigation")
 	fs.BoolVar(&cfg.InstantNav, "instant-nav", false, "Enable instant navigation with hover prefetching")
-	fs.BoolVar(&cfg.ViewTransitions, "view-transitions", false, "Enable browser view transitions API")
+	fs.BoolVar(&viewTransitionsFlag, "view-transitions", false, "Deprecated: view transitions are now enabled by default")
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Enable debug output")
@@ -59,6 +60,11 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 	}
 
 	errLogger := output.NewLogger(stderr, output.IsStderrTTY(), false, false)
+
+	// Check if deprecated --view-transitions flag was used
+	if viewTransitionsFlag {
+		errLogger.Warning("--view-transitions is deprecated: view transitions are now enabled by default")
+	}
 
 	// Get input directory from positional arguments
 	remainingArgs := fs.Args()
@@ -209,7 +215,6 @@ func printServeUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  --breadcrumbs        Show breadcrumb trail (default: true)")
 	_, _ = fmt.Fprintln(w, "  --page-nav           Show previous/next page links")
 	_, _ = fmt.Fprintln(w, "  --instant-nav        Enable hover prefetching for faster navigation")
-	_, _ = fmt.Fprintln(w, "  --view-transitions   Enable browser view transitions API")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Logging:")
 	_, _ = fmt.Fprintln(w, "  -q, --quiet          Suppress non-error output")

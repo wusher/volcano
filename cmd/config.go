@@ -33,5 +33,6 @@ func DefaultConfig() *Config {
 		Port:            1776,
 		Title:           "My Site",
 		ShowBreadcrumbs: true, // Show breadcrumbs by default
+		ViewTransitions: true, // View transitions enabled by default
 	}
 }
