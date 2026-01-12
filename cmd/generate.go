@@ -28,6 +28,7 @@ func Generate(cfg *Config, w io.Writer) error {
 		AccentColor:     cfg.AccentColor,
 		InstantNav:      cfg.InstantNav,
 		ViewTransitions: cfg.ViewTransitions,
+		InlineAssets:    cfg.InlineAssets,
 	}
 
 	gen, err := generator.New(genConfig, w)

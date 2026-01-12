@@ -617,7 +617,7 @@
             if (modal && modal.close) modal.close();
         }
     </script>
-{{if .JSURL}}    <script src="{{.JSURL}}"></script>
+{{if .JSURL}}    <script defer src="{{.JSURL}}"></script>
 {{else if .InstantNavJS}}    <script>
 {{.InstantNavJS}}
     </script>
