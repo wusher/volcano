@@ -730,6 +730,11 @@ h1, h2, h3, h4, h5, h6 {
    TYPOGRAPHY LAYOUT
    ========================================================================== */
 
+/* Prevent iOS double-tap-to-zoom delay on links with :hover styles */
+.prose a {
+  touch-action: manipulation;
+}
+
 .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
   margin-top: 1.5em;
   margin-bottom: 0.5em;
