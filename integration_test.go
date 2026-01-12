@@ -8,6 +8,25 @@ import (
 	"testing"
 )
 
+// readExternalCSS reads the hashed CSS file from the assets directory
+func readExternalCSS(outputDir string) (string, error) {
+	assetsDir := filepath.Join(outputDir, "assets")
+	entries, err := os.ReadDir(assetsDir)
+	if err != nil {
+		return "", err
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), "styles.") && strings.HasSuffix(entry.Name(), ".css") {
+			content, err := os.ReadFile(filepath.Join(assetsDir, entry.Name()))
+			if err != nil {
+				return "", err
+			}
+			return string(content), nil
+		}
+	}
+	return "", nil
+}
+
 func TestIntegrationGenerateFromExample(t *testing.T) {
 	// Skip if example folder doesn't exist
 	if _, err := os.Stat("./example"); os.IsNotExist(err) {
@@ -311,11 +330,12 @@ func TestIntegrationStory18_ExternalLinks(t *testing.T) {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
 
-	content, _ := os.ReadFile(filepath.Join(outputDir, "getting-started/index.html"))
-	html := string(content)
-
-	// Story 18 acceptance: external link icon styling
-	if !strings.Contains(html, "external-icon") {
+	// Check for external-icon class in CSS (now in external file)
+	css, err := readExternalCSS(outputDir)
+	if err != nil {
+		t.Fatalf("Failed to read external CSS: %v", err)
+	}
+	if !strings.Contains(css, "external-icon") {
 		t.Error("Story 18: should have external link icon class in CSS")
 	}
 }
@@ -372,15 +392,18 @@ func TestIntegrationStory21_PrintStyles(t *testing.T) {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
 
-	content, _ := os.ReadFile(filepath.Join(outputDir, "index.html"))
-	html := string(content)
+	// Check for print styles in external CSS file
+	css, err := readExternalCSS(outputDir)
+	if err != nil {
+		t.Fatalf("Failed to read external CSS: %v", err)
+	}
 
 	// Story 21 acceptance: print stylesheet
-	if !strings.Contains(html, "@media print") {
+	if !strings.Contains(css, "@media print") {
 		t.Error("Story 21: should have print media query")
 	}
 	// Story 21 acceptance: sidebar hidden in print (CSS is minified)
-	if !strings.Contains(html, "display:none!important") {
+	if !strings.Contains(css, "display:none!important") {
 		t.Error("Story 21: should hide navigation in print")
 	}
 }
@@ -550,14 +573,17 @@ func TestIntegrationStory29_Admonitions(t *testing.T) {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
 
-	content, _ := os.ReadFile(filepath.Join(outputDir, "index.html"))
-	html := string(content)
+	// Check for admonition styles in external CSS file
+	css, err := readExternalCSS(outputDir)
+	if err != nil {
+		t.Fatalf("Failed to read external CSS: %v", err)
+	}
 
 	// Story 29 acceptance: admonition styles
-	if !strings.Contains(html, ".admonition") {
+	if !strings.Contains(css, ".admonition") {
 		t.Error("Story 29: should have admonition styles")
 	}
-	if !strings.Contains(html, ".admonition-note") {
+	if !strings.Contains(css, ".admonition-note") {
 		t.Error("Story 29: should have admonition-note style")
 	}
 }
@@ -571,11 +597,14 @@ func TestIntegrationStory30_LineHighlighting(t *testing.T) {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
 
-	content, _ := os.ReadFile(filepath.Join(outputDir, "index.html"))
-	html := string(content)
+	// Check for line highlight styles in external CSS file
+	css, err := readExternalCSS(outputDir)
+	if err != nil {
+		t.Fatalf("Failed to read external CSS: %v", err)
+	}
 
 	// Story 30 acceptance: line highlight styles
-	if !strings.Contains(html, ".line.highlight") {
+	if !strings.Contains(css, ".line.highlight") {
 		t.Error("Story 30: should have line highlight styles")
 	}
 }
@@ -589,15 +618,18 @@ func TestIntegrationStory31_SmoothScroll(t *testing.T) {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
 
-	content, _ := os.ReadFile(filepath.Join(outputDir, "index.html"))
-	html := string(content)
+	// Check for scroll styles in external CSS file
+	css, err := readExternalCSS(outputDir)
+	if err != nil {
+		t.Fatalf("Failed to read external CSS: %v", err)
+	}
 
 	// Story 31 acceptance: smooth scroll (CSS is minified)
-	if !strings.Contains(html, "scroll-behavior:smooth") {
+	if !strings.Contains(css, "scroll-behavior:smooth") {
 		t.Error("Story 31: should have smooth scroll behavior")
 	}
 	// Story 31 acceptance: prefers-reduced-motion
-	if !strings.Contains(html, "prefers-reduced-motion") {
+	if !strings.Contains(css, "prefers-reduced-motion") {
 		t.Error("Story 31: should respect prefers-reduced-motion")
 	}
 }

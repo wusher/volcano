@@ -28,7 +28,9 @@ type PageData struct {
 	Content         template.HTML // Rendered HTML content
 	Navigation      template.HTML // Rendered navigation HTML
 	CurrentPath     string        // Current page URL path for active state
-	CSS             template.CSS  // Embedded CSS styles
+	CSS             template.CSS  // Embedded CSS styles (used when CSSURL is empty)
+	CSSURL          string        // External CSS file URL (when set, CSS is ignored)
+	JSURL           string        // External JS file URL (when set, InstantNavJS is ignored)
 	Breadcrumbs     template.HTML // Breadcrumb navigation
 	PageNav         template.HTML // Previous/Next navigation
 	TOC             template.HTML // Table of contents

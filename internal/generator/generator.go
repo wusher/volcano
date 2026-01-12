@@ -73,6 +73,9 @@ type Generator struct {
 	baseURL         string          // Base URL path prefix extracted from SiteURL
 	instantNavJS    template.JS     // Instant navigation JavaScript (if enabled)
 	viewTransitions bool            // Enable browser view transitions API
+	cssURL          string          // External CSS file URL (hashed)
+	jsURL           string          // External JS file URL (hashed)
+	css             string          // CSS content (for writing to file)
 }
 
 // New creates a new Generator
@@ -89,7 +92,8 @@ func New(config Config, writer io.Writer) (*Generator, error) {
 		return nil, fmt.Errorf("failed to load CSS: %w", err)
 	}
 
-	renderer, err := templates.NewRenderer(css)
+	// Create renderer (CSS will be passed per-page or via external file)
+	renderer, err := templates.NewRenderer("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create renderer: %w", err)
 	}
@@ -110,6 +114,7 @@ func New(config Config, writer io.Writer) (*Generator, error) {
 		logger:          output.NewLogger(writer, config.Colored, config.Quiet, config.Verbose),
 		baseURL:         baseURL,
 		viewTransitions: config.ViewTransitions,
+		css:             css,
 	}
 
 	// Initialize instant navigation JS if enabled
@@ -172,6 +177,11 @@ func (g *Generator) Generate() (*Result, error) {
 		g.logger.Warning("No markdown files found in %s", g.config.InputDir)
 		result.Warnings = append(result.Warnings, "No markdown files found")
 		return result, nil
+	}
+
+	// Write hashed CSS and JS assets (after confirming we have pages)
+	if err := g.writeHashedAssets(); err != nil {
+		return nil, err
 	}
 
 	// Count folders
@@ -422,6 +432,8 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		ShowSearch:      true,
 		TopNavItems:     g.topNavItems,
 		BaseURL:         g.baseURL,
+		CSSURL:          g.cssURL,
+		JSURL:           g.jsURL,
 		InstantNavJS:    g.instantNavJS,
 		ViewTransitions: g.viewTransitions,
 	}
@@ -474,6 +486,8 @@ func (g *Generator) generate404(root *tree.Node) error {
 		Navigation:      nav,
 		CurrentPath:     "",
 		BaseURL:         g.baseURL,
+		CSSURL:          g.cssURL,
+		JSURL:           g.jsURL,
 		InstantNavJS:    g.instantNavJS,
 		ViewTransitions: g.viewTransitions,
 	}
@@ -486,4 +500,28 @@ func (g *Generator) generate404(root *tree.Node) error {
 	defer func() { _ = f.Close() }()
 
 	return g.renderer.Render(f, data)
+}
+
+// writeHashedAssets writes CSS and JS to separate files with content hashes.
+// This enables browser caching with automatic cache invalidation on content changes.
+func (g *Generator) writeHashedAssets() error {
+	// Write CSS file
+	cssAsset, err := assets.WriteHashedAsset(g.config.OutputDir, "styles", "css", g.css, g.baseURL)
+	if err != nil {
+		return fmt.Errorf("failed to write CSS: %w", err)
+	}
+	g.cssURL = cssAsset.URLPath
+	g.logger.Verbose("  CSS: %s", cssAsset.FileName)
+
+	// Write JS file if instant navigation is enabled
+	if g.config.InstantNav {
+		jsAsset, err := assets.WriteHashedAsset(g.config.OutputDir, "app", "js", string(g.instantNavJS), g.baseURL)
+		if err != nil {
+			return fmt.Errorf("failed to write JS: %w", err)
+		}
+		g.jsURL = jsAsset.URLPath
+		g.logger.Verbose("  JS: %s", jsAsset.FileName)
+	}
+
+	return nil
 }
