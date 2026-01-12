@@ -639,9 +639,24 @@ func TestGenerateWithAllOptionsEnabled(t *testing.T) {
 		t.Error("Generated HTML should contain base URL")
 	}
 
-	// Verify accent color is applied
-	if !bytes.Contains(content, []byte("#ff0000")) {
-		t.Error("Generated HTML should contain accent color")
+	// Verify accent color is applied (now in external CSS file)
+	assetsDir := filepath.Join(outputDir, "assets")
+	entries, err := os.ReadDir(assetsDir)
+	if err != nil {
+		t.Fatalf("Failed to read assets directory: %v", err)
+	}
+	var cssContent []byte
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), "styles.") && strings.HasSuffix(entry.Name(), ".css") {
+			cssContent, err = os.ReadFile(filepath.Join(assetsDir, entry.Name()))
+			if err != nil {
+				t.Fatalf("Failed to read CSS file: %v", err)
+			}
+			break
+		}
+	}
+	if !bytes.Contains(cssContent, []byte("#ff0000")) {
+		t.Error("Generated CSS should contain accent color")
 	}
 }
 

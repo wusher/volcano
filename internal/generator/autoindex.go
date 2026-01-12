@@ -47,6 +47,8 @@ func (g *Generator) generateAutoIndex(node *tree.Node, root *tree.Node) error {
 		MetaTags:        metaTagsHTML,
 		ShowSearch:      true,
 		BaseURL:         g.baseURL,
+		CSSURL:          g.cssURL,
+		JSURL:           g.jsURL,
 		InstantNavJS:    g.instantNavJS,
 		ViewTransitions: g.viewTransitions,
 	}

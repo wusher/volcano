@@ -8,7 +8,28 @@
 {{.FaviconLinks}}
 {{if .ViewTransitions}}    <meta name="view-transition" content="same-origin">
 {{end}}
-    <style>
+{{if .CSSURL}}    <link rel="stylesheet" href="{{.CSSURL}}">
+{{if .ViewTransitions}}    <style>
+        /* View Transitions API styles */
+        @view-transition {
+            navigation: auto;
+        }
+
+        /* Customize the default crossfade animation */
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+            animation-duration: 0.2s;
+        }
+
+        /* Respect reduced motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+            ::view-transition-old(root),
+            ::view-transition-new(root) {
+                animation-duration: 0s;
+            }
+        }
+    </style>
+{{end}}{{else}}    <style>
 {{.CSS}}
 {{if .ViewTransitions}}
         /* View Transitions API styles */
@@ -30,7 +51,7 @@
             }
         }
 {{end}}
-    </style>
+    </style>{{end}}
     <script>
         // Detect theme before page renders to prevent flash
         (function() {
@@ -596,8 +617,8 @@
             if (modal && modal.close) modal.close();
         }
     </script>
-{{if .InstantNavJS}}
-    <script>
+{{if .JSURL}}    <script src="{{.JSURL}}"></script>
+{{else if .InstantNavJS}}    <script>
 {{.InstantNavJS}}
     </script>
 {{end}}
