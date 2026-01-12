@@ -90,8 +90,7 @@ a:hover {
 }
 
 .scroll-progress-bar {
-  background: linear-gradient(90deg, var(--accent, var(--text-primary)), var(--accent-hover, var(--text-primary)));
-  box-shadow: 0 0 8px var(--accent, var(--text-primary));
+  background: var(--accent, var(--text-primary));
 }
 
 /* ==========================================================================

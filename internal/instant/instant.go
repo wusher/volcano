@@ -120,13 +120,14 @@ const instantNavJSRaw = `
 
             // Function to perform the actual DOM updates
             const performUpdate = () => {
-                // Update page content
-                updateContent(newDoc);
-
-                // Update URL (unless this is a popstate event)
+                // Update URL FIRST so relative paths in new content resolve correctly
+                // This must happen before updateContent to prevent broken images
                 if (!isPop) {
                     history.pushState(null, '', url);
                 }
+
+                // Update page content
+                updateContent(newDoc);
 
                 // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'instant' });

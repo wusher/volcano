@@ -44,6 +44,7 @@ type Config struct {
 	AccentColor     string // Custom accent color in hex format (e.g., "#ff6600")
 	InstantNav      bool   // Enable instant navigation with hover prefetching
 	ViewTransitions bool   // Enable browser view transitions API
+	InlineAssets    bool   // Embed CSS/JS inline instead of external files
 }
 
 // Result holds the result of generation
@@ -180,8 +181,11 @@ func (g *Generator) Generate() (*Result, error) {
 	}
 
 	// Write hashed CSS and JS assets (after confirming we have pages)
-	if err := g.writeHashedAssets(); err != nil {
-		return nil, err
+	// Skip when inline assets are requested
+	if !g.config.InlineAssets {
+		if err := g.writeHashedAssets(); err != nil {
+			return nil, err
+		}
 	}
 
 	// Count folders
@@ -434,6 +438,7 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		BaseURL:         g.baseURL,
 		CSSURL:          g.cssURL,
 		JSURL:           g.jsURL,
+		CSS:             g.inlineCSS(),
 		InstantNavJS:    g.instantNavJS,
 		ViewTransitions: g.viewTransitions,
 	}
@@ -488,6 +493,7 @@ func (g *Generator) generate404(root *tree.Node) error {
 		BaseURL:         g.baseURL,
 		CSSURL:          g.cssURL,
 		JSURL:           g.jsURL,
+		CSS:             g.inlineCSS(),
 		InstantNavJS:    g.instantNavJS,
 		ViewTransitions: g.viewTransitions,
 	}
@@ -524,4 +530,13 @@ func (g *Generator) writeHashedAssets() error {
 	}
 
 	return nil
+}
+
+// inlineCSS returns CSS content for inline embedding when InlineAssets is enabled.
+// Returns empty string when external assets are used (CSSURL will be set instead).
+func (g *Generator) inlineCSS() template.CSS {
+	if g.config.InlineAssets {
+		return template.CSS(g.css)
+	}
+	return ""
 }
