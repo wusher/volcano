@@ -105,7 +105,8 @@ a:hover {
 }
 
 .scroll-progress-bar {
-  background: var(--accent, var(--text-muted));
+  background: linear-gradient(90deg, var(--accent, var(--text-muted)), var(--accent-hover, var(--text-muted)));
+  box-shadow: 0 0 6px var(--accent, var(--text-muted));
 }
 
 /* ==========================================================================
