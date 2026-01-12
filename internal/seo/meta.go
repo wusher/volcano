@@ -238,13 +238,11 @@ func RenderMetaTags(meta PageMeta) template.HTML {
 		sb.WriteString("\n")
 	}
 
-	// Browser theme color tags
+	// Browser theme color tags (single tag, updated via JS to sync with theme toggle)
 	sb.WriteString("\n")
 	sb.WriteString(`  <!-- Browser Theme Colors -->`)
 	sb.WriteString("\n")
 	sb.WriteString(`  <meta name="theme-color" content="#ffffff">`)
-	sb.WriteString("\n")
-	sb.WriteString(`  <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">`)
 	sb.WriteString("\n")
 	sb.WriteString(`  <meta name="color-scheme" content="light dark">`)
 	sb.WriteString("\n")
