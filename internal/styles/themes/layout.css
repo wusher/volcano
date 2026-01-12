@@ -810,8 +810,13 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
   }
 
-  .has-toc .mobile-toc-toggle {
+  .mobile-toc-toggle {
     display: flex;
+    margin-left: auto;
+  }
+
+  .mobile-toc-toggle + .mobile-theme-toggle {
+    margin-left: 0.25rem;
   }
 
   .theme-toggle {
@@ -834,7 +839,7 @@ h1, h2, h3, h4, h5, h6 {
     right: 0;
     width: 100%;
     max-height: calc(100vh - 48px);
-    z-index: 150;
+    z-index: 250;
     border-radius: 0;
     overflow-y: auto;
   }
@@ -846,6 +851,13 @@ h1, h2, h3, h4, h5, h6 {
   .has-top-nav .toc-sidebar {
     top: 96px;
     max-height: calc(100vh - 96px);
+  }
+
+  /* Larger touch targets for mobile TOC links */
+  .toc-sidebar .toc a {
+    padding: 0.625rem 0.75rem;
+    margin-left: -0.75rem;
+    font-size: 1rem;
   }
 
   .close-btn {

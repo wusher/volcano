@@ -256,6 +256,28 @@
             document.body.classList.remove('toc-open');
         }
 
+        // Close mobile TOC when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!document.body.classList.contains('toc-open')) return;
+            const tocSidebar = document.querySelector('.toc-sidebar');
+            const tocToggle = document.querySelector('.mobile-toc-toggle');
+            if (tocSidebar && !tocSidebar.contains(e.target) && tocToggle && !tocToggle.contains(e.target)) {
+                closeMobileTOC();
+            }
+        });
+
+        // Close mobile TOC when clicking a TOC link
+        (function() {
+            const tocSidebar = document.querySelector('.toc-sidebar');
+            if (tocSidebar) {
+                tocSidebar.addEventListener('click', function(e) {
+                    if (e.target.closest('a')) {
+                        closeMobileTOC();
+                    }
+                });
+            }
+        })();
+
         // Tree navigation toggle (uses event delegation to survive instant nav)
         document.querySelector('.tree-nav').addEventListener('click', function(e) {
             const toggle = e.target.closest('.folder-toggle');
@@ -551,6 +573,7 @@
                 if (e.key === 'Escape') {
                     closeShortcutsModal();
                     closeDrawer();
+                    closeMobileTOC();
                     return;
                 }
 
