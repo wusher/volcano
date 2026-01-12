@@ -192,12 +192,17 @@ body {
 }
 
 .mobile-header .mobile-menu-btn,
+.mobile-header .mobile-toc-toggle,
 .mobile-header .mobile-theme-toggle {
   display: flex;
   padding: 0.5rem;
 }
 
 .mobile-menu-btn {
+  display: none;
+}
+
+.mobile-toc-toggle {
   display: none;
 }
 
@@ -805,6 +810,10 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
   }
 
+  .has-toc .mobile-toc-toggle {
+    display: flex;
+  }
+
   .theme-toggle {
     display: none !important;
   }
@@ -819,6 +828,24 @@ h1, h2, h3, h4, h5, h6 {
 
   .toc-sidebar {
     display: none;
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: calc(100vh - 48px);
+    z-index: 150;
+    border-radius: 0;
+    overflow-y: auto;
+  }
+
+  body.toc-open .toc-sidebar {
+    display: block;
+  }
+
+  .has-top-nav .toc-sidebar {
+    top: 96px;
+    max-height: calc(100vh - 96px);
   }
 
   .close-btn {
