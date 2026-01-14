@@ -26,6 +26,9 @@ type Config struct {
 	ViewTransitions bool   // Enable browser view transitions API
 	InlineAssets    bool   // Embed CSS/JS inline instead of external files
 	PWA             bool   // Enable PWA manifest and service worker generation
+
+	// Internal fields (not settable via CLI)
+	configFilePath string // Path to loaded config file (for verbose logging)
 }
 
 // DefaultConfig returns a Config with default values
