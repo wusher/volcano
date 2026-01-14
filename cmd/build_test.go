@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/wusher/volcano/internal/config"
 )
 
 func TestBuildHelp(t *testing.T) {
@@ -372,5 +374,235 @@ func TestPrintBuildUsage(t *testing.T) {
 		if !strings.Contains(output, phrase) {
 			t.Errorf("Usage output should contain %q", phrase)
 		}
+	}
+}
+
+func TestPrescanArgs(t *testing.T) {
+	tests := []struct {
+		name           string
+		args           []string
+		expectedInput  string
+		expectedConfig string
+	}{
+		{
+			name:           "empty args",
+			args:           []string{},
+			expectedInput:  "",
+			expectedConfig: "",
+		},
+		{
+			name:           "input only",
+			args:           []string{"./docs"},
+			expectedInput:  "./docs",
+			expectedConfig: "",
+		},
+		{
+			name:           "input with flags",
+			args:           []string{"-q", "./docs"},
+			expectedInput:  "./docs",
+			expectedConfig: "",
+		},
+		{
+			name:           "config flag with space",
+			args:           []string{"--config", "./config.json", "./docs"},
+			expectedInput:  "./docs",
+			expectedConfig: "./config.json",
+		},
+		{
+			name:           "config flag short",
+			args:           []string{"-c", "./config.json", "./docs"},
+			expectedInput:  "./docs",
+			expectedConfig: "./config.json",
+		},
+		{
+			name:           "config flag with equals",
+			args:           []string{"--config=./config.json", "./docs"},
+			expectedInput:  "./docs",
+			expectedConfig: "./config.json",
+		},
+		{
+			name:           "short config flag with equals",
+			args:           []string{"-c=./config.json", "./docs"},
+			expectedInput:  "./docs",
+			expectedConfig: "./config.json",
+		},
+		{
+			name:           "value flag before input",
+			args:           []string{"-o", "./output", "./docs"},
+			expectedInput:  "./docs",
+			expectedConfig: "",
+		},
+		{
+			name:           "mixed flags",
+			args:           []string{"--title=Test", "-c", "config.json", "-o", "out", "./docs"},
+			expectedInput:  "./docs",
+			expectedConfig: "config.json",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			inputDir, configPath := prescanArgs(tc.args)
+			if inputDir != tc.expectedInput {
+				t.Errorf("inputDir = %q, want %q", inputDir, tc.expectedInput)
+			}
+			if configPath != tc.expectedConfig {
+				t.Errorf("configPath = %q, want %q", configPath, tc.expectedConfig)
+			}
+		})
+	}
+}
+
+func TestApplyFileConfig(t *testing.T) {
+	t.Run("apply all fields", func(t *testing.T) {
+		cfg := DefaultConfig()
+		fileCfg := &config.FileConfig{
+			Output:       "./public",
+			Title:        "Test Site",
+			URL:          "https://example.com",
+			Author:       "Test Author",
+			Theme:        "blog",
+			CSS:          "./custom.css",
+			AccentColor:  "#ff6600",
+			Favicon:      "./favicon.png",
+			OGImage:      "./og.png",
+			TopNav:       config.BoolPtr(true),
+			Breadcrumbs:  config.BoolPtr(false),
+			PageNav:      config.BoolPtr(true),
+			InstantNav:   config.BoolPtr(true),
+			InlineAssets: config.BoolPtr(true),
+			PWA:          config.BoolPtr(true),
+			LastModified: config.BoolPtr(true),
+		}
+
+		applyFileConfig(cfg, fileCfg)
+
+		if cfg.OutputDir != "./public" {
+			t.Errorf("OutputDir = %q, want %q", cfg.OutputDir, "./public")
+		}
+		if cfg.Title != "Test Site" {
+			t.Errorf("Title = %q, want %q", cfg.Title, "Test Site")
+		}
+		if cfg.SiteURL != "https://example.com" {
+			t.Errorf("SiteURL = %q, want %q", cfg.SiteURL, "https://example.com")
+		}
+		if cfg.Author != "Test Author" {
+			t.Errorf("Author = %q, want %q", cfg.Author, "Test Author")
+		}
+		if cfg.Theme != "blog" {
+			t.Errorf("Theme = %q, want %q", cfg.Theme, "blog")
+		}
+		if cfg.CSSPath != "./custom.css" {
+			t.Errorf("CSSPath = %q, want %q", cfg.CSSPath, "./custom.css")
+		}
+		if cfg.AccentColor != "#ff6600" {
+			t.Errorf("AccentColor = %q, want %q", cfg.AccentColor, "#ff6600")
+		}
+		if cfg.FaviconPath != "./favicon.png" {
+			t.Errorf("FaviconPath = %q, want %q", cfg.FaviconPath, "./favicon.png")
+		}
+		if cfg.OGImage != "./og.png" {
+			t.Errorf("OGImage = %q, want %q", cfg.OGImage, "./og.png")
+		}
+		if !cfg.TopNav {
+			t.Error("TopNav should be true")
+		}
+		if cfg.ShowBreadcrumbs {
+			t.Error("ShowBreadcrumbs should be false")
+		}
+		if !cfg.ShowPageNav {
+			t.Error("ShowPageNav should be true")
+		}
+		if !cfg.InstantNav {
+			t.Error("InstantNav should be true")
+		}
+		if !cfg.InlineAssets {
+			t.Error("InlineAssets should be true")
+		}
+		if !cfg.PWA {
+			t.Error("PWA should be true")
+		}
+		if !cfg.ShowLastMod {
+			t.Error("ShowLastMod should be true")
+		}
+	})
+
+	t.Run("empty file config preserves defaults", func(t *testing.T) {
+		cfg := DefaultConfig()
+		originalTitle := cfg.Title
+		originalOutput := cfg.OutputDir
+
+		fileCfg := &config.FileConfig{}
+
+		applyFileConfig(cfg, fileCfg)
+
+		if cfg.Title != originalTitle {
+			t.Errorf("Title changed from %q to %q", originalTitle, cfg.Title)
+		}
+		if cfg.OutputDir != originalOutput {
+			t.Errorf("OutputDir changed from %q to %q", originalOutput, cfg.OutputDir)
+		}
+	})
+
+	t.Run("partial config applies only specified fields", func(t *testing.T) {
+		cfg := DefaultConfig()
+
+		fileCfg := &config.FileConfig{
+			Title: "Custom Title",
+			PWA:   config.BoolPtr(true),
+		}
+
+		applyFileConfig(cfg, fileCfg)
+
+		if cfg.Title != "Custom Title" {
+			t.Errorf("Title = %q, want %q", cfg.Title, "Custom Title")
+		}
+		if !cfg.PWA {
+			t.Error("PWA should be true")
+		}
+		// Other fields should keep defaults
+		if cfg.OutputDir != "./output" {
+			t.Errorf("OutputDir = %q, want %q", cfg.OutputDir, "./output")
+		}
+	})
+}
+
+func TestBuildWithConfigFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Test"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create config file
+	configContent := `{
+		"title": "Config Title",
+		"output": "` + outputDir + `",
+		"pwa": true
+	}`
+	configPath := filepath.Join(inputDir, "volcano.json")
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	err := Build([]string{inputDir}, &stdout, &stderr)
+	if err != nil {
+		t.Errorf("Build should succeed with config file, got error: %v", err)
+	}
+
+	// Check output was created
+	if _, err := os.Stat(filepath.Join(outputDir, "index.html")); os.IsNotExist(err) {
+		t.Error("Build should create output in directory from config file")
+	}
+
+	// Check PWA assets were created (config enabled pwa)
+	if _, err := os.Stat(filepath.Join(outputDir, "manifest.json")); os.IsNotExist(err) {
+		t.Error("manifest.json should exist when PWA is enabled in config")
 	}
 }
