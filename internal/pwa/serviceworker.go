@@ -136,3 +136,21 @@ func GetServiceWorkerRegistration(baseURL string) string {
   navigator.serviceWorker.register('%s');
 }`, swPath)
 }
+
+// BuildServiceWorker creates sw.js content in memory and returns it as a string.
+func BuildServiceWorker(config ServiceWorkerConfig) string {
+	// Collect all URLs to cache
+	allURLs := make([]string, 0, len(config.PageURLs)+len(config.AssetURLs))
+	allURLs = append(allURLs, config.PageURLs...)
+	allURLs = append(allURLs, config.AssetURLs...)
+
+	// Sort for consistent hashing
+	sort.Strings(allURLs)
+
+	// Generate cache version from hash of all URLs
+	cacheVersion := generateCacheVersion(allURLs)
+	cacheName := "volcano-cache-" + cacheVersion
+
+	// Build and return the service worker JavaScript
+	return buildServiceWorkerJS(cacheName, allURLs)
+}

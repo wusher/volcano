@@ -1,6 +1,7 @@
 package pwa
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/gif"
@@ -123,4 +124,42 @@ func GetIconURLs(baseURL string) []string {
 		urls[i] = fmt.Sprintf("%sicon-%d.png", prefix, size)
 	}
 	return urls
+}
+
+// GenerateIconBytes creates a PWA icon in memory from image data.
+// ext should be the file extension with dot (e.g., ".png", ".jpg")
+// Returns the icon as PNG bytes.
+func GenerateIconBytes(imageData []byte, ext string, size int) ([]byte, error) {
+	// Decode the source image
+	var src image.Image
+	var err error
+
+	reader := bytes.NewReader(imageData)
+	switch ext {
+	case ".png":
+		src, err = png.Decode(reader)
+	case ".jpg", ".jpeg":
+		src, err = jpeg.Decode(reader)
+	case ".gif":
+		src, err = gif.Decode(reader)
+	default:
+		return nil, fmt.Errorf("unsupported format: %s", ext)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode image: %w", err)
+	}
+
+	// Create destination image
+	dst := image.NewRGBA(image.Rect(0, 0, size, size))
+
+	// Use high-quality CatmullRom resampling
+	draw.CatmullRom.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Over, nil)
+
+	// Encode as PNG to bytes
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, dst); err != nil {
+		return nil, fmt.Errorf("failed to encode icon: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }

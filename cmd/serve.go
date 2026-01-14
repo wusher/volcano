@@ -39,6 +39,7 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Enable debug output")
+	fs.BoolVar(&cfg.PWA, "pwa", false, "Enable PWA manifest and service worker for offline support")
 	fs.BoolVar(&showHelp, "h", false, "Show help")
 	fs.BoolVar(&showHelp, "help", false, "Show help")
 
@@ -145,6 +146,7 @@ func Serve(cfg *Config, w io.Writer) error {
 			InstantNav:      cfg.InstantNav,
 			ViewTransitions: cfg.ViewTransitions,
 			FaviconPath:     cfg.FaviconPath,
+			PWA:             cfg.PWA,
 		}
 
 		srv, err := server.NewDynamicServer(dynamicCfg, w)
@@ -219,6 +221,9 @@ func printServeUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Logging:")
 	_, _ = fmt.Fprintln(w, "  -q, --quiet          Suppress non-error output")
 	_, _ = fmt.Fprintln(w, "  --verbose            Show detailed server logs")
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "PWA:")
+	_, _ = fmt.Fprintln(w, "  --pwa                Enable PWA manifest and service worker")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Other:")
 	_, _ = fmt.Fprintln(w, "  -h, --help           Show this help message")

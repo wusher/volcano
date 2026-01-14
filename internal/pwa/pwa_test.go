@@ -1,6 +1,7 @@
 package pwa
 
 import (
+	"bytes"
 	"encoding/json"
 	"image"
 	"image/png"
@@ -449,6 +450,173 @@ func TestGetIconURLs(t *testing.T) {
 		}
 		if urls[1] != "/docs/icon-512.png" {
 			t.Errorf("URL[1] = %q, want %q", urls[1], "/docs/icon-512.png")
+		}
+	})
+}
+
+func TestGenerateIconBytes(t *testing.T) {
+	// Create a test PNG image
+	img := image.NewRGBA(image.Rect(0, 0, 100, 100))
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatal(err)
+	}
+	pngData := buf.Bytes()
+
+	t.Run("PNG image", func(t *testing.T) {
+		result, err := GenerateIconBytes(pngData, ".png", 64)
+		if err != nil {
+			t.Fatalf("GenerateIconBytes() error = %v", err)
+		}
+		if len(result) == 0 {
+			t.Error("GenerateIconBytes() returned empty result")
+		}
+	})
+
+	t.Run("unsupported format", func(t *testing.T) {
+		_, err := GenerateIconBytes([]byte("not an image"), ".bmp", 64)
+		if err == nil {
+			t.Error("GenerateIconBytes() should return error for unsupported format")
+		}
+		if !strings.Contains(err.Error(), "unsupported format") {
+			t.Errorf("error should mention unsupported format, got: %v", err)
+		}
+	})
+
+	t.Run("invalid image data", func(t *testing.T) {
+		_, err := GenerateIconBytes([]byte("not a valid png"), ".png", 64)
+		if err == nil {
+			t.Error("GenerateIconBytes() should return error for invalid image data")
+		}
+	})
+}
+
+func TestBuildManifest(t *testing.T) {
+	t.Run("basic manifest", func(t *testing.T) {
+		config := ManifestConfig{
+			SiteTitle:   "Test Site",
+			Description: "A test site",
+			ThemeColor:  "#ff0000",
+			BaseURL:     "",
+			HasIcons:    false,
+		}
+
+		data := BuildManifest(config)
+		if len(data) == 0 {
+			t.Error("BuildManifest() returned empty result")
+		}
+
+		var manifest Manifest
+		if err := json.Unmarshal(data, &manifest); err != nil {
+			t.Fatalf("Failed to parse manifest JSON: %v", err)
+		}
+
+		if manifest.Name != "Test Site" {
+			t.Errorf("Name = %q, want %q", manifest.Name, "Test Site")
+		}
+		if manifest.ThemeColor != "#ff0000" {
+			t.Errorf("ThemeColor = %q, want %q", manifest.ThemeColor, "#ff0000")
+		}
+	})
+
+	t.Run("manifest with base URL and icons", func(t *testing.T) {
+		config := ManifestConfig{
+			SiteTitle: "Test Site",
+			BaseURL:   "/docs",
+			HasIcons:  true,
+		}
+
+		data := BuildManifest(config)
+		var manifest Manifest
+		if err := json.Unmarshal(data, &manifest); err != nil {
+			t.Fatalf("Failed to parse manifest JSON: %v", err)
+		}
+
+		if manifest.StartURL != "/docs/" {
+			t.Errorf("StartURL = %q, want %q", manifest.StartURL, "/docs/")
+		}
+		if manifest.Scope != "/docs/" {
+			t.Errorf("Scope = %q, want %q", manifest.Scope, "/docs/")
+		}
+		if len(manifest.Icons) != 2 {
+			t.Errorf("Icons length = %d, want 2", len(manifest.Icons))
+		}
+		if manifest.Icons[0].Src != "/docs/icon-192.png" {
+			t.Errorf("Icon[0].Src = %q, want %q", manifest.Icons[0].Src, "/docs/icon-192.png")
+		}
+	})
+
+	t.Run("default theme color", func(t *testing.T) {
+		config := ManifestConfig{
+			SiteTitle: "Test Site",
+		}
+
+		data := BuildManifest(config)
+		var manifest Manifest
+		if err := json.Unmarshal(data, &manifest); err != nil {
+			t.Fatalf("Failed to parse manifest JSON: %v", err)
+		}
+
+		if manifest.ThemeColor != DefaultThemeColor {
+			t.Errorf("ThemeColor = %q, want default %q", manifest.ThemeColor, DefaultThemeColor)
+		}
+	})
+
+	t.Run("long title truncated", func(t *testing.T) {
+		config := ManifestConfig{
+			SiteTitle: "This Is A Very Long Site Title",
+		}
+
+		data := BuildManifest(config)
+		var manifest Manifest
+		if err := json.Unmarshal(data, &manifest); err != nil {
+			t.Fatalf("Failed to parse manifest JSON: %v", err)
+		}
+
+		if len(manifest.ShortName) > 12 {
+			t.Errorf("ShortName length = %d, want <= 12", len(manifest.ShortName))
+		}
+	})
+}
+
+func TestBuildServiceWorker(t *testing.T) {
+	t.Run("basic service worker", func(t *testing.T) {
+		config := ServiceWorkerConfig{
+			BaseURL:   "",
+			PageURLs:  []string{"/", "/about/"},
+			AssetURLs: []string{"/styles.css"},
+		}
+
+		result := BuildServiceWorker(config)
+		if result == "" {
+			t.Error("BuildServiceWorker() returned empty result")
+		}
+
+		if !strings.Contains(result, "volcano-cache-") {
+			t.Error("service worker should contain cache name")
+		}
+		if !strings.Contains(result, `"/"`) {
+			t.Error("service worker should contain root URL")
+		}
+		if !strings.Contains(result, `"/about/"`) {
+			t.Error("service worker should contain about URL")
+		}
+		if !strings.Contains(result, `"/styles.css"`) {
+			t.Error("service worker should contain CSS URL")
+		}
+	})
+
+	t.Run("deterministic cache version", func(t *testing.T) {
+		config := ServiceWorkerConfig{
+			PageURLs:  []string{"/a/", "/b/"},
+			AssetURLs: []string{"/c.css"},
+		}
+
+		result1 := BuildServiceWorker(config)
+		result2 := BuildServiceWorker(config)
+
+		if result1 != result2 {
+			t.Error("BuildServiceWorker() should return identical results for same input")
 		}
 	})
 }
