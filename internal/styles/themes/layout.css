@@ -222,15 +222,27 @@ body {
 }
 
 /* ==========================================================================
-   THEME TOGGLE
+   DESKTOP TOOLBAR (Theme + Focus toggles)
    ========================================================================== */
 
-.theme-toggle {
+.desktop-toolbar {
   position: fixed;
   top: 0;
   right: 2rem;
   z-index: 200;
   height: var(--breadcrumbs-height);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.zen-toggle {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+}
+
+.theme-toggle {
   display: flex;
   align-items: center;
   padding: 0 0.5rem;
@@ -266,6 +278,54 @@ body {
 
 [data-theme="dark"] .mobile-header .mobile-theme-toggle .moon-icon {
   display: none;
+}
+
+/* ==========================================================================
+   ZEN MODE EXIT BUTTON
+   ========================================================================== */
+
+.zen-exit {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+/* ==========================================================================
+   ZEN MODE
+   ========================================================================== */
+
+body.zen-mode .sidebar,
+body.zen-mode .toc-sidebar,
+body.zen-mode .desktop-toolbar,
+body.zen-mode .mobile-header,
+body.zen-mode .breadcrumbs,
+body.zen-mode .top-nav,
+body.zen-mode .page-nav,
+body.zen-mode .back-to-top,
+body.zen-mode .scroll-progress {
+  display: none !important;
+}
+
+body.zen-mode .main-wrapper {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+body.zen-mode .content {
+  padding-top: 3rem;
+}
+
+body.zen-mode .prose {
+  max-width: 650px;
+}
+
+body.zen-mode .zen-exit {
+  display: flex;
 }
 
 /* ==========================================================================
@@ -326,7 +386,7 @@ body {
   padding-top: 48px;
 }
 
-.has-top-nav .theme-toggle {
+.has-top-nav .desktop-toolbar {
   display: none;
 }
 
@@ -823,7 +883,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-left: 0.25rem;
   }
 
-  .theme-toggle {
+  .desktop-toolbar {
     display: none !important;
   }
 
@@ -1031,3 +1091,4 @@ body.drawer-open .mobile-menu-btn {
 .chroma .hl { display: block; width: 100%; }
 .chroma .lnt { margin-right: 0.4em; padding: 0 0.4em; }
 .chroma .ln { margin-right: 0.4em; padding: 0 0.4em; }
+

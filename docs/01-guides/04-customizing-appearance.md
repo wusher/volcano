@@ -34,6 +34,10 @@ volcano css -o custom.css
 volcano ./docs --css ./custom.css
 ```
 
+:::tip Generate with AI
+Use the [[prompts/custom-theme|custom theme prompt]] to generate a complete theme with AI. Just describe your desired look and get production-ready CSS.
+:::
+
 ## Branding
 
 ```bash

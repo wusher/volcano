@@ -236,10 +236,14 @@ func (s *DynamicServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	rec := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
 
-	// Set cache control headers for development (no caching)
-	rec.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	// Set aggressive cache control headers for development (no caching)
+	// Use no-store (not just no-cache) to prevent any caching including bfcache
+	rec.Header().Set("Cache-Control", "no-store, must-revalidate, max-age=0")
 	rec.Header().Set("Pragma", "no-cache")
 	rec.Header().Set("Expires", "0")
+	// Set varying ETag to force revalidation
+	rec.Header().Set("ETag", fmt.Sprintf(`"%d"`, time.Now().UnixNano()))
+	rec.Header().Set("Vary", "*")
 
 	urlPath := r.URL.Path
 

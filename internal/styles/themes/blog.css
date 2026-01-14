@@ -230,14 +230,37 @@ body.toc-open .mobile-toc-toggle {
    THEME TOGGLE STYLING
    ========================================================================== */
 
-.theme-toggle {
+.theme-toggle,
+.zen-toggle {
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-muted);
 }
 
-.theme-toggle:hover {
+.theme-toggle:hover,
+.zen-toggle:hover {
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   ZEN MODE EXIT BUTTON STYLING
+   ========================================================================== */
+
+.zen-exit {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background-color var(--transition-speed), border-color var(--transition-speed);
+}
+
+.zen-exit:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--text-muted);
   color: var(--text-primary);
 }
 
@@ -318,9 +341,14 @@ body.toc-open .mobile-toc-toggle {
    TREE NAVIGATION STYLING
    ========================================================================== */
 
+.tree-nav {
+  font-size: 0.75rem;
+}
+
 .tree-nav a {
   border-radius: 0.25rem;
   color: var(--text-secondary);
+  padding: 0.2rem 0.4rem;
   transition: background-color var(--transition-speed), color var(--transition-speed);
 }
 

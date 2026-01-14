@@ -38,18 +38,22 @@ var ValidThemes = []string{"docs", "blog", "vanilla"}
 // If theme is empty, returns the docs theme (default)
 // CSS is combined: layout.css + theme.css
 func GetCSS(theme string) string {
-	var themeCSS string
+	return LayoutCSS + "\n" + GetThemeCSS(theme)
+}
+
+// GetThemeCSS returns just the theme CSS without layout
+// Used by the `volcano css` command to output the customization skeleton
+func GetThemeCSS(theme string) string {
 	switch theme {
 	case "blog":
-		themeCSS = BlogCSS
+		return BlogCSS
 	case "vanilla":
-		themeCSS = VanillaCSS
+		return VanillaCSS
 	case "docs", "":
-		themeCSS = DocsCSS
+		return DocsCSS
 	default:
-		themeCSS = DocsCSS
+		return DocsCSS
 	}
-	return LayoutCSS + "\n" + themeCSS
 }
 
 // ValidateTheme checks if the given theme name is valid
@@ -93,6 +97,7 @@ func NewCSSLoader(config CSSConfig, readFile func(string) ([]byte, error)) CSSLo
 }
 
 // LoadCSS returns minified CSS content from custom file or embedded theme
+// Layout CSS is always included first, then theme or custom CSS is appended
 func (l *cssLoader) LoadCSS() (string, error) {
 	var css string
 	if l.config.CSSPath != "" {
@@ -100,7 +105,8 @@ func (l *cssLoader) LoadCSS() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		css = string(content)
+		// Prepend layout CSS to custom CSS
+		css = LayoutCSS + "\n" + string(content)
 	} else {
 		// Try to load theme from filesystem first (for development)
 		// This enables live reload during development

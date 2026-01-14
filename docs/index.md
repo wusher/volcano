@@ -53,3 +53,4 @@ Your folder structure becomes the site navigation. That's it.
 - [[guides/index|Guides]] — Learn Volcano features
 - [[reference/index|Reference]] — CLI flags and options
 - [[examples/index|Examples]] — Real-world setups
+- [[prompts/index|AI Prompts]] — Generate content with AI assistants
