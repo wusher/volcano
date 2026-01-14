@@ -9,6 +9,7 @@ require (
 	github.com/tdewolff/minify/v2 v2.24.8
 	github.com/yuin/goldmark v1.7.16
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
+	golang.org/x/image v0.35.0
 	golang.org/x/term v0.38.0
 )
 

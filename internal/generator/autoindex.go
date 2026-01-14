@@ -52,6 +52,7 @@ func (g *Generator) generateAutoIndex(node *tree.Node, root *tree.Node) error {
 		CSS:             g.inlineCSS(),
 		InstantNavJS:    g.instantNavJS,
 		ViewTransitions: g.viewTransitions,
+		PWAEnabled:      g.pwaEnabled,
 	}
 
 	// Create output directory

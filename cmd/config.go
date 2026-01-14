@@ -25,6 +25,7 @@ type Config struct {
 	InstantNav      bool   // Enable instant navigation with hover prefetching
 	ViewTransitions bool   // Enable browser view transitions API
 	InlineAssets    bool   // Embed CSS/JS inline instead of external files
+	PWA             bool   // Enable PWA manifest and service worker generation
 }
 
 // DefaultConfig returns a Config with default values
