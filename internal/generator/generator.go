@@ -15,6 +15,7 @@ import (
 	"github.com/wusher/volcano/internal/markdown"
 	"github.com/wusher/volcano/internal/navigation"
 	"github.com/wusher/volcano/internal/output"
+	"github.com/wusher/volcano/internal/pwa"
 	"github.com/wusher/volcano/internal/seo"
 	"github.com/wusher/volcano/internal/styles"
 	"github.com/wusher/volcano/internal/templates"
@@ -45,6 +46,7 @@ type Config struct {
 	InstantNav      bool   // Enable instant navigation with hover prefetching
 	ViewTransitions bool   // Enable browser view transitions API
 	InlineAssets    bool   // Embed CSS/JS inline instead of external files
+	PWA             bool   // Enable PWA manifest and service worker generation
 }
 
 // Result holds the result of generation
@@ -77,6 +79,7 @@ type Generator struct {
 	cssURL          string          // External CSS file URL (hashed)
 	jsURL           string          // External JS file URL (hashed)
 	css             string          // CSS content (for writing to file)
+	pwaEnabled      bool            // Whether PWA support is enabled
 }
 
 // New creates a new Generator
@@ -116,6 +119,7 @@ func New(config Config, writer io.Writer) (*Generator, error) {
 		baseURL:         baseURL,
 		viewTransitions: config.ViewTransitions,
 		css:             css,
+		pwaEnabled:      config.PWA,
 	}
 
 	// Initialize instant navigation JS if enabled
@@ -270,6 +274,13 @@ func (g *Generator) Generate() (*Result, error) {
 			}
 		}
 		return nil, fmt.Errorf("build failed: %d broken internal links found", len(brokenContentLinks))
+	}
+
+	// Step 8: Generate PWA assets if enabled
+	if g.pwaEnabled {
+		if err := g.generatePWA(site.AllPages, foldersNeedingIndex); err != nil {
+			return nil, fmt.Errorf("failed to generate PWA assets: %w", err)
+		}
 	}
 
 	// Print summary
@@ -441,6 +452,7 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		CSS:             g.inlineCSS(),
 		InstantNavJS:    g.instantNavJS,
 		ViewTransitions: g.viewTransitions,
+		PWAEnabled:      g.pwaEnabled,
 	}
 
 	// Create output directory
@@ -496,6 +508,7 @@ func (g *Generator) generate404(root *tree.Node) error {
 		CSS:             g.inlineCSS(),
 		InstantNavJS:    g.instantNavJS,
 		ViewTransitions: g.viewTransitions,
+		PWAEnabled:      g.pwaEnabled,
 	}
 
 	fullPath := filepath.Join(g.config.OutputDir, "404.html")
@@ -539,4 +552,94 @@ func (g *Generator) inlineCSS() template.CSS {
 		return template.CSS(g.css)
 	}
 	return ""
+}
+
+// generatePWA creates PWA assets (manifest.json, sw.js, icons).
+func (g *Generator) generatePWA(allPages []*tree.Node, autoIndexFolders []*tree.Node) error {
+	g.logger.Verbose("Generating PWA assets...")
+
+	// 1. Generate icons from favicon
+	iconResult, err := pwa.GenerateIcons(g.config.FaviconPath, g.config.OutputDir)
+	if err != nil {
+		return err
+	}
+	if iconResult.Warning != "" {
+		g.logger.Warning(iconResult.Warning)
+	}
+
+	// 2. Generate manifest.json
+	manifestConfig := pwa.ManifestConfig{
+		SiteTitle:  g.config.Title,
+		ThemeColor: g.config.AccentColor, // Empty = default in manifest.go
+		BaseURL:    g.baseURL,
+		HasIcons:   iconResult.Generated,
+	}
+	if err := pwa.GenerateManifest(g.config.OutputDir, manifestConfig); err != nil {
+		return err
+	}
+
+	// 3. Collect all page URLs
+	pageURLs := collectPageURLs(allPages, autoIndexFolders, g.baseURL)
+
+	// 4. Collect asset URLs
+	assetURLs := []string{}
+	if g.cssURL != "" {
+		assetURLs = append(assetURLs, g.cssURL)
+	}
+	if g.jsURL != "" {
+		assetURLs = append(assetURLs, g.jsURL)
+	}
+	if iconResult.Generated {
+		assetURLs = append(assetURLs, pwa.GetIconURLs(g.baseURL)...)
+	}
+
+	// 5. Generate service worker
+	swConfig := pwa.ServiceWorkerConfig{
+		BaseURL:   g.baseURL,
+		PageURLs:  pageURLs,
+		AssetURLs: assetURLs,
+	}
+	if err := pwa.GenerateServiceWorker(g.config.OutputDir, swConfig); err != nil {
+		return err
+	}
+
+	g.logger.Verbose("  manifest.json")
+	g.logger.Verbose("  sw.js")
+	if iconResult.Generated {
+		g.logger.Verbose("  icon-192.png, icon-512.png")
+	}
+
+	return nil
+}
+
+// collectPageURLs gathers all page URLs for service worker precaching.
+func collectPageURLs(allPages []*tree.Node, autoIndexFolders []*tree.Node, baseURL string) []string {
+	// Use a map to deduplicate URLs
+	urlSet := make(map[string]bool)
+
+	// Add all pages
+	for _, page := range allPages {
+		urlPath := tree.GetURLPath(page)
+		if baseURL != "" {
+			urlPath = baseURL + urlPath
+		}
+		urlSet[urlPath] = true
+	}
+
+	// Add auto-index folders
+	for _, folder := range autoIndexFolders {
+		urlPath := "/" + tree.SlugifyPath(folder.Path) + "/"
+		if baseURL != "" {
+			urlPath = baseURL + urlPath
+		}
+		urlSet[urlPath] = true
+	}
+
+	// Convert map to slice
+	urls := make([]string, 0, len(urlSet))
+	for url := range urlSet {
+		urls = append(urls, url)
+	}
+
+	return urls
 }

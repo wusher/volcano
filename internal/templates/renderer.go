@@ -44,6 +44,7 @@ type PageData struct {
 	BaseURL         string        // Base URL path prefix for all links (e.g., "/volcano")
 	InstantNavJS    template.JS   // Instant navigation JavaScript (when --instant-nav enabled)
 	ViewTransitions bool          // Enable browser view transitions API (when --view-transitions enabled)
+	PWAEnabled      bool          // Whether PWA is enabled (adds manifest link + SW registration)
 }
 
 // Renderer handles HTML template rendering

@@ -1,7 +1,9 @@
 package tree
 
 import (
+	"os"
 	"testing"
+	"time"
 )
 
 func TestNewNode(t *testing.T) {
@@ -214,6 +216,44 @@ func TestBuildValidURLMap(t *testing.T) {
 		}
 		if validURLs["/example/"] {
 			t.Error("Should NOT add domain as prefix")
+		}
+	})
+}
+
+func TestModTime(t *testing.T) {
+	t.Run("with existing file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		filePath := tmpDir + "/test.md"
+		if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		node := &Node{SourcePath: filePath}
+		modTime := node.ModTime()
+
+		// Should return a time close to now (file was just created)
+		if time.Since(modTime) > 5*time.Second {
+			t.Error("ModTime should return a recent time for existing file")
+		}
+	})
+
+	t.Run("with empty source path", func(t *testing.T) {
+		node := &Node{SourcePath: ""}
+		modTime := node.ModTime()
+
+		// Should return current time when no source path
+		if time.Since(modTime) > 1*time.Second {
+			t.Error("ModTime should return current time for empty source path")
+		}
+	})
+
+	t.Run("with non-existent file", func(t *testing.T) {
+		node := &Node{SourcePath: "/nonexistent/path/to/file.md"}
+		modTime := node.ModTime()
+
+		// Should return current time when file doesn't exist
+		if time.Since(modTime) > 1*time.Second {
+			t.Error("ModTime should return current time for non-existent file")
 		}
 	})
 }

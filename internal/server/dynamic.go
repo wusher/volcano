@@ -21,6 +21,7 @@ import (
 	"github.com/wusher/volcano/internal/instant"
 	"github.com/wusher/volcano/internal/markdown"
 	"github.com/wusher/volcano/internal/navigation"
+	"github.com/wusher/volcano/internal/pwa"
 	"github.com/wusher/volcano/internal/styles"
 	"github.com/wusher/volcano/internal/templates"
 	"github.com/wusher/volcano/internal/toc"
@@ -43,6 +44,7 @@ type DynamicConfig struct {
 	FaviconPath     string // Path to favicon file
 	InstantNav      bool   // Enable instant navigation with hover prefetching
 	ViewTransitions bool   // Enable browser view transitions API
+	PWA             bool   // Enable PWA manifest and service worker
 }
 
 // DynamicServer serves markdown files with live rendering
@@ -61,6 +63,10 @@ type DynamicServer struct {
 	faviconName     string        // Favicon filename (e.g., "logo.png")
 	instantNavJS    template.JS   // Instant navigation JavaScript (if enabled)
 	viewTransitions bool          // Enable browser view transitions API
+	pwaEnabled      bool          // PWA manifest and service worker enabled
+	pwaIcon192      []byte        // PWA 192x192 icon (generated from favicon)
+	pwaIcon512      []byte        // PWA 512x512 icon (generated from favicon)
+	pwaHasIcons     bool          // Whether PWA icons were generated
 }
 
 // NewDynamicServer creates a new dynamic server
@@ -90,6 +96,7 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 		scanner:         defaultScanner{},
 		cssLoader:       cssLoader,
 		viewTransitions: config.ViewTransitions,
+		pwaEnabled:      config.PWA,
 	}
 
 	// Initialize instant navigation JS if enabled
@@ -102,6 +109,13 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 		if err := srv.loadFavicon(); err != nil {
 			// Log warning but don't fail server startup
 			_, _ = fmt.Fprintf(writer, "Warning: Failed to load favicon: %v\n", err)
+		}
+	}
+
+	// Generate PWA icons if PWA is enabled and favicon is available
+	if config.PWA && srv.faviconData != nil {
+		if err := srv.generatePWAIcons(); err != nil {
+			_, _ = fmt.Fprintf(writer, "Warning: Failed to generate PWA icons: %v\n", err)
 		}
 	}
 
@@ -246,6 +260,12 @@ func (s *DynamicServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	rec.Header().Set("Vary", "*")
 
 	urlPath := r.URL.Path
+
+	// Serve PWA files (manifest.json, sw.js, icons) if PWA is enabled
+	if s.servePWA(rec, urlPath) {
+		s.logRequest(r.Method, urlPath, rec.statusCode, time.Since(start))
+		return
+	}
 
 	// Serve favicon from memory if requested
 	if s.serveFavicon(rec, urlPath) {
@@ -448,6 +468,7 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 		BaseURL:         "", // Empty for dev server (no base URL prefix)
 		InstantNavJS:    s.instantNavJS,
 		ViewTransitions: s.viewTransitions,
+		PWAEnabled:      s.pwaEnabled,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -754,6 +775,7 @@ func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage 
 		BaseURL:         "", // Empty for dev server (no base URL prefix)
 		InstantNavJS:    s.instantNavJS,
 		ViewTransitions: s.viewTransitions,
+		PWAEnabled:      s.pwaEnabled,
 	}
 
 	// Get renderer
@@ -797,6 +819,7 @@ func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 		BaseURL:         "", // Empty for dev server (no base URL prefix)
 		InstantNavJS:    s.instantNavJS,
 		ViewTransitions: s.viewTransitions,
+		PWAEnabled:      s.pwaEnabled,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -918,6 +941,7 @@ func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, n
 		BaseURL:         "", // Empty for dev server (no base URL prefix)
 		InstantNavJS:    s.instantNavJS,
 		ViewTransitions: s.viewTransitions,
+		PWAEnabled:      s.pwaEnabled,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -963,4 +987,142 @@ func findFolderByPath(node *tree.Node, urlPath string) *tree.Node {
 	}
 
 	return nil
+}
+
+// generatePWAIcons creates PWA icons in memory from the loaded favicon
+func (s *DynamicServer) generatePWAIcons() error {
+	if s.faviconData == nil {
+		return nil
+	}
+
+	// Check if format is supported for resizing
+	ext := strings.ToLower(filepath.Ext(s.faviconName))
+	switch ext {
+	case ".svg", ".ico":
+		// Cannot resize these formats
+		return nil
+	case ".png", ".jpg", ".jpeg", ".gif":
+		// Supported formats
+	default:
+		return nil
+	}
+
+	// Generate icons using pwa package's in-memory generation
+	icon192, err := pwa.GenerateIconBytes(s.faviconData, ext, 192)
+	if err != nil {
+		return fmt.Errorf("failed to generate 192x192 icon: %w", err)
+	}
+
+	icon512, err := pwa.GenerateIconBytes(s.faviconData, ext, 512)
+	if err != nil {
+		return fmt.Errorf("failed to generate 512x512 icon: %w", err)
+	}
+
+	s.pwaIcon192 = icon192
+	s.pwaIcon512 = icon512
+	s.pwaHasIcons = true
+	return nil
+}
+
+// servePWA serves PWA files (manifest.json, sw.js, icons) from memory
+func (s *DynamicServer) servePWA(w http.ResponseWriter, urlPath string) bool {
+	if !s.pwaEnabled {
+		return false
+	}
+
+	switch urlPath {
+	case "/manifest.json":
+		s.serveManifest(w)
+		return true
+	case "/sw.js":
+		s.serveServiceWorker(w)
+		return true
+	case "/icon-192.png":
+		if s.pwaIcon192 != nil {
+			w.Header().Set("Content-Type", "image/png")
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+			_, _ = w.Write(s.pwaIcon192)
+			return true
+		}
+	case "/icon-512.png":
+		if s.pwaIcon512 != nil {
+			w.Header().Set("Content-Type", "image/png")
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+			_, _ = w.Write(s.pwaIcon512)
+			return true
+		}
+	}
+
+	return false
+}
+
+// serveManifest generates and serves manifest.json dynamically
+func (s *DynamicServer) serveManifest(w http.ResponseWriter) {
+	config := pwa.ManifestConfig{
+		SiteTitle:   s.config.Title,
+		Description: "",
+		ThemeColor:  s.config.AccentColor,
+		BaseURL:     "", // No base URL for dev server
+		HasIcons:    s.pwaHasIcons,
+	}
+
+	manifest := pwa.BuildManifest(config)
+
+	w.Header().Set("Content-Type", "application/manifest+json")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = w.Write(manifest)
+}
+
+// serveServiceWorker generates and serves sw.js dynamically
+func (s *DynamicServer) serveServiceWorker(w http.ResponseWriter) {
+	// Scan the tree to get all page URLs
+	site, err := s.scanner.Scan(s.config.SourceDir)
+	if err != nil {
+		http.Error(w, "Failed to scan site", http.StatusInternalServerError)
+		return
+	}
+
+	// Collect all page URLs
+	var pageURLs []string
+	collectPageURLs(site.Root, &pageURLs)
+
+	// Add root path
+	pageURLs = append([]string{"/"}, pageURLs...)
+
+	// Build asset URLs (icons if available)
+	var assetURLs []string
+	if s.pwaHasIcons {
+		assetURLs = append(assetURLs, "/icon-192.png", "/icon-512.png")
+	}
+
+	config := pwa.ServiceWorkerConfig{
+		BaseURL:   "", // No base URL for dev server
+		PageURLs:  pageURLs,
+		AssetURLs: assetURLs,
+	}
+
+	sw := pwa.BuildServiceWorker(config)
+
+	w.Header().Set("Content-Type", "application/javascript")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = w.Write([]byte(sw))
+}
+
+// collectPageURLs collects all page URLs from the tree
+func collectPageURLs(node *tree.Node, urls *[]string) {
+	if node == nil {
+		return
+	}
+
+	if !node.IsFolder && node.Path != "" {
+		*urls = append(*urls, tree.GetURLPath(node))
+	}
+
+	if node.IsFolder && node.HasIndex {
+		*urls = append(*urls, tree.GetURLPath(&tree.Node{Path: node.IndexPath}))
+	}
+
+	for _, child := range node.Children {
+		collectPageURLs(child, urls)
+	}
 }

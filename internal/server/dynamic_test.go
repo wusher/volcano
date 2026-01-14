@@ -850,3 +850,230 @@ func TestDynamicServerStart_ShutdownWithSignal(t *testing.T) {
 		t.Fatal("Start() did not return after signal")
 	}
 }
+
+func TestDynamicServer_LoadFavicon(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a test favicon file
+	faviconPath := filepath.Join(tmpDir, "favicon.ico")
+	if err := os.WriteFile(faviconPath, []byte("fake ico data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	server := &DynamicServer{
+		config: DynamicConfig{
+			SourceDir:   tmpDir,
+			FaviconPath: faviconPath,
+		},
+	}
+
+	err := server.loadFavicon()
+	if err != nil {
+		t.Fatalf("loadFavicon() error = %v", err)
+	}
+
+	if server.faviconData == nil {
+		t.Error("faviconData should not be nil")
+	}
+	if server.faviconMime != "image/x-icon" {
+		t.Errorf("faviconMime = %q, want %q", server.faviconMime, "image/x-icon")
+	}
+	if server.faviconName != "favicon.ico" {
+		t.Errorf("faviconName = %q, want %q", server.faviconName, "favicon.ico")
+	}
+	if server.faviconLinks == "" {
+		t.Error("faviconLinks should not be empty")
+	}
+}
+
+func TestDynamicServer_LoadFavicon_NotFound(t *testing.T) {
+	server := &DynamicServer{
+		config: DynamicConfig{
+			FaviconPath: "/nonexistent/favicon.ico",
+		},
+	}
+
+	err := server.loadFavicon()
+	if err == nil {
+		t.Error("loadFavicon() should return error for non-existent file")
+	}
+}
+
+func TestDynamicServer_LoadFavicon_UnsupportedFormat(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a test file with unsupported extension
+	badPath := filepath.Join(tmpDir, "favicon.txt")
+	if err := os.WriteFile(badPath, []byte("text"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	server := &DynamicServer{
+		config: DynamicConfig{
+			FaviconPath: badPath,
+		},
+	}
+
+	err := server.loadFavicon()
+	if err == nil {
+		t.Error("loadFavicon() should return error for unsupported format")
+	}
+}
+
+func TestDynamicServer_ServeFavicon(t *testing.T) {
+	server := &DynamicServer{
+		faviconData: []byte("favicon data"),
+		faviconMime: "image/x-icon",
+		faviconName: "favicon.ico",
+	}
+
+	t.Run("serves favicon", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+
+		result := server.serveFavicon(rec, "/favicon.ico")
+		if !result {
+			t.Error("serveFavicon() should return true")
+		}
+
+		if rec.Header().Get("Content-Type") != "image/x-icon" {
+			t.Errorf("Content-Type = %q, want %q", rec.Header().Get("Content-Type"), "image/x-icon")
+		}
+
+		if rec.Body.String() != "favicon data" {
+			t.Errorf("body = %q, want %q", rec.Body.String(), "favicon data")
+		}
+	})
+
+	t.Run("ignores other paths", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+
+		result := server.serveFavicon(rec, "/other.ico")
+		if result {
+			t.Error("serveFavicon() should return false for non-favicon paths")
+		}
+	})
+
+	t.Run("returns false when no favicon data", func(t *testing.T) {
+		emptyServer := &DynamicServer{}
+		rec := httptest.NewRecorder()
+
+		result := emptyServer.serveFavicon(rec, "/favicon.ico")
+		if result {
+			t.Error("serveFavicon() should return false when no favicon data")
+		}
+	})
+}
+
+func TestDynamicServer_ServePWA(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create index.md
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	server, err := NewDynamicServer(DynamicConfig{
+		SourceDir: tmpDir,
+		Title:     "Test Site",
+		PWA:       true,
+	}, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("returns false when PWA disabled", func(t *testing.T) {
+		disabledServer := &DynamicServer{pwaEnabled: false}
+		rec := httptest.NewRecorder()
+
+		result := disabledServer.servePWA(rec, "/manifest.json")
+		if result {
+			t.Error("servePWA() should return false when PWA disabled")
+		}
+	})
+
+	t.Run("serves manifest.json", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+
+		result := server.servePWA(rec, "/manifest.json")
+		if !result {
+			t.Error("servePWA() should return true for manifest.json")
+		}
+
+		if rec.Header().Get("Content-Type") != "application/manifest+json" {
+			t.Errorf("Content-Type = %q, want %q", rec.Header().Get("Content-Type"), "application/manifest+json")
+		}
+
+		body := rec.Body.String()
+		if !strings.Contains(body, "Test Site") {
+			t.Error("manifest should contain site title")
+		}
+	})
+
+	t.Run("serves sw.js", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+
+		result := server.servePWA(rec, "/sw.js")
+		if !result {
+			t.Error("servePWA() should return true for sw.js")
+		}
+
+		if rec.Header().Get("Content-Type") != "application/javascript" {
+			t.Errorf("Content-Type = %q, want %q", rec.Header().Get("Content-Type"), "application/javascript")
+		}
+	})
+
+	t.Run("returns false for unknown paths", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+
+		result := server.servePWA(rec, "/unknown.txt")
+		if result {
+			t.Error("servePWA() should return false for unknown paths")
+		}
+	})
+}
+
+func TestCollectPageURLs(t *testing.T) {
+	// Create a tree structure
+	root := tree.NewNode("", "", true)
+
+	file1 := tree.NewNode("File 1", "file1.md", false)
+	file1.Path = "file1.md"
+	root.AddChild(file1)
+
+	folder := tree.NewNode("Folder", "folder", true)
+	folder.Path = "folder"
+	folder.HasIndex = true
+	folder.IndexPath = "folder/index.md"
+	root.AddChild(folder)
+
+	file2 := tree.NewNode("File 2", "folder/file2.md", false)
+	file2.Path = "folder/file2.md"
+	folder.AddChild(file2)
+
+	var urls []string
+	collectPageURLs(root, &urls)
+
+	if len(urls) < 2 {
+		t.Errorf("collectPageURLs() should collect at least 2 URLs, got %d", len(urls))
+	}
+
+	// Verify file URLs are collected
+	hasFile1 := false
+	for _, url := range urls {
+		if strings.Contains(url, "file1") {
+			hasFile1 = true
+		}
+	}
+	if !hasFile1 {
+		t.Error("collectPageURLs() should include file1 URL")
+	}
+}
+
+func TestCollectPageURLs_NilNode(t *testing.T) {
+	var urls []string
+	collectPageURLs(nil, &urls)
+
+	if len(urls) != 0 {
+		t.Errorf("collectPageURLs(nil) should not add any URLs, got %d", len(urls))
+	}
+}

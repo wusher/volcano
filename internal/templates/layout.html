@@ -6,7 +6,11 @@
     <title>{{.PageTitle}}{{if .SiteTitle}} - {{.SiteTitle}}{{end}}</title>
 {{.MetaTags}}
 {{.FaviconLinks}}
-{{if .ViewTransitions}}    <meta name="view-transition" content="same-origin">
+{{if .PWAEnabled}}    <link rel="manifest" href="{{.BaseURL}}/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="{{.SiteTitle}}">
+{{end}}{{if .ViewTransitions}}    <meta name="view-transition" content="same-origin">
 {{end}}
 {{if .CSSURL}}    <link rel="stylesheet" href="{{.CSSURL}}">
 {{if .ViewTransitions}}    <style>
@@ -687,6 +691,12 @@
 {{if .JSURL}}    <script defer src="{{.JSURL}}"></script>
 {{else if .InstantNavJS}}    <script>
 {{.InstantNavJS}}
+    </script>
+{{end}}
+{{if .PWAEnabled}}    <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('{{.BaseURL}}/sw.js');
+}
     </script>
 {{end}}
 </body>

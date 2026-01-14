@@ -1,6 +1,7 @@
 package tree
 
 import (
+	"os"
 	"testing"
 	"time"
 )
@@ -176,24 +177,137 @@ func TestIsDraftFile(t *testing.T) {
 }
 
 func TestSortNodes(t *testing.T) {
-	// Create nodes with different dates
-	node1 := &Node{Name: "Old Post", Path: "2024-01-01-old.md", IsFolder: false, SourcePath: ""}
-	node2 := &Node{Name: "New Post", Path: "2024-03-15-new.md", IsFolder: false, SourcePath: ""}
-	node3 := &Node{Name: "Folder", Path: "folder", IsFolder: true}
+	t.Run("files before folders", func(t *testing.T) {
+		// Create nodes with different dates
+		node1 := &Node{Name: "Old Post", Path: "2024-01-01-old.md", IsFolder: false, SourcePath: ""}
+		node2 := &Node{Name: "New Post", Path: "2024-03-15-new.md", IsFolder: false, SourcePath: ""}
+		node3 := &Node{Name: "Folder", Path: "folder", IsFolder: true}
 
-	nodes := []*Node{node1, node2, node3}
+		nodes := []*Node{node1, node2, node3}
 
-	// Sort newest first
-	SortNodes(nodes, true)
+		// Sort newest first
+		SortNodes(nodes, true)
 
-	// Files should come first, then folders
-	if nodes[0].IsFolder {
-		t.Error("Files should come before folders after sorting")
-	}
-	// Last item should be the folder
-	if !nodes[2].IsFolder {
-		t.Error("Folder should be last after sorting")
-	}
+		// Files should come first, then folders
+		if nodes[0].IsFolder {
+			t.Error("Files should come before folders after sorting")
+		}
+		// Last item should be the folder
+		if !nodes[2].IsFolder {
+			t.Error("Folder should be last after sorting")
+		}
+	})
+
+	t.Run("files sorted by date", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Create test files with date prefixes
+		oldFile := tmpDir + "/2024-01-01-old.md"
+		newFile := tmpDir + "/2024-03-15-new.md"
+		if err := os.WriteFile(oldFile, []byte("old"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(newFile, []byte("new"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		node1 := &Node{Name: "Old Post", FileName: "2024-01-01-old.md", IsFolder: false, SourcePath: oldFile}
+		node2 := &Node{Name: "New Post", FileName: "2024-03-15-new.md", IsFolder: false, SourcePath: newFile}
+
+		nodes := []*Node{node1, node2}
+
+		// Sort newest first
+		SortNodes(nodes, true)
+		if nodes[0].FileName != "2024-03-15-new.md" {
+			t.Error("Newer file should come first when sorting newest first")
+		}
+
+		// Sort oldest first
+		nodes = []*Node{node1, node2}
+		SortNodes(nodes, false)
+		if nodes[0].FileName != "2024-01-01-old.md" {
+			t.Error("Older file should come first when sorting oldest first")
+		}
+	})
+
+	t.Run("files sorted by number prefix", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Create test files with number prefixes
+		file1 := tmpDir + "/01-intro.md"
+		file2 := tmpDir + "/02-setup.md"
+		if err := os.WriteFile(file1, []byte("intro"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(file2, []byte("setup"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		node1 := &Node{Name: "Intro", FileName: "01-intro.md", IsFolder: false, SourcePath: file1}
+		node2 := &Node{Name: "Setup", FileName: "02-setup.md", IsFolder: false, SourcePath: file2}
+
+		nodes := []*Node{node2, node1}
+
+		// Sort oldest first (lower numbers first)
+		SortNodes(nodes, false)
+		if nodes[0].FileName != "01-intro.md" {
+			t.Error("Lower numbered file should come first when sorting oldest first")
+		}
+	})
+
+	t.Run("files sorted alphabetically by name", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		fileA := tmpDir + "/alpha.md"
+		fileB := tmpDir + "/beta.md"
+		if err := os.WriteFile(fileA, []byte("a"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(fileB, []byte("b"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		node1 := &Node{Name: "Alpha", FileName: "alpha.md", IsFolder: false, SourcePath: fileA}
+		node2 := &Node{Name: "Beta", FileName: "beta.md", IsFolder: false, SourcePath: fileB}
+
+		nodes := []*Node{node2, node1}
+
+		// Sort oldest first (alphabetical A-Z)
+		SortNodes(nodes, false)
+		if nodes[0].Name != "Alpha" {
+			t.Error("Alpha should come first when sorting oldest first (A-Z)")
+		}
+
+		// Sort newest first (alphabetical Z-A)
+		nodes = []*Node{node2, node1}
+		SortNodes(nodes, true)
+		if nodes[0].Name != "Beta" {
+			t.Error("Beta should come first when sorting newest first (Z-A)")
+		}
+	})
+
+	t.Run("dated files before undated files", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		datedFile := tmpDir + "/2024-01-15-dated.md"
+		undatedFile := tmpDir + "/undated.md"
+		if err := os.WriteFile(datedFile, []byte("dated"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(undatedFile, []byte("undated"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		node1 := &Node{Name: "Dated", FileName: "2024-01-15-dated.md", IsFolder: false, SourcePath: datedFile}
+		node2 := &Node{Name: "Undated", FileName: "undated.md", IsFolder: false, SourcePath: undatedFile}
+
+		nodes := []*Node{node2, node1}
+
+		SortNodes(nodes, false)
+		if nodes[0].FileName != "2024-01-15-dated.md" {
+			t.Error("Dated files should come before undated files")
+		}
+	})
 }
 
 func TestGetNumberForSort(t *testing.T) {

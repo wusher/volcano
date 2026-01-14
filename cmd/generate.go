@@ -29,6 +29,7 @@ func Generate(cfg *Config, w io.Writer) error {
 		InstantNav:      cfg.InstantNav,
 		ViewTransitions: cfg.ViewTransitions,
 		InlineAssets:    cfg.InlineAssets,
+		PWA:             cfg.PWA,
 	}
 
 	gen, err := generator.New(genConfig, w)

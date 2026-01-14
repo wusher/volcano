@@ -2,6 +2,8 @@ package generator
 
 import (
 	"bytes"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -918,5 +920,338 @@ func TestGenerateWithFaviconAndOGImage(t *testing.T) {
 	}
 	if !strings.Contains(contentStr, "Test Author") {
 		t.Error("Generated HTML should contain author meta tag")
+	}
+}
+
+func TestGenerateWithPWA(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create markdown files
+	files := map[string]string{
+		"index.md":        "# Home\n\nWelcome!",
+		"about.md":        "# About\n\nAbout page.",
+		"guides/index.md": "# Guides\n\nGuide section.",
+	}
+
+	for path, content := range files {
+		fullPath := filepath.Join(inputDir, path)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "PWA Test Site",
+		PWA:       true,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	if result.PagesGenerated < 3 {
+		t.Errorf("PagesGenerated = %d, want at least 3", result.PagesGenerated)
+	}
+
+	// Check manifest.json exists
+	manifestPath := filepath.Join(outputDir, "manifest.json")
+	if _, err := os.Stat(manifestPath); os.IsNotExist(err) {
+		t.Error("manifest.json should exist when PWA is enabled")
+	}
+
+	// Check service worker exists
+	swPath := filepath.Join(outputDir, "sw.js")
+	if _, err := os.Stat(swPath); os.IsNotExist(err) {
+		t.Error("sw.js should exist when PWA is enabled")
+	}
+
+	// Check manifest.json content
+	manifestContent, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(manifestContent), "PWA Test Site") {
+		t.Error("manifest.json should contain site title")
+	}
+
+	// Check service worker content
+	swContent, err := os.ReadFile(swPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	swStr := string(swContent)
+	if !strings.Contains(swStr, "volcano-cache-") {
+		t.Error("Service worker should contain cache name")
+	}
+	if !strings.Contains(swStr, "URLS_TO_CACHE") {
+		t.Error("Service worker should contain URLs to cache")
+	}
+
+	// Check HTML contains PWA meta tags
+	indexPath := filepath.Join(outputDir, "index.html")
+	htmlContent, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	htmlStr := string(htmlContent)
+	if !strings.Contains(htmlStr, "manifest.json") {
+		t.Error("HTML should link to manifest.json")
+	}
+	if !strings.Contains(htmlStr, "serviceWorker") {
+		t.Error("HTML should contain service worker registration")
+	}
+}
+
+func TestGenerateWithPWAAndFavicon(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create a valid PNG favicon using Go's image library
+	faviconPath := filepath.Join(tmpDir, "favicon.png")
+	img := image.NewRGBA(image.Rect(0, 0, 100, 100))
+	f, err := os.Create(faviconPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := png.Encode(f, img); err != nil {
+		_ = f.Close()
+		t.Fatal(err)
+	}
+	_ = f.Close()
+
+	// Create markdown file
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:    inputDir,
+		OutputDir:   outputDir,
+		Title:       "PWA With Icons",
+		PWA:         true,
+		FaviconPath: faviconPath,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check that PWA icons were generated
+	icon192Path := filepath.Join(outputDir, "icon-192.png")
+	icon512Path := filepath.Join(outputDir, "icon-512.png")
+
+	if _, err := os.Stat(icon192Path); os.IsNotExist(err) {
+		t.Error("icon-192.png should be generated when PNG favicon provided")
+	}
+	if _, err := os.Stat(icon512Path); os.IsNotExist(err) {
+		t.Error("icon-512.png should be generated when PNG favicon provided")
+	}
+
+	// Check manifest.json contains icon references
+	manifestContent, err := os.ReadFile(filepath.Join(outputDir, "manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(manifestContent), "icon-192.png") {
+		t.Error("manifest.json should contain icon-192.png reference")
+	}
+}
+
+func TestGenerateWithPWAAndBaseURL(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create markdown files
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "PWA with Base URL",
+		SiteURL:   "https://example.com/docs",
+		PWA:       true,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check manifest.json contains base URL
+	manifestContent, err := os.ReadFile(filepath.Join(outputDir, "manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifestStr := string(manifestContent)
+	if !strings.Contains(manifestStr, "/docs/") {
+		t.Error("manifest.json should contain base URL path")
+	}
+
+	// Check service worker contains base URL in URLs
+	swContent, err := os.ReadFile(filepath.Join(outputDir, "sw.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	swStr := string(swContent)
+	if !strings.Contains(swStr, "/docs/") {
+		t.Error("Service worker should contain base URL in cached URLs")
+	}
+}
+
+func TestCollectPageURLs(t *testing.T) {
+	tests := []struct {
+		name              string
+		allPages          []*tree.Node
+		autoIndexFolders  []*tree.Node
+		baseURL           string
+		expectedContains  []string
+		expectedMinLength int
+	}{
+		{
+			name: "basic pages without base URL",
+			allPages: []*tree.Node{
+				{Path: "index.md"},
+				{Path: "about.md"},
+			},
+			autoIndexFolders:  nil,
+			baseURL:           "",
+			expectedContains:  []string{"/", "/about/"},
+			expectedMinLength: 2,
+		},
+		{
+			name: "pages with base URL",
+			allPages: []*tree.Node{
+				{Path: "index.md"},
+			},
+			autoIndexFolders:  nil,
+			baseURL:           "/docs",
+			expectedContains:  []string{"/docs/"},
+			expectedMinLength: 1,
+		},
+		{
+			name:     "with auto-index folders",
+			allPages: []*tree.Node{},
+			autoIndexFolders: []*tree.Node{
+				{Path: "guides"},
+				{Path: "api"},
+			},
+			baseURL:           "",
+			expectedContains:  []string{"/guides/", "/api/"},
+			expectedMinLength: 2,
+		},
+		{
+			name: "mixed pages and folders with base URL",
+			allPages: []*tree.Node{
+				{Path: "index.md"},
+			},
+			autoIndexFolders: []*tree.Node{
+				{Path: "guides"},
+			},
+			baseURL:           "/site",
+			expectedContains:  []string{"/site/", "/site/guides/"},
+			expectedMinLength: 2,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			urls := collectPageURLs(tc.allPages, tc.autoIndexFolders, tc.baseURL)
+
+			if len(urls) < tc.expectedMinLength {
+				t.Errorf("Expected at least %d URLs, got %d", tc.expectedMinLength, len(urls))
+			}
+
+			urlSet := make(map[string]bool)
+			for _, u := range urls {
+				urlSet[u] = true
+			}
+
+			for _, expected := range tc.expectedContains {
+				if !urlSet[expected] {
+					t.Errorf("Expected URLs to contain %q, got: %v", expected, urls)
+				}
+			}
+		})
+	}
+}
+
+func TestGenerateWithInlineAssets(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Test"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:     inputDir,
+		OutputDir:    outputDir,
+		Title:        "Test",
+		InlineAssets: true,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check that HTML contains inline CSS
+	indexPath := filepath.Join(outputDir, "index.html")
+	content, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	contentStr := string(content)
+	// When inline assets is enabled, CSS should be in a <style> tag
+	if !strings.Contains(contentStr, "<style>") {
+		t.Error("Generated HTML should contain inline CSS when InlineAssets is true")
 	}
 }
