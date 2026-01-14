@@ -1,0 +1,933 @@
+/* =============================================================================
+   VOLCANO VANILLA THEME - Customization Skeleton
+   =============================================================================
+
+   This is a complete CSS skeleton with all available selectors as empty rules.
+   Use this as a starting point for creating your own custom theme.
+
+   The structural layout (flexbox, positioning, mobile responsiveness) is provided
+   by the shared layout.css that Volcano automatically includes.
+
+   To customize:
+   1. Export this file:    volcano css -o custom.css
+   2. Fill in the rules:   Add your colors, fonts, borders, backgrounds, etc.
+   3. Use your theme:      volcano build ./docs -o ./public --css ./custom.css
+
+   ============================================================================= */
+
+
+/* =============================================================================
+   CSS CUSTOM PROPERTIES (Variables)
+   =============================================================================
+   Define your theme colors, fonts, and other values here.
+   These variables are used throughout the theme for consistency.
+   ============================================================================= */
+
+/* Root variables for light mode - these cascade to all elements */
+:root {
+  /* Main page background color - applied to body and content areas */
+  /* --bg-primary: ; */
+
+  /* Background for sidebar, cards, and secondary UI areas */
+  /* --bg-secondary: ; */
+
+  /* Background for hover states and tertiary UI elements */
+  /* --bg-tertiary: ; */
+
+  /* Primary text color for headings and body text */
+  /* --text-primary: ; */
+
+  /* Secondary text color for less prominent text */
+  /* --text-secondary: ; */
+
+  /* Muted text for labels, placeholders, and de-emphasized content */
+  /* --text-muted: ; */
+
+  /* Color for borders, dividers, and separators throughout the UI */
+  /* --border-color: ; */
+
+  /* Default link text color */
+  /* --link-color: ; */
+
+  /* Link color on hover */
+  /* --link-hover: ; */
+
+  /* Background color for code blocks and inline code */
+  /* --code-bg: ; */
+
+  /* Sans-serif font stack for UI elements and docs theme */
+  /* --font-sans: ; */
+
+  /* Serif font stack for blog theme body text */
+  /* --font-serif: ; */
+
+  /* Monospace font for code blocks and inline code */
+  /* --font-mono: ; */
+
+  /* Duration for hover/focus transitions (e.g., 0.2s) */
+  /* --transition-speed: 0.2s; */
+
+  /* Width of the left navigation sidebar (default: 280px) */
+  /* --sidebar-width: ; */
+
+  /* Width of the right table of contents panel (default: 220px) */
+  /* --toc-width: ; */
+
+  /* Maximum width of the main content area (default: 800px, 680px for blog) */
+  /* --content-max-width: ; */
+}
+
+
+/* =============================================================================
+   DARK MODE
+   =============================================================================
+   Override variables when user toggles dark mode.
+   Applied when [data-theme="dark"] is set on the <html> element.
+   ============================================================================= */
+
+/* Dark mode overrides - redefine the variables above with dark-appropriate values */
+[data-theme="dark"] {
+}
+
+
+/* =============================================================================
+   BASE TYPOGRAPHY
+   =============================================================================
+   Global font settings applied to the root elements.
+   ============================================================================= */
+
+/* Root element - set base font size (typically 16px or 18px for blog) and line height */
+html {
+}
+
+/* Body - set font family, background color, and text color */
+body {
+}
+
+/* All links sitewide - set default color and text decoration */
+a {
+}
+
+/* Link hover state sitewide */
+a:hover {
+}
+
+
+/* =============================================================================
+   SCROLL PROGRESS INDICATOR
+   =============================================================================
+   Thin horizontal bar at the very top of the viewport showing how far
+   the user has scrolled down the page.
+   ============================================================================= */
+
+/* The full-width track/background of the scroll progress bar */
+.scroll-progress {
+}
+
+/* The filled portion that grows from left to right as user scrolls */
+.scroll-progress-bar {
+}
+
+
+/* =============================================================================
+   SIDEBAR
+   =============================================================================
+   The left navigation panel containing site branding, search, and page tree.
+   Fixed position on desktop, slides in as drawer on mobile.
+   ============================================================================= */
+
+/* Main sidebar container - set background, border-right, etc. */
+.sidebar {
+}
+
+/* Top section of sidebar containing the site title and mobile close button */
+.sidebar-header {
+}
+
+/* Site title/logo link at the very top of the sidebar - typically bold, links to home */
+.site-title {
+}
+
+/* X button to close the sidebar drawer on mobile devices */
+.close-btn {
+}
+
+
+/* =============================================================================
+   NAVIGATION SEARCH
+   =============================================================================
+   Search input in the sidebar that filters the navigation tree as user types.
+   ============================================================================= */
+
+/* Container holding the search icon and input field in the sidebar */
+.nav-search {
+}
+
+/* Magnifying glass icon positioned inside the left side of the search input */
+.search-icon {
+}
+
+/* Text input field where user types to filter navigation items */
+.search-input {
+}
+
+/* Search input when it has keyboard focus */
+.search-input:focus {
+}
+
+/* Placeholder text shown in empty search input (e.g., "Search...") */
+.search-input::placeholder {
+}
+
+/* Small X button that appears inside search input to clear the current query */
+.search-clear {
+}
+
+/* Clear button hover state */
+.search-clear:hover {
+}
+
+/* Message shown in sidebar when search query matches no navigation items */
+.search-empty {
+}
+
+
+/* =============================================================================
+   MOBILE HEADER
+   =============================================================================
+   Fixed header bar shown only on mobile/tablet screens.
+   Contains hamburger menu, site title, and theme toggle.
+   Hidden on desktop where sidebar is always visible.
+   ============================================================================= */
+
+/* The fixed header bar at top of mobile viewport */
+.mobile-header {
+}
+
+/* Mobile header in dark mode - typically needs adjusted background opacity */
+[data-theme="dark"] .mobile-header {
+}
+
+/* Hamburger menu button (three lines) that opens the sidebar drawer */
+.mobile-header .mobile-menu-btn {
+}
+
+/* Button with list icon that toggles the table of contents dropdown on mobile */
+.mobile-header .mobile-toc-toggle {
+}
+
+/* Sun/moon button in mobile header that toggles light/dark mode */
+.mobile-header .mobile-theme-toggle {
+}
+
+/* TOC toggle button hover state */
+.mobile-header .mobile-toc-toggle:hover {
+}
+
+/* TOC toggle button when the table of contents is currently open/visible */
+body.toc-open .mobile-toc-toggle {
+}
+
+/* Site title shown in the center of the mobile header bar */
+.mobile-header .mobile-site-title {
+}
+
+/* Mobile site title hover - typically remove underline */
+.mobile-header .mobile-site-title:hover {
+}
+
+
+/* =============================================================================
+   DRAWER BACKDROP
+   =============================================================================
+   Semi-transparent overlay that covers the page content when the mobile
+   sidebar drawer is open. Clicking it closes the sidebar.
+   ============================================================================= */
+
+/* Dark overlay behind the open sidebar drawer on mobile */
+.drawer-backdrop {
+}
+
+
+/* =============================================================================
+   THEME TOGGLE
+   =============================================================================
+   Button that switches between light and dark color modes.
+   Located in sidebar footer on desktop, in header on mobile.
+   ============================================================================= */
+
+/* The clickable button containing sun/moon icons */
+.theme-toggle {
+}
+
+/* Theme toggle hover state */
+.theme-toggle:hover {
+}
+
+/* Sun icon shown when in dark mode (click to switch to light) */
+.theme-toggle .sun-icon {
+}
+
+/* Moon icon shown when in light mode (click to switch to dark) */
+.theme-toggle .moon-icon {
+}
+
+/* Optional animation for icon rotation when theme changes */
+@keyframes spin-in {
+}
+
+/* Theme toggle keyboard focus state for accessibility */
+.theme-toggle:focus {
+}
+
+
+/* =============================================================================
+   TOP NAVIGATION BAR
+   =============================================================================
+   Horizontal nav bar at the top of the main content area (not the mobile header).
+   Used in some layouts for section-level navigation links.
+   ============================================================================= */
+
+/* The horizontal navigation bar above the content area */
+.top-nav {
+}
+
+/* Top nav in dark mode */
+[data-theme="dark"] .top-nav {
+}
+
+/* Theme toggle button when placed in the top nav bar */
+.top-nav-theme-toggle {
+}
+
+/* Top nav theme toggle hover state */
+.top-nav-theme-toggle:hover {
+}
+
+/* SVG icon inside the top nav theme toggle */
+.top-nav-theme-toggle svg {
+}
+
+/* Top nav theme toggle when being clicked */
+.top-nav-theme-toggle:active svg {
+}
+
+/* Individual navigation links in the top nav bar */
+.top-nav-list li a {
+}
+
+/* Top nav link hover state */
+.top-nav-list li a:hover {
+}
+
+/* Currently active/selected section link in top nav - often has underline accent */
+.top-nav-list li a.active {
+}
+
+
+/* =============================================================================
+   TREE NAVIGATION
+   =============================================================================
+   Hierarchical list of pages and folders in the sidebar.
+   Folders can expand/collapse to show nested pages.
+   ============================================================================= */
+
+/* Individual page links in the navigation tree */
+.tree-nav a {
+}
+
+/* Navigation link hover state */
+.tree-nav a:hover {
+}
+
+/* Currently active page link - typically highlighted with background and/or left border */
+.tree-nav a.active {
+}
+
+/* Chevron button that expands/collapses a folder's children */
+.folder-toggle {
+}
+
+/* Folder toggle hover state */
+.folder-toggle:hover {
+}
+
+/* Clickable folder name that links to the folder's index page (when folder has index.md) */
+.folder-link {
+}
+
+/* Non-clickable folder label for folders without an index page */
+.folder-label {
+}
+
+/* Folder link hover state */
+.folder-link:hover {
+}
+
+
+/* =============================================================================
+   BREADCRUMBS
+   =============================================================================
+   Horizontal navigation trail above the content showing the path from
+   home to the current page (e.g., "Home / Section / Current Page").
+   ============================================================================= */
+
+/* Container for the breadcrumb navigation trail */
+.breadcrumbs {
+}
+
+/* Breadcrumbs in dark mode */
+[data-theme="dark"] .breadcrumbs {
+}
+
+/* The ordered list containing breadcrumb items */
+.breadcrumbs ol {
+}
+
+/* Separator character (/) shown between breadcrumb items via ::after pseudo-element */
+.breadcrumbs li:not(:last-child)::after {
+}
+
+/* Clickable breadcrumb links for parent pages */
+.breadcrumbs a {
+}
+
+/* Breadcrumb link hover state */
+.breadcrumbs a:hover {
+}
+
+/* The current page in breadcrumbs (displayed as text, not a link) */
+.breadcrumbs span[aria-current="page"] {
+}
+
+
+/* =============================================================================
+   PAGE META
+   =============================================================================
+   Metadata displayed below the page title, such as publication date,
+   estimated reading time, and word count. Common in blog layouts.
+   ============================================================================= */
+
+/* Container for page metadata like date and reading time */
+.page-meta {
+}
+
+
+/* =============================================================================
+   TABLE OF CONTENTS
+   =============================================================================
+   Right sidebar panel listing the headings on the current page.
+   Allows quick navigation to sections. Fixed on desktop, dropdown on mobile.
+   ============================================================================= */
+
+/* The TOC panel container on the right side of the content */
+.toc-sidebar {
+}
+
+/* Mobile TOC appears as a dropdown below the mobile header */
+@media (max-width: 768px) {
+  .toc-sidebar {
+  }
+}
+
+/* "On this page" heading at the top of the TOC */
+.toc-title {
+}
+
+/* Individual heading links in the table of contents */
+.toc a {
+}
+
+/* TOC link hover state */
+.toc a:hover {
+}
+
+/* Currently visible section's link in TOC - highlighted as user scrolls */
+.toc a.active {
+}
+
+
+/* =============================================================================
+   PAGE NAVIGATION
+   =============================================================================
+   Previous/Next links at the bottom of page content for navigating
+   between pages in sequence.
+   ============================================================================= */
+
+/* Container holding the prev/next navigation links */
+.page-nav {
+}
+
+/* Link to the previous page in the sequence */
+.page-nav-prev {
+}
+
+/* Link to the next page in the sequence */
+.page-nav-next {
+}
+
+/* Hover state for prev/next links */
+.page-nav-prev:hover,
+.page-nav-next:hover {
+}
+
+/* Small label text above the page title (says "Previous" or "Next") */
+.page-nav-label {
+}
+
+/* The title of the linked page shown in prev/next navigation */
+.page-nav-title {
+}
+
+
+/* =============================================================================
+   BACK TO TOP BUTTON
+   =============================================================================
+   Floating circular button in the bottom-right corner that scrolls
+   the page back to the top when clicked. Appears after scrolling down.
+   ============================================================================= */
+
+/* The floating back-to-top button */
+.back-to-top {
+}
+
+/* Back to top button hover state */
+.back-to-top:hover {
+}
+
+
+/* =============================================================================
+   HEADING ANCHORS
+   =============================================================================
+   Small link icon that appears next to headings on hover.
+   Allows users to copy a permalink to that specific section.
+   ============================================================================= */
+
+/* The anchor link icon (typically a # or link symbol) next to headings */
+.heading-anchor {
+}
+
+
+/* =============================================================================
+   CODE BLOCKS
+   =============================================================================
+   Syntax-highlighted code blocks with optional copy-to-clipboard button.
+   ============================================================================= */
+
+/* Copy button in the top-right corner of code blocks */
+.copy-button {
+}
+
+/* Copy button becomes more visible when hovering over the code block */
+.code-block:hover .copy-button {
+}
+
+/* Copy button direct hover state */
+.copy-button:hover {
+}
+
+/* Copy button after user clicks it - briefly shows "Copied!" state */
+.copy-button.copied {
+}
+
+/* Copied state in dark mode */
+[data-theme="dark"] .copy-button.copied {
+}
+
+/* Highlighted line within a code block (specified via line number syntax) */
+.code-block .line.highlight {
+}
+
+/* Highlighted line in dark mode */
+[data-theme="dark"] .code-block .line.highlight {
+}
+
+
+/* =============================================================================
+   ADMONITIONS
+   =============================================================================
+   Callout boxes for special content like notes, tips, warnings.
+   Created in markdown with :::note, :::tip, :::warning, :::danger, :::info
+   ============================================================================= */
+
+/* Base styles for all admonition types - typically has left border and background */
+.admonition {
+}
+
+/* Bold heading inside the admonition (e.g., "Note", "Warning") */
+.admonition-heading {
+}
+
+/* Note admonition - for general supplementary information */
+.admonition-note {
+}
+
+/* Tip admonition - for helpful suggestions and best practices */
+.admonition-tip {
+}
+
+/* Warning admonition - for potential issues or things to be careful about */
+.admonition-warning {
+}
+
+/* Danger admonition - for critical warnings about destructive actions */
+.admonition-danger {
+}
+
+/* Info admonition - for neutral informational callouts */
+.admonition-info {
+}
+
+
+/* =============================================================================
+   KEYBOARD SHORTCUTS MODAL
+   =============================================================================
+   Dialog popup showing available keyboard shortcuts.
+   Opened by pressing the ? key anywhere on the page.
+   ============================================================================= */
+
+/* The modal dialog container showing keyboard shortcuts */
+.shortcuts-modal {
+}
+
+/* Semi-transparent backdrop behind the open modal */
+.shortcuts-modal::backdrop {
+}
+
+/* Modal title heading */
+.shortcuts-modal h2 {
+}
+
+/* Description text for each keyboard shortcut */
+.shortcut-group dd {
+}
+
+/* Styled keyboard key indicators (e.g., the "?" or "j" in shortcut lists) */
+kbd {
+}
+
+/* Button to close the shortcuts modal */
+.close-modal {
+}
+
+/* Close button hover state */
+.close-modal:hover {
+}
+
+
+/* =============================================================================
+   PROSE TYPOGRAPHY
+   =============================================================================
+   Typography styles for rendered markdown content.
+   Applied within the .prose wrapper class around page content.
+   ============================================================================= */
+
+/* All heading levels in prose content */
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+}
+
+/* Page title (h1) - largest heading, typically at top of content */
+.prose h1 {
+}
+
+/* Section headings (h2) - often styled with bottom border */
+.prose h2 {
+}
+
+/* Subsection headings (h3) */
+.prose h3 {
+}
+
+/* Minor headings (h4) */
+.prose h4 {
+}
+
+/* Small headings (h5, h6) */
+.prose h5, .prose h6 {
+}
+
+/* Inline code wrapped in single backticks */
+.prose code {
+}
+
+/* Code block container (the pre element wrapping code) */
+.prose pre {
+}
+
+/* Code element inside a pre block - reset inline code styles */
+.prose pre code {
+}
+
+/* Block quotes - typically indented with left border */
+.prose blockquote {
+}
+
+/* Horizontal rule / thematic break */
+.prose hr {
+}
+
+/* Table cells (both header and body cells) */
+.prose th, .prose td {
+}
+
+/* Table header cells - typically bold with background */
+.prose th {
+}
+
+/* Images in prose content */
+.prose img {
+}
+
+/* Links within prose content */
+.prose a {
+}
+
+/* Prose link hover state */
+.prose a:hover {
+}
+
+
+/* =============================================================================
+   PRINT STYLES
+   =============================================================================
+   Styles applied when user prints the page or saves as PDF.
+   ============================================================================= */
+
+@media print {
+  /* Reset background for printing */
+  body {
+  }
+
+  /* Optionally show full URLs after external links when printed */
+  a[href^="http"]::after {
+  }
+}
+
+
+/* =============================================================================
+   SYNTAX HIGHLIGHTING - Light Mode
+   =============================================================================
+   Colors for syntax-highlighted code (powered by Chroma highlighter).
+   ============================================================================= */
+
+/* Code block background color */
+.chroma {
+}
+
+/* Background for highlighted/emphasized lines in code */
+.chroma .hl {
+}
+
+/* Line numbers in code blocks */
+.chroma .lnt, .chroma .ln {
+}
+
+/* Language keywords: if, else, for, function, return, etc. */
+.chroma .k, .chroma .kc, .chroma .kd, .chroma .kn, .chroma .kp, .chroma .kr, .chroma .kt {
+}
+
+/* HTML/XML attributes and other named attributes */
+.chroma .na {
+}
+
+/* Built-in functions and objects */
+.chroma .nb {
+}
+
+/* Class names and type definitions */
+.chroma .nc {
+}
+
+/* Constants and constant values */
+.chroma .no {
+}
+
+/* Decorators (e.g., Python @decorator) */
+.chroma .nd {
+}
+
+/* Entity names */
+.chroma .ni {
+}
+
+/* Exception names */
+.chroma .ne {
+}
+
+/* Function and method names */
+.chroma .nf {
+}
+
+/* Labels (e.g., goto labels) */
+.chroma .nl {
+}
+
+/* Namespace and module names */
+.chroma .nn {
+}
+
+/* HTML/XML tag names */
+.chroma .nt {
+}
+
+/* Variable names */
+.chroma .nv {
+}
+
+/* String literals of all types */
+.chroma .s, .chroma .sa, .chroma .sb, .chroma .sc, .chroma .dl, .chroma .s2, .chroma .se, .chroma .sh, .chroma .si, .chroma .sx, .chroma .sr, .chroma .s1, .chroma .ss {
+}
+
+/* Documentation strings / docstrings */
+.chroma .sd {
+}
+
+/* Numeric literals: integers, floats, hex, etc. */
+.chroma .m, .chroma .mb, .chroma .mf, .chroma .mh, .chroma .mi, .chroma .il, .chroma .mo {
+}
+
+/* Operators: +, -, *, /, =, ==, etc. */
+.chroma .o, .chroma .ow {
+}
+
+/* Comments: single-line, multi-line, etc. */
+.chroma .c, .chroma .ch, .chroma .cm, .chroma .c1, .chroma .cs {
+}
+
+/* Preprocessor directives */
+.chroma .cp {
+}
+
+/* Preprocessor file includes */
+.chroma .cpf {
+}
+
+/* Deleted lines in diffs (red background typically) */
+.chroma .gd {
+}
+
+/* Generic emphasis (italic text) */
+.chroma .ge {
+}
+
+/* Inserted lines in diffs (green background typically) */
+.chroma .gi {
+}
+
+/* Generic strong (bold text) */
+.chroma .gs {
+}
+
+/* Generic subheading in diffs */
+.chroma .gu {
+}
+
+
+/* =============================================================================
+   SYNTAX HIGHLIGHTING - Dark Mode
+   =============================================================================
+   Dark mode color overrides for syntax highlighting.
+   ============================================================================= */
+
+/* Highlighted line background in dark mode */
+[data-theme="dark"] .chroma .hl {
+}
+
+/* Keywords in dark mode */
+[data-theme="dark"] .chroma .k, [data-theme="dark"] .chroma .kc, [data-theme="dark"] .chroma .kd, [data-theme="dark"] .chroma .kn, [data-theme="dark"] .chroma .kp, [data-theme="dark"] .chroma .kr, [data-theme="dark"] .chroma .kt {
+}
+
+/* Attributes in dark mode */
+[data-theme="dark"] .chroma .na {
+}
+
+/* Builtins in dark mode */
+[data-theme="dark"] .chroma .nb {
+}
+
+/* Class names in dark mode */
+[data-theme="dark"] .chroma .nc {
+}
+
+/* Constants in dark mode */
+[data-theme="dark"] .chroma .no {
+}
+
+/* Decorators in dark mode */
+[data-theme="dark"] .chroma .nd {
+}
+
+/* Entities in dark mode */
+[data-theme="dark"] .chroma .ni {
+}
+
+/* Exceptions in dark mode */
+[data-theme="dark"] .chroma .ne {
+}
+
+/* Functions in dark mode */
+[data-theme="dark"] .chroma .nf {
+}
+
+/* Labels in dark mode */
+[data-theme="dark"] .chroma .nl {
+}
+
+/* Namespaces in dark mode */
+[data-theme="dark"] .chroma .nn {
+}
+
+/* Tags in dark mode */
+[data-theme="dark"] .chroma .nt {
+}
+
+/* Variables in dark mode */
+[data-theme="dark"] .chroma .nv {
+}
+
+/* Strings in dark mode */
+[data-theme="dark"] .chroma .s, [data-theme="dark"] .chroma .sa, [data-theme="dark"] .chroma .sb, [data-theme="dark"] .chroma .sc, [data-theme="dark"] .chroma .dl, [data-theme="dark"] .chroma .s2, [data-theme="dark"] .chroma .se, [data-theme="dark"] .chroma .sh, [data-theme="dark"] .chroma .si, [data-theme="dark"] .chroma .sx, [data-theme="dark"] .chroma .sr, [data-theme="dark"] .chroma .s1, [data-theme="dark"] .chroma .ss {
+}
+
+/* Docstrings in dark mode */
+[data-theme="dark"] .chroma .sd {
+}
+
+/* Numbers in dark mode */
+[data-theme="dark"] .chroma .m, [data-theme="dark"] .chroma .mb, [data-theme="dark"] .chroma .mf, [data-theme="dark"] .chroma .mh, [data-theme="dark"] .chroma .mi, [data-theme="dark"] .chroma .il, [data-theme="dark"] .chroma .mo {
+}
+
+/* Operators in dark mode */
+[data-theme="dark"] .chroma .o, [data-theme="dark"] .chroma .ow {
+}
+
+/* Comments in dark mode */
+[data-theme="dark"] .chroma .c, [data-theme="dark"] .chroma .ch, [data-theme="dark"] .chroma .cm, [data-theme="dark"] .chroma .c1, [data-theme="dark"] .chroma .cs {
+}
+
+/* Preprocessor in dark mode */
+[data-theme="dark"] .chroma .cp {
+}
+
+/* Preprocessor file in dark mode */
+[data-theme="dark"] .chroma .cpf {
+}
+
+/* Deleted diff lines in dark mode */
+[data-theme="dark"] .chroma .gd {
+}
+
+/* Inserted diff lines in dark mode */
+[data-theme="dark"] .chroma .gi {
+}
+
+/* Diff subheading in dark mode */
+[data-theme="dark"] .chroma .gu {
+}
+
+
+/* =============================================================================
+   YOUR CUSTOM STYLES
+   =============================================================================
+   Add any additional custom styles below.
+   ============================================================================= */

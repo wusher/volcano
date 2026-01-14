@@ -1,0 +1,1581 @@
+/* =============================================================================
+   WINDOWS 98 THEME - "API DOCS FROM THE PAST"
+   =============================================================================
+
+   A faithful recreation of the classic Windows 98 aesthetic for API documentation.
+   Features authentic system colors, 3D beveled UI elements, window chrome, and
+   that nostalgic late-90s computing experience.
+
+   Light mode: Classic gray desktop aesthetic
+   Dark mode: Nighttime variant with darker tones
+
+   ============================================================================= */
+
+
+/* =============================================================================
+   CSS CUSTOM PROPERTIES (Variables)
+   =============================================================================
+   Windows 98 color palette and system settings
+   ============================================================================= */
+
+:root {
+  /* === WINDOWS 98 CLASSIC COLORS === */
+
+  /* Main backgrounds - classic Windows gray */
+  --bg-primary: #C0C0C0;        /* Silver/button face */
+  --bg-secondary: #BFBFBF;      /* Slightly darker gray for panels */
+  --bg-tertiary: #DFDFDF;       /* Lighter gray for hover states */
+
+  /* Text colors */
+  --text-primary: #000000;      /* Black text */
+  --text-secondary: #404040;    /* Dark gray for secondary text */
+  --text-muted: #808080;        /* Medium gray for muted text */
+
+  /* UI chrome colors */
+  --border-color: #808080;      /* Gray border */
+  --border-light: #FFFFFF;      /* White highlight edge */
+  --border-dark: #000000;       /* Black shadow edge */
+  --border-mid-light: #DFDFDF;  /* Light gray inner edge */
+  --border-mid-dark: #808080;   /* Dark gray inner edge */
+
+  /* Active window title bar - classic Windows blue */
+  --titlebar-active: #000080;   /* Navy blue */
+  --titlebar-text: #FFFFFF;     /* White text on blue */
+  --titlebar-inactive: #808080; /* Gray for inactive windows */
+
+  /* Links - classic blue and purple */
+  --link-color: #0000FF;        /* Bright blue */
+  --link-hover: #FF00FF;        /* Magenta/visited purple */
+  --link-visited: #800080;      /* Dark purple */
+
+  /* Code blocks - white terminal background */
+  --code-bg: #FFFFFF;
+  --code-border: #000000;
+
+  /* Selection color - classic Windows blue highlight */
+  --selection-bg: #000080;
+  --selection-text: #FFFFFF;
+
+  /* System fonts - authentic Windows 98 */
+  --font-sans: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, Arial, sans-serif;
+  --font-serif: "Times New Roman", Times, serif;
+  --font-mono: "Courier New", Courier, "Lucida Console", monospace;
+
+  /* Transitions - keep them snappy like the 90s */
+  --transition-speed: 0.1s;
+
+  /* Layout dimensions */
+  --sidebar-width: 280px;
+  --toc-width: 240px;
+  --content-max-width: 800px;
+
+  /* 3D bevel shadows - for that raised/inset effect */
+  --shadow-raised: inset 1px 1px 0 var(--border-light),
+                   inset -1px -1px 0 var(--border-dark),
+                   inset 2px 2px 0 var(--border-mid-light),
+                   inset -2px -2px 0 var(--border-mid-dark);
+
+  --shadow-inset: inset -1px -1px 0 var(--border-light),
+                  inset 1px 1px 0 var(--border-dark);
+
+  --shadow-window: 2px 2px 0 rgba(0,0,0,0.4);
+}
+
+
+/* =============================================================================
+   DARK MODE - "NIGHTTIME WINDOWS"
+   =============================================================================
+   Darker variant of Windows 98 for late-night API browsing
+   ============================================================================= */
+
+[data-theme="dark"] {
+  /* Dark backgrounds */
+  --bg-primary: #3C3C3C;        /* Dark gray */
+  --bg-secondary: #2D2D2D;      /* Darker gray for panels */
+  --bg-tertiary: #4A4A4A;       /* Medium gray for hover */
+
+  /* Dark mode text */
+  --text-primary: #FFFFFF;      /* White text */
+  --text-secondary: #C0C0C0;    /* Light gray */
+  --text-muted: #808080;        /* Medium gray */
+
+  /* Dark mode borders */
+  --border-color: #1A1A1A;      /* Very dark gray */
+  --border-light: #5A5A5A;      /* Medium gray highlight */
+  --border-dark: #000000;       /* Black shadow */
+  --border-mid-light: #4A4A4A;  /* Dark gray inner */
+  --border-mid-dark: #1A1A1A;   /* Very dark inner */
+
+  /* Dark title bars */
+  --titlebar-active: #000050;   /* Dark blue */
+  --titlebar-text: #FFFFFF;
+  --titlebar-inactive: #2D2D2D;
+
+  /* Dark mode links */
+  --link-color: #5C9CFF;        /* Lighter blue */
+  --link-hover: #FF69B4;        /* Hot pink */
+  --link-visited: #C77DFF;      /* Light purple */
+
+  /* Dark code blocks */
+  --code-bg: #1E1E1E;
+  --code-border: #000000;
+
+  /* Dark selection */
+  --selection-bg: #000050;
+  --selection-text: #FFFFFF;
+}
+
+
+/* =============================================================================
+   BASE TYPOGRAPHY
+   =============================================================================
+   Classic Windows 98 system fonts
+   ============================================================================= */
+
+html {
+  font-size: 12px; /* Authentic Windows 98 was smaller */
+  line-height: 1.4;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  /* Desktop texture pattern (optional subtle noise) */
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.02) 1px, rgba(0,0,0,0.02) 2px);
+}
+
+a {
+  color: var(--link-color);
+  text-decoration: underline;
+  cursor: pointer; /* Windows 98 hand cursor */
+}
+
+a:hover {
+  color: var(--link-hover);
+}
+
+a:visited {
+  color: var(--link-visited);
+}
+
+/* Text selection - classic Windows blue highlight */
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+
+/* =============================================================================
+   SCROLL PROGRESS INDICATOR
+   =============================================================================
+   Styled like a Windows 98 progress bar
+   ============================================================================= */
+
+.scroll-progress {
+  height: 4px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-dark);
+  border-top: 1px solid var(--border-light);
+}
+
+.scroll-progress-bar {
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    #000080 0px,
+    #000080 8px,
+    #0000A0 8px,
+    #0000A0 16px
+  );
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+}
+
+
+/* =============================================================================
+   SIDEBAR - "EXPLORER WINDOW"
+   =============================================================================
+   Styled like a Windows Explorer sidebar with window chrome
+   ============================================================================= */
+
+.sidebar {
+  background: var(--bg-secondary);
+  border-right: 2px solid var(--border-dark);
+  box-shadow: var(--shadow-raised);
+  font-size: 11px;
+}
+
+.sidebar-header {
+  background: var(--titlebar-active);
+  color: var(--titlebar-text);
+  padding: 3px 4px;
+  font-weight: bold;
+  font-size: 11px;
+  border-bottom: 1px solid var(--border-dark);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* Classic title bar gradient */
+  background: linear-gradient(
+    90deg,
+    #000080 0%,
+    #1084D0 100%
+  );
+}
+
+.site-title {
+  color: var(--titlebar-text);
+  text-decoration: none;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.site-title:hover {
+  color: var(--titlebar-text);
+}
+
+/* Add Windows logo effect */
+.site-title::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg,
+    #FF0000 0%, #FF0000 25%,
+    #00FF00 25%, #00FF00 50%,
+    #0000FF 50%, #0000FF 75%,
+    #FFFF00 75%, #FFFF00 100%
+  );
+  border: 1px solid white;
+}
+
+.close-btn {
+  width: 16px;
+  height: 14px;
+  background: var(--bg-primary);
+  border: none;
+  box-shadow: var(--shadow-raised);
+  font-size: 9px;
+  font-weight: bold;
+  color: var(--text-primary);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  box-shadow: var(--shadow-inset);
+}
+
+.close-btn::before {
+  content: "×";
+  font-size: 14px;
+  line-height: 1;
+}
+
+
+/* =============================================================================
+   NAVIGATION SEARCH - "FIND FILES"
+   =============================================================================
+   Styled like a Windows 98 search box
+   ============================================================================= */
+
+.nav-search {
+  padding: 6px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-dark);
+}
+
+.search-icon {
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-input {
+  background: #FFFFFF;
+  color: #000000;
+  border: none;
+  box-shadow: var(--shadow-inset);
+  padding: 3px 6px 3px 24px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  width: 100%;
+}
+
+[data-theme="dark"] .search-input {
+  background: #FFFFFF;
+  color: #000000;
+}
+
+.search-input:focus {
+  outline: 1px dotted var(--text-primary);
+  outline-offset: -2px;
+}
+
+.search-input::placeholder {
+  color: #808080;
+}
+
+.search-clear {
+  background: var(--bg-primary);
+  border: none;
+  box-shadow: var(--shadow-raised);
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-clear:hover {
+  box-shadow: var(--shadow-inset);
+}
+
+.search-empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+
+/* =============================================================================
+   MOBILE HEADER
+   =============================================================================
+   Styled like a Windows 98 application title bar
+   ============================================================================= */
+
+.mobile-header {
+  background: linear-gradient(90deg, #000080 0%, #1084D0 100%);
+  color: var(--titlebar-text);
+  border-bottom: 2px solid var(--border-dark);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .mobile-header {
+  background: linear-gradient(90deg, #000050 0%, #0A4A8A 100%);
+}
+
+.mobile-header .mobile-menu-btn,
+.mobile-header .mobile-toc-toggle,
+.mobile-header .mobile-theme-toggle {
+  background: var(--bg-primary);
+  border: none;
+  box-shadow: var(--shadow-raised);
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-header .mobile-menu-btn:hover,
+.mobile-header .mobile-toc-toggle:hover,
+.mobile-header .mobile-theme-toggle:hover {
+  box-shadow: var(--shadow-inset);
+}
+
+body.toc-open .mobile-toc-toggle {
+  box-shadow: var(--shadow-inset);
+  background: var(--bg-tertiary);
+}
+
+.mobile-header .mobile-site-title {
+  color: var(--titlebar-text);
+  font-weight: bold;
+  font-size: 11px;
+  text-decoration: none;
+  letter-spacing: 0.5px;
+}
+
+.mobile-header .mobile-site-title:hover {
+  text-decoration: none;
+}
+
+
+/* =============================================================================
+   DRAWER BACKDROP
+   =============================================================================
+   Dark overlay when sidebar is open on mobile
+   ============================================================================= */
+
+.drawer-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+
+/* =============================================================================
+   THEME TOGGLE - "CONTROL PANEL BUTTON"
+   =============================================================================
+   Styled like a Windows 98 system button
+   ============================================================================= */
+
+.theme-toggle {
+  background: var(--bg-primary);
+  border: none;
+  box-shadow: var(--shadow-raised);
+  padding: 4px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+.theme-toggle:hover {
+  box-shadow: var(--shadow-inset);
+}
+
+.theme-toggle .sun-icon,
+.theme-toggle .moon-icon {
+  width: 14px;
+  height: 14px;
+}
+
+@keyframes spin-in {
+  from {
+    transform: rotate(-180deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.theme-toggle:focus {
+  outline: 1px dotted var(--text-primary);
+  outline-offset: -3px;
+}
+
+
+/* =============================================================================
+   TOP NAVIGATION BAR
+   =============================================================================
+   Styled like Windows 98 menu bar
+   ============================================================================= */
+
+.top-nav {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-dark);
+  box-shadow: inset 0 1px 0 var(--border-light);
+  padding: 2px 8px;
+}
+
+[data-theme="dark"] .top-nav {
+  background: var(--bg-secondary);
+}
+
+.top-nav-theme-toggle {
+  background: var(--bg-primary);
+  border: none;
+  box-shadow: var(--shadow-raised);
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.top-nav-theme-toggle:hover {
+  box-shadow: var(--shadow-inset);
+}
+
+.top-nav-theme-toggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform var(--transition-speed);
+}
+
+.top-nav-theme-toggle:active svg {
+  transform: scale(0.9);
+}
+
+.top-nav-list li a {
+  color: var(--text-primary);
+  text-decoration: none;
+  padding: 4px 8px;
+  display: block;
+  font-size: 11px;
+}
+
+.top-nav-list li a:hover {
+  background: var(--titlebar-active);
+  color: var(--titlebar-text);
+}
+
+.top-nav-list li a.active {
+  background: var(--bg-tertiary);
+  box-shadow: var(--shadow-inset);
+  font-weight: bold;
+}
+
+
+/* =============================================================================
+   TREE NAVIGATION - "EXPLORER TREE"
+   =============================================================================
+   Styled like Windows Explorer folder tree
+   ============================================================================= */
+
+.tree-nav a {
+  color: var(--text-primary);
+  text-decoration: none;
+  padding: 2px 4px 2px 8px;
+  display: block;
+  font-size: 11px;
+  border: 1px solid transparent;
+}
+
+.tree-nav a:hover {
+  background: var(--titlebar-active);
+  color: var(--titlebar-text);
+}
+
+.tree-nav a.active {
+  background: var(--titlebar-active);
+  color: var(--titlebar-text);
+  font-weight: bold;
+}
+
+.folder-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+
+.folder-toggle:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Windows 98 style folder icons */
+.folder-toggle::before {
+  content: "▶";
+  font-size: 8px;
+  display: inline-block;
+  transition: transform var(--transition-speed);
+}
+
+.folder-toggle[aria-expanded="true"]::before {
+  transform: rotate(90deg);
+}
+
+.folder-link,
+.folder-label {
+  font-weight: bold;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 11px;
+}
+
+.folder-link:hover {
+  background: var(--titlebar-active);
+  color: var(--titlebar-text);
+}
+
+
+/* =============================================================================
+   BREADCRUMBS - "ADDRESS BAR"
+   =============================================================================
+   Styled like Windows Explorer address bar
+   ============================================================================= */
+
+.breadcrumbs {
+  background: #FFFFFF;
+  border: none;
+  box-shadow: var(--shadow-inset);
+  padding: 4px 8px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+[data-theme="dark"] .breadcrumbs {
+  background: #FFFFFF;
+  color: #000000;
+}
+
+.breadcrumbs ol {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+}
+
+.breadcrumbs li:not(:last-child)::after {
+  content: "\\";
+  margin: 0 4px;
+  color: #000000;
+  font-weight: bold;
+}
+
+.breadcrumbs a {
+  color: #000000;
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+  text-decoration: underline;
+  color: #0000FF;
+}
+
+.breadcrumbs span[aria-current="page"] {
+  color: #000000;
+  font-weight: bold;
+}
+
+
+/* =============================================================================
+   PAGE META
+   =============================================================================
+   Metadata display
+   ============================================================================= */
+
+.page-meta {
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 4px 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  margin: 8px 0;
+}
+
+
+/* =============================================================================
+   TABLE OF CONTENTS - "CONTENTS PANEL"
+   =============================================================================
+   Styled like a Windows 98 dialog panel
+   ============================================================================= */
+
+.toc-sidebar {
+  background: var(--bg-secondary);
+  border-left: 2px solid var(--border-dark);
+  box-shadow: var(--shadow-raised);
+  padding: 8px;
+}
+
+@media (max-width: 768px) {
+  .toc-sidebar {
+    border: 2px solid var(--border-dark);
+    box-shadow: var(--shadow-window);
+  }
+}
+
+.toc-title {
+  font-weight: bold;
+  font-size: 11px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  padding: 4px;
+  background: var(--titlebar-active);
+  color: var(--titlebar-text);
+  text-align: center;
+}
+
+.toc a {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 11px;
+  padding: 2px 4px;
+  display: block;
+  border-left: 2px solid transparent;
+}
+
+.toc a:hover {
+  background: var(--bg-tertiary);
+  border-left-color: var(--titlebar-active);
+}
+
+.toc a.active {
+  background: var(--titlebar-active);
+  color: var(--titlebar-text);
+  border-left-color: #FFFFFF;
+  font-weight: bold;
+}
+
+
+/* =============================================================================
+   PAGE NAVIGATION - "WIZARD BUTTONS"
+   =============================================================================
+   Styled like Windows 98 wizard prev/next buttons
+   ============================================================================= */
+
+.page-nav {
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+  margin-top: 24px;
+  display: flex;
+  gap: 8px;
+}
+
+.page-nav-prev,
+.page-nav-next {
+  background: var(--bg-primary);
+  border: none;
+  box-shadow: var(--shadow-raised);
+  padding: 8px 12px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+}
+
+.page-nav-prev:hover,
+.page-nav-next:hover {
+  box-shadow: var(--shadow-inset);
+  background: var(--bg-tertiary);
+}
+
+.page-nav-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.page-nav-title {
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+
+/* =============================================================================
+   BACK TO TOP BUTTON
+   =============================================================================
+   Styled like a Windows 98 toolbar button
+   ============================================================================= */
+
+.back-to-top {
+  background: var(--bg-primary);
+  border: none;
+  box-shadow: var(--shadow-raised);
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  font-weight: bold;
+}
+
+.back-to-top:hover {
+  box-shadow: var(--shadow-inset);
+  background: var(--bg-tertiary);
+}
+
+
+/* =============================================================================
+   HEADING ANCHORS
+   =============================================================================
+   Link icons next to headings
+   ============================================================================= */
+
+.heading-anchor {
+  color: var(--link-color);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity var(--transition-speed);
+  margin-left: 4px;
+  font-size: 0.8em;
+}
+
+.prose h1:hover .heading-anchor,
+.prose h2:hover .heading-anchor,
+.prose h3:hover .heading-anchor,
+.prose h4:hover .heading-anchor,
+.prose h5:hover .heading-anchor,
+.prose h6:hover .heading-anchor {
+  opacity: 1;
+}
+
+
+/* =============================================================================
+   CODE BLOCKS - "MS-DOS WINDOW"
+   =============================================================================
+   Styled like Windows 98 command prompt or notepad
+   ============================================================================= */
+
+.copy-button {
+  background: var(--bg-primary);
+  border: none;
+  box-shadow: var(--shadow-raised);
+  padding: 4px 8px;
+  font-size: 10px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.code-block:hover .copy-button {
+  opacity: 1;
+}
+
+.copy-button:hover {
+  box-shadow: var(--shadow-inset);
+  background: var(--bg-tertiary);
+}
+
+.copy-button.copied {
+  background: var(--titlebar-active);
+  color: var(--titlebar-text);
+  box-shadow: var(--shadow-inset);
+}
+
+[data-theme="dark"] .copy-button.copied {
+  background: var(--titlebar-active);
+  color: var(--titlebar-text);
+}
+
+.code-block .line.highlight {
+  background: #FFFFCC;
+  border-left: 2px solid #FF0000;
+}
+
+[data-theme="dark"] .code-block .line.highlight {
+  background: #4A4A00;
+  border-left: 2px solid #FFFF00;
+}
+
+
+/* =============================================================================
+   ADMONITIONS - "DIALOG BOXES"
+   =============================================================================
+   Styled like Windows 98 message boxes and dialog alerts
+   ============================================================================= */
+
+.admonition {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-dark);
+  box-shadow: var(--shadow-raised);
+  padding: 12px;
+  margin: 16px 0;
+  font-size: 11px;
+}
+
+.admonition-heading {
+  font-weight: bold;
+  font-size: 11px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Add Windows 98 style icons using emoji/symbols */
+.admonition-note .admonition-heading::before {
+  content: "ℹ️";
+  font-style: normal;
+}
+
+.admonition-tip .admonition-heading::before {
+  content: "💡";
+  font-style: normal;
+}
+
+.admonition-warning .admonition-heading::before {
+  content: "⚠️";
+  font-style: normal;
+}
+
+.admonition-danger .admonition-heading::before {
+  content: "🛑";
+  font-style: normal;
+}
+
+.admonition-info .admonition-heading::before {
+  content: "📋";
+  font-style: normal;
+}
+
+.admonition-note {
+  background: #E0E0FF;
+  border-color: #0000FF;
+}
+
+.admonition-tip {
+  background: #E0FFE0;
+  border-color: #00AA00;
+}
+
+.admonition-warning {
+  background: #FFFFCC;
+  border-color: #CCCC00;
+}
+
+.admonition-danger {
+  background: #FFE0E0;
+  border-color: #FF0000;
+}
+
+.admonition-info {
+  background: #E0F0FF;
+  border-color: #0080FF;
+}
+
+[data-theme="dark"] .admonition-note {
+  background: #1A1A3A;
+  border-color: #5C9CFF;
+}
+
+[data-theme="dark"] .admonition-tip {
+  background: #1A3A1A;
+  border-color: #00FF00;
+}
+
+[data-theme="dark"] .admonition-warning {
+  background: #3A3A1A;
+  border-color: #FFFF00;
+}
+
+[data-theme="dark"] .admonition-danger {
+  background: #3A1A1A;
+  border-color: #FF5555;
+}
+
+[data-theme="dark"] .admonition-info {
+  background: #1A2A3A;
+  border-color: #5C9CFF;
+}
+
+
+/* =============================================================================
+   KEYBOARD SHORTCUTS MODAL - "HELP DIALOG"
+   =============================================================================
+   Styled like a Windows 98 help dialog box
+   ============================================================================= */
+
+.shortcuts-modal {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-dark);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 11px;
+}
+
+.shortcuts-modal::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.shortcuts-modal h2 {
+  background: linear-gradient(90deg, #000080 0%, #1084D0 100%);
+  color: var(--titlebar-text);
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  border-bottom: 1px solid var(--border-dark);
+}
+
+.shortcut-group dd {
+  color: var(--text-secondary);
+  margin-left: 0;
+  padding: 2px 8px;
+}
+
+kbd {
+  background: var(--bg-primary);
+  border: none;
+  box-shadow: var(--shadow-raised);
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: bold;
+  display: inline-block;
+  min-width: 20px;
+  text-align: center;
+}
+
+.close-modal {
+  background: var(--bg-primary);
+  border: none;
+  box-shadow: var(--shadow-raised);
+  padding: 6px 16px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 12px;
+}
+
+.close-modal:hover {
+  box-shadow: var(--shadow-inset);
+}
+
+
+/* =============================================================================
+   PROSE TYPOGRAPHY - "DOCUMENT CONTENT"
+   =============================================================================
+   Main content area styled for readability with Windows 98 aesthetic
+   ============================================================================= */
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  font-family: var(--font-sans);
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.2;
+}
+
+.prose h1 {
+  font-size: 20px;
+  border-bottom: 2px solid var(--border-dark);
+  padding-bottom: 4px;
+  margin-top: 0;
+}
+
+.prose h2 {
+  font-size: 16px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 3px;
+}
+
+.prose h3 {
+  font-size: 14px;
+}
+
+.prose h4 {
+  font-size: 12px;
+}
+
+.prose h5, .prose h6 {
+  font-size: 11px;
+}
+
+.prose code {
+  background: var(--code-bg);
+  color: #000000;
+  padding: 1px 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-inset);
+}
+
+[data-theme="dark"] .prose code {
+  background: #FFFFFF;
+  color: #000000;
+}
+
+.prose pre {
+  background: var(--code-bg);
+  border: 2px solid var(--border-dark);
+  box-shadow: var(--shadow-inset);
+  padding: 12px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 16px 0;
+}
+
+[data-theme="dark"] .prose pre {
+  background: #000000;
+  color: #00FF00; /* Classic green terminal text */
+}
+
+.prose pre code {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: inherit;
+}
+
+.prose blockquote {
+  border-left: 4px solid var(--titlebar-active);
+  background: var(--bg-tertiary);
+  padding: 8px 12px;
+  margin: 16px 0;
+  font-style: italic;
+  box-shadow: var(--shadow-inset);
+}
+
+.prose hr {
+  border: none;
+  height: 2px;
+  background: var(--border-color);
+  margin: 24px 0;
+  box-shadow: 0 1px 0 var(--border-light);
+}
+
+.prose th, .prose td {
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  font-size: 11px;
+}
+
+.prose th {
+  background: var(--titlebar-active);
+  color: var(--titlebar-text);
+  font-weight: bold;
+  text-align: left;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border: 2px solid var(--border-dark);
+  box-shadow: var(--shadow-raised);
+  display: block;
+  margin: 16px 0;
+}
+
+.prose a {
+  color: var(--link-color);
+  text-decoration: underline;
+}
+
+.prose a:hover {
+  color: var(--link-hover);
+}
+
+.prose p {
+  margin: 12px 0;
+  line-height: 1.5;
+  font-size: 12px;
+}
+
+.prose ul, .prose ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.prose li {
+  margin: 6px 0;
+  line-height: 1.5;
+  font-size: 12px;
+}
+
+
+/* =============================================================================
+   PRINT STYLES
+   =============================================================================
+   Clean printing without Windows 98 chrome
+   ============================================================================= */
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 10px;
+    color: #666;
+  }
+
+  .sidebar,
+  .toc-sidebar,
+  .mobile-header,
+  .back-to-top,
+  .copy-button {
+    display: none !important;
+  }
+}
+
+
+/* =============================================================================
+   SYNTAX HIGHLIGHTING - Light Mode
+   =============================================================================
+   Windows 98 Notepad/QuickView style syntax colors
+   ============================================================================= */
+
+.chroma {
+  background: var(--code-bg);
+  color: #000000;
+}
+
+[data-theme="dark"] .chroma {
+  background: #000000;
+  color: #00FF00; /* Classic green terminal */
+}
+
+.chroma .hl {
+  background: #FFFFCC;
+}
+
+.chroma .lnt, .chroma .ln {
+  color: #808080;
+  margin-right: 8px;
+}
+
+/* Keywords - blue like in Visual Studio */
+.chroma .k, .chroma .kc, .chroma .kd, .chroma .kn, .chroma .kp, .chroma .kr, .chroma .kt {
+  color: #0000FF;
+  font-weight: bold;
+}
+
+/* Attributes */
+.chroma .na {
+  color: #FF0000;
+}
+
+/* Built-ins */
+.chroma .nb {
+  color: #800080;
+}
+
+/* Classes */
+.chroma .nc {
+  color: #008080;
+  font-weight: bold;
+}
+
+/* Constants */
+.chroma .no {
+  color: #800000;
+}
+
+/* Decorators */
+.chroma .nd {
+  color: #808080;
+}
+
+/* Entities */
+.chroma .ni {
+  color: #800080;
+}
+
+/* Exceptions */
+.chroma .ne {
+  color: #FF0000;
+  font-weight: bold;
+}
+
+/* Functions */
+.chroma .nf {
+  color: #000080;
+  font-weight: bold;
+}
+
+/* Labels */
+.chroma .nl {
+  color: #800000;
+}
+
+/* Namespaces */
+.chroma .nn {
+  color: #000080;
+}
+
+/* Tags */
+.chroma .nt {
+  color: #800000;
+  font-weight: bold;
+}
+
+/* Variables */
+.chroma .nv {
+  color: #000000;
+}
+
+/* Strings - green */
+.chroma .s, .chroma .sa, .chroma .sb, .chroma .sc, .chroma .dl, .chroma .s2, .chroma .se, .chroma .sh, .chroma .si, .chroma .sx, .chroma .sr, .chroma .s1, .chroma .ss {
+  color: #008000;
+}
+
+/* Docstrings */
+.chroma .sd {
+  color: #808080;
+  font-style: italic;
+}
+
+/* Numbers */
+.chroma .m, .chroma .mb, .chroma .mf, .chroma .mh, .chroma .mi, .chroma .il, .chroma .mo {
+  color: #FF0000;
+}
+
+/* Operators */
+.chroma .o, .chroma .ow {
+  color: #000000;
+  font-weight: bold;
+}
+
+/* Comments - gray */
+.chroma .c, .chroma .ch, .chroma .cm, .chroma .c1, .chroma .cs {
+  color: #008000;
+  font-style: italic;
+}
+
+/* Preprocessor */
+.chroma .cp {
+  color: #0000FF;
+}
+
+/* Preprocessor includes */
+.chroma .cpf {
+  color: #008000;
+}
+
+/* Diff deleted */
+.chroma .gd {
+  background: #FFE0E0;
+  color: #FF0000;
+}
+
+/* Diff inserted */
+.chroma .gi {
+  background: #E0FFE0;
+  color: #008000;
+}
+
+/* Generic emphasis */
+.chroma .ge {
+  font-style: italic;
+}
+
+/* Generic strong */
+.chroma .gs {
+  font-weight: bold;
+}
+
+/* Diff subheading */
+.chroma .gu {
+  color: #800080;
+  font-weight: bold;
+}
+
+
+/* =============================================================================
+   SYNTAX HIGHLIGHTING - Dark Mode
+   =============================================================================
+   Classic green-on-black terminal aesthetic
+   ============================================================================= */
+
+[data-theme="dark"] .chroma .hl {
+  background: #003300;
+}
+
+[data-theme="dark"] .chroma .k, [data-theme="dark"] .chroma .kc, [data-theme="dark"] .chroma .kd, [data-theme="dark"] .chroma .kn, [data-theme="dark"] .chroma .kp, [data-theme="dark"] .chroma .kr, [data-theme="dark"] .chroma .kt {
+  color: #00FFFF; /* Cyan for keywords */
+  font-weight: bold;
+}
+
+[data-theme="dark"] .chroma .na {
+  color: #FFFF00; /* Yellow for attributes */
+}
+
+[data-theme="dark"] .chroma .nb {
+  color: #FF00FF; /* Magenta for built-ins */
+}
+
+[data-theme="dark"] .chroma .nc {
+  color: #00FFFF; /* Cyan for classes */
+  font-weight: bold;
+}
+
+[data-theme="dark"] .chroma .no {
+  color: #FF8000; /* Orange for constants */
+}
+
+[data-theme="dark"] .chroma .nd {
+  color: #808080; /* Gray for decorators */
+}
+
+[data-theme="dark"] .chroma .ni {
+  color: #FF00FF; /* Magenta */
+}
+
+[data-theme="dark"] .chroma .ne {
+  color: #FF5555; /* Light red */
+  font-weight: bold;
+}
+
+[data-theme="dark"] .chroma .nf {
+  color: #00FF00; /* Bright green for functions */
+  font-weight: bold;
+}
+
+[data-theme="dark"] .chroma .nl {
+  color: #FF8000; /* Orange */
+}
+
+[data-theme="dark"] .chroma .nn {
+  color: #00FFFF; /* Cyan */
+}
+
+[data-theme="dark"] .chroma .nt {
+  color: #FFFF00; /* Yellow for tags */
+  font-weight: bold;
+}
+
+[data-theme="dark"] .chroma .nv {
+  color: #00FF00; /* Green */
+}
+
+[data-theme="dark"] .chroma .s, [data-theme="dark"] .chroma .sa, [data-theme="dark"] .chroma .sb, [data-theme="dark"] .chroma .sc, [data-theme="dark"] .chroma .dl, [data-theme="dark"] .chroma .s2, [data-theme="dark"] .chroma .se, [data-theme="dark"] .chroma .sh, [data-theme="dark"] .chroma .si, [data-theme="dark"] .chroma .sx, [data-theme="dark"] .chroma .sr, [data-theme="dark"] .chroma .s1, [data-theme="dark"] .chroma .ss {
+  color: #00FF00; /* Bright green for strings */
+}
+
+[data-theme="dark"] .chroma .sd {
+  color: #808080; /* Gray for docstrings */
+  font-style: italic;
+}
+
+[data-theme="dark"] .chroma .m, [data-theme="dark"] .chroma .mb, [data-theme="dark"] .chroma .mf, [data-theme="dark"] .chroma .mh, [data-theme="dark"] .chroma .mi, [data-theme="dark"] .chroma .il, [data-theme="dark"] .chroma .mo {
+  color: #FFFF00; /* Yellow for numbers */
+}
+
+[data-theme="dark"] .chroma .o, [data-theme="dark"] .chroma .ow {
+  color: #00FF00; /* Green */
+}
+
+[data-theme="dark"] .chroma .c, [data-theme="dark"] .chroma .ch, [data-theme="dark"] .chroma .cm, [data-theme="dark"] .chroma .c1, [data-theme="dark"] .chroma .cs {
+  color: #00AA00; /* Darker green for comments */
+  font-style: italic;
+}
+
+[data-theme="dark"] .chroma .cp {
+  color: #00FFFF; /* Cyan */
+}
+
+[data-theme="dark"] .chroma .cpf {
+  color: #00FF00; /* Green */
+}
+
+[data-theme="dark"] .chroma .gd {
+  background: #3A0000;
+  color: #FF5555;
+}
+
+[data-theme="dark"] .chroma .gi {
+  background: #003A00;
+  color: #00FF00;
+}
+
+[data-theme="dark"] .chroma .gu {
+  color: #FF00FF; /* Magenta */
+  font-weight: bold;
+}
+
+
+/* =============================================================================
+   CUSTOM EXTRAS - Windows 98 Polish
+   =============================================================================
+   Additional flourishes for maximum authenticity
+   ============================================================================= */
+
+/* Focus styles - dotted outlines like Windows 98 */
+button:focus,
+a:focus,
+input:focus {
+  outline: 1px dotted var(--text-primary);
+  outline-offset: -2px;
+}
+
+/* Scrollbar styling for WebKit browsers */
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-raised);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-button {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-raised);
+}
+
+::-webkit-scrollbar-button:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Arrow buttons */
+::-webkit-scrollbar-button:vertical:decrement {
+  background: var(--bg-primary) url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23000" d="M6 4l-4 4h8z"/></svg>') center no-repeat;
+}
+
+::-webkit-scrollbar-button:vertical:increment {
+  background: var(--bg-primary) url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23000" d="M6 8l-4-4h8z"/></svg>') center no-repeat;
+}
+
+::-webkit-scrollbar-button:horizontal:decrement {
+  background: var(--bg-primary) url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23000" d="M4 6l4-4v8z"/></svg>') center no-repeat;
+}
+
+::-webkit-scrollbar-button:horizontal:increment {
+  background: var(--bg-primary) url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23000" d="M8 6l-4-4v8z"/></svg>') center no-repeat;
+}
+
+/* Main content area gets a window frame */
+main {
+  background: #FFFFFF;
+  padding: 16px;
+  border: 2px solid var(--border-dark);
+  box-shadow: var(--shadow-raised);
+  min-height: 400px;
+}
+
+[data-theme="dark"] main {
+  background: var(--bg-secondary);
+}
+
+/* Add subtle desktop pattern to body */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(0,128,128,0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(0,0,128,0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Status bar at bottom (if you have one) */
+.status-bar {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-light);
+  padding: 2px 4px;
+  font-size: 11px;
+  color: var(--text-primary);
+  display: flex;
+  gap: 8px;
+}
+
+.status-bar-item {
+  padding: 1px 6px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-inset);
+}

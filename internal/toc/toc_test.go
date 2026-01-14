@@ -130,3 +130,31 @@ func TestHasTOC(t *testing.T) {
 		t.Error("should not have TOC with only 3 headings when minItems=5")
 	}
 }
+
+func TestExtractTOCUnescapesHTMLEntities(t *testing.T) {
+	// Simulate headings with HTML-escaped content like "--output <dir>"
+	html := `
+		<h2 id="output">-o, --output &lt;dir&gt;</h2>
+		<h2 id="port">-p, --port &lt;port&gt;</h2>
+		<h2 id="title">--title &lt;title&gt;</h2>
+	`
+
+	toc := ExtractTOC(html, 1)
+	if toc == nil {
+		t.Fatal("TOC should not be nil")
+	}
+
+	// Check that HTML entities are unescaped
+	if toc.Items[0].Text != "-o, --output <dir>" {
+		t.Errorf("Text = %q, want %q", toc.Items[0].Text, "-o, --output <dir>")
+	}
+	if toc.Items[1].Text != "-p, --port <port>" {
+		t.Errorf("Text = %q, want %q", toc.Items[1].Text, "-p, --port <port>")
+	}
+
+	// Verify that RenderTOC properly escapes them again for HTML output
+	rendered := string(RenderTOC(toc))
+	if !strings.Contains(rendered, "&lt;dir&gt;") {
+		t.Errorf("Rendered TOC should escape < and >: %s", rendered)
+	}
+}

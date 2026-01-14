@@ -2,6 +2,7 @@
 package toc
 
 import (
+	"html"
 	"html/template"
 	"regexp"
 	"strings"
@@ -47,6 +48,9 @@ func ExtractTOC(htmlContent string, minItems int) *PageTOC {
 		id := match[2]
 		text := stripTagsRegex.ReplaceAllString(match[3], "")
 		text = strings.TrimSpace(text)
+		// Unescape HTML entities since the text comes from rendered HTML
+		// (e.g., "&lt;dir&gt;" -> "<dir>")
+		text = html.UnescapeString(text)
 
 		item := &Item{
 			ID:    id,
