@@ -156,6 +156,9 @@ func GenerateSearchJS(baseURL string) string {
         }
     });
 
+    // Listen for open-search event (from mobile button)
+    window.addEventListener('open-search', openCommandPalette);
+
     // Open immediately since user pressed Cmd+K to load this
     openCommandPalette();
 })();`
