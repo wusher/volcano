@@ -62,6 +62,8 @@ func Build(args []string, stdout, stderr io.Writer) error {
 	fs.BoolVar(&cfg.InstantNav, "instant-nav", cfg.InstantNav, "Enable instant navigation with hover prefetching")
 	fs.BoolVar(&cfg.InlineAssets, "inline-assets", cfg.InlineAssets, "Embed CSS/JS inline instead of external files")
 	fs.BoolVar(&cfg.PWA, "pwa", cfg.PWA, "Enable PWA manifest and service worker for offline support")
+	fs.BoolVar(&cfg.Search, "search", cfg.Search, "Enable site search with Cmd+K command palette")
+	fs.BoolVar(&cfg.AllowBrokenLinks, "allow-broken-links", cfg.AllowBrokenLinks, "Don't fail build on broken internal links")
 	fs.BoolVar(&viewTransitionsFlag, "view-transitions", false, "Deprecated: view transitions are now enabled by default")
 	fs.BoolVar(&cfg.Quiet, "q", cfg.Quiet, "Suppress non-error output")
 	fs.BoolVar(&cfg.Quiet, "quiet", cfg.Quiet, "Suppress non-error output")
@@ -184,6 +186,8 @@ func printBuildUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  --instant-nav        Enable hover prefetching for faster navigation")
 	_, _ = fmt.Fprintln(w, "  --inline-assets      Embed CSS/JS inline instead of external files")
 	_, _ = fmt.Fprintln(w, "  --pwa                Enable PWA manifest and service worker for offline support")
+	_, _ = fmt.Fprintln(w, "  --search             Enable site search with Cmd+K command palette")
+	_, _ = fmt.Fprintln(w, "  --allow-broken-links Don't fail build on broken internal links")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Content:")
 	_, _ = fmt.Fprintln(w, "  --last-modified      Show last modified date on pages")
@@ -368,6 +372,9 @@ func applyFileConfig(cfg *Config, fileCfg *config.FileConfig) {
 	}
 	if fileCfg.PWA != nil {
 		cfg.PWA = *fileCfg.PWA
+	}
+	if fileCfg.Search != nil {
+		cfg.Search = *fileCfg.Search
 	}
 	if fileCfg.LastModified != nil {
 		cfg.ShowLastMod = *fileCfg.LastModified

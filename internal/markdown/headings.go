@@ -7,6 +7,32 @@ import (
 	"unicode"
 )
 
+// validHTMLTags is a set of commonly used HTML tags that shouldn't be escaped
+var validHTMLTags = map[string]bool{
+	"a": true, "abbr": true, "b": true, "br": true, "code": true,
+	"del": true, "em": true, "i": true, "img": true, "ins": true,
+	"kbd": true, "mark": true, "q": true, "s": true, "small": true,
+	"span": true, "strong": true, "sub": true, "sup": true, "u": true,
+	"svg": true, "path": true,
+}
+
+// escapePseudoHTMLTags escapes angle brackets that look like HTML tags but aren't valid
+// This handles cases like "<dir>" or "<port>" in headings that should be displayed literally
+var pseudoTagRegex = regexp.MustCompile(`<([a-zA-Z][a-zA-Z0-9-]*)>`)
+
+func escapePseudoHTMLTags(content string) string {
+	return pseudoTagRegex.ReplaceAllStringFunc(content, func(match string) string {
+		// Extract the tag name
+		tagName := strings.ToLower(match[1 : len(match)-1])
+		// If it's a valid HTML tag, keep it
+		if validHTMLTags[tagName] {
+			return match
+		}
+		// Otherwise escape it
+		return "&lt;" + match[1:len(match)-1] + "&gt;"
+	})
+}
+
 // HeadingID tracks heading IDs for uniqueness
 type HeadingID struct {
 	Original string
@@ -57,6 +83,9 @@ func AddHeadingAnchors(htmlContent string) string {
 		tag := matches[1]     // h1, h2, etc
 		attrs := matches[2]   // existing attributes
 		content := matches[3] // heading content
+
+		// Escape pseudo-HTML tags like <dir>, <port> that should be displayed literally
+		content = escapePseudoHTMLTags(content)
 
 		// Strip HTML tags from content to get plain text for slug
 		plainText := stripHTMLTags(content)

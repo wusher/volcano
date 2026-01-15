@@ -186,6 +186,36 @@ func TestLogger(t *testing.T) {
 			t.Errorf("Expected empty output in quiet mode, got %q", buf.String())
 		}
 	})
+
+	t.Run("Success quiet mode", func(t *testing.T) {
+		var buf bytes.Buffer
+		logger := NewLogger(&buf, false, true, false) // quiet=true
+		logger.Success("Task completed")
+
+		if buf.String() != "" {
+			t.Errorf("Expected empty output in quiet mode, got %q", buf.String())
+		}
+	})
+
+	t.Run("Warning quiet mode", func(t *testing.T) {
+		var buf bytes.Buffer
+		logger := NewLogger(&buf, false, true, false) // quiet=true
+		logger.Warning("Something might be wrong")
+
+		if buf.String() != "" {
+			t.Errorf("Expected empty output in quiet mode, got %q", buf.String())
+		}
+	})
+
+	t.Run("FileSuccess quiet mode", func(t *testing.T) {
+		var buf bytes.Buffer
+		logger := NewLogger(&buf, false, true, false) // quiet=true
+		logger.FileSuccess("index.md")
+
+		if buf.String() != "" {
+			t.Errorf("Expected empty output in quiet mode, got %q", buf.String())
+		}
+	})
 }
 
 func TestNewLogger(t *testing.T) {

@@ -45,6 +45,7 @@ type PageData struct {
 	InstantNavJS    template.JS   // Instant navigation JavaScript (when --instant-nav enabled)
 	ViewTransitions bool          // Enable browser view transitions API (when --view-transitions enabled)
 	PWAEnabled      bool          // Whether PWA is enabled (adds manifest link + SW registration)
+	SearchEnabled   bool          // Whether search is enabled (adds command palette + lazy load)
 }
 
 // Renderer handles HTML template rendering

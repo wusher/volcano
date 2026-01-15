@@ -4,6 +4,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/wusher/volcano/internal/tree"
 )
 
 // linkRegex matches <a> tags
@@ -140,7 +142,7 @@ func PrefixInternalLinks(htmlContent string, baseURL string) string {
 
 	// Extract the base path from the URL
 	// e.g., "https://wusher.github.io/volcano/" -> "/volcano"
-	basePath := extractBasePath(baseURL)
+	basePath := tree.ExtractBasePath(baseURL)
 	if basePath == "" {
 		return htmlContent
 	}
@@ -238,37 +240,4 @@ func PrefixInternalLinks(htmlContent string, baseURL string) string {
 	})
 
 	return htmlContent
-}
-
-// extractBasePath extracts the path portion from a URL.
-// e.g., "https://example.com/volcano/" -> "/volcano"
-// e.g., "https://example.com/" -> ""
-func extractBasePath(baseURL string) string {
-	// Remove trailing slash for consistent handling
-	baseURL = strings.TrimSuffix(baseURL, "/")
-
-	// Find the scheme separator
-	schemeEnd := strings.Index(baseURL, "://")
-	if schemeEnd == -1 {
-		// No scheme, might just be a path
-		if strings.HasPrefix(baseURL, "/") {
-			return baseURL
-		}
-		return ""
-	}
-
-	// Find the first slash after the scheme (start of path)
-	pathStart := strings.Index(baseURL[schemeEnd+3:], "/")
-	if pathStart == -1 {
-		// No path component
-		return ""
-	}
-
-	// Extract the path
-	path := baseURL[schemeEnd+3+pathStart:]
-	if path == "" || path == "/" {
-		return ""
-	}
-
-	return path
 }

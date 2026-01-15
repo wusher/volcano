@@ -31,3 +31,14 @@ output/
 
 # Playwright MCP cache
 .playwright-mcp/
+
+# Node.js (e2e tests)
+node_modules/
+npm-debug.log*
+.npm
+package-lock.json
+
+# Playwright
+playwright-report/
+test-results/
+.playwright/

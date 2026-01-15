@@ -334,3 +334,34 @@ func TestServeCommandInputNotDirectory(t *testing.T) {
 		t.Errorf("Error should mention 'not a directory', got: %v", err)
 	}
 }
+
+func TestServeCommandDeprecatedViewTransitions(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.md"), []byte("# Test"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	// Use a port that won't actually start (we're testing the deprecation warning, not the server)
+	// We need the command to fail before starting the server, so use an invalid port
+	go func() {
+		// This will start a server - we just want to verify the warning is logged
+		_ = ServeCommand([]string{"--view-transitions", "-p", "18799", tmpDir}, &stdout, &stderr)
+	}()
+
+	// Give it time to process flags and log warning
+	time.Sleep(200 * time.Millisecond)
+
+	stderrOutput := stderr.String()
+	if !strings.Contains(stderrOutput, "deprecated") {
+		t.Errorf("Stderr should contain deprecation warning, got: %q", stderrOutput)
+	}
+}
+
+func TestServeCommandInvalidFlag(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	err := ServeCommand([]string{"--invalid-flag-xyz"}, &stdout, &stderr)
+	if err == nil {
+		t.Error("ServeCommand with invalid flag should return error")
+	}
+}

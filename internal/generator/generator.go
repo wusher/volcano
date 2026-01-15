@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/wusher/volcano/internal/assets"
 	"github.com/wusher/volcano/internal/autoindex"
@@ -16,6 +17,7 @@ import (
 	"github.com/wusher/volcano/internal/navigation"
 	"github.com/wusher/volcano/internal/output"
 	"github.com/wusher/volcano/internal/pwa"
+	"github.com/wusher/volcano/internal/search"
 	"github.com/wusher/volcano/internal/seo"
 	"github.com/wusher/volcano/internal/styles"
 	"github.com/wusher/volcano/internal/templates"
@@ -25,28 +27,30 @@ import (
 
 // Config holds configuration for the generator
 type Config struct {
-	InputDir        string
-	OutputDir       string
-	Title           string
-	Clean           bool
-	Quiet           bool
-	Verbose         bool
-	Colored         bool
-	SiteURL         string // Base URL for canonical links
-	Author          string // Site author
-	OGImage         string // Path to local OG image file (copied to output)
-	FaviconPath     string // Path to favicon file
-	ShowLastMod     bool   // Show last modified date
-	TopNav          bool   // Display root files in top navigation bar
-	ShowPageNav     bool   // Show previous/next page navigation
-	ShowBreadcrumbs bool   // Show breadcrumb navigation
-	Theme           string // Theme name (docs, blog, vanilla)
-	CSSPath         string // Path to custom CSS file
-	AccentColor     string // Custom accent color in hex format (e.g., "#ff6600")
-	InstantNav      bool   // Enable instant navigation with hover prefetching
-	ViewTransitions bool   // Enable browser view transitions API
-	InlineAssets    bool   // Embed CSS/JS inline instead of external files
-	PWA             bool   // Enable PWA manifest and service worker generation
+	InputDir         string
+	OutputDir        string
+	Title            string
+	Clean            bool
+	Quiet            bool
+	Verbose          bool
+	Colored          bool
+	SiteURL          string // Base URL for canonical links
+	Author           string // Site author
+	OGImage          string // Path to local OG image file (copied to output)
+	FaviconPath      string // Path to favicon file
+	ShowLastMod      bool   // Show last modified date
+	TopNav           bool   // Display root files in top navigation bar
+	ShowPageNav      bool   // Show previous/next page navigation
+	ShowBreadcrumbs  bool   // Show breadcrumb navigation
+	Theme            string // Theme name (docs, blog, vanilla)
+	CSSPath          string // Path to custom CSS file
+	AccentColor      string // Custom accent color in hex format (e.g., "#ff6600")
+	InstantNav       bool   // Enable instant navigation with hover prefetching
+	ViewTransitions  bool   // Enable browser view transitions API
+	InlineAssets     bool   // Embed CSS/JS inline instead of external files
+	PWA              bool   // Enable PWA manifest and service worker generation
+	Search           bool   // Enable search index generation
+	AllowBrokenLinks bool   // Don't fail build on broken internal links
 }
 
 // Result holds the result of generation
@@ -80,6 +84,8 @@ type Generator struct {
 	jsURL           string          // External JS file URL (hashed)
 	css             string          // CSS content (for writing to file)
 	pwaEnabled      bool            // Whether PWA support is enabled
+	searchEnabled   bool            // Whether search is enabled
+	searchIndex     *search.Index   // Search index data
 }
 
 // New creates a new Generator
@@ -120,6 +126,12 @@ func New(config Config, writer io.Writer) (*Generator, error) {
 		viewTransitions: config.ViewTransitions,
 		css:             css,
 		pwaEnabled:      config.PWA,
+		searchEnabled:   config.Search,
+	}
+
+	// Initialize search index if enabled
+	if config.Search {
+		gen.searchIndex = &search.Index{Pages: []search.PageEntry{}}
 	}
 
 	// Initialize instant navigation JS if enabled
@@ -235,11 +247,21 @@ func (g *Generator) Generate() (*Result, error) {
 	brokenLinks := g.verifyLinks(site.AllPages)
 	if len(brokenLinks) > 0 {
 		g.logger.Println("")
-		g.logger.Error("Found %d broken navigation links:", len(brokenLinks))
-		for _, link := range brokenLinks {
-			g.logger.Error("  %s", link)
+		if g.config.AllowBrokenLinks {
+			g.logger.Warning("Found %d broken navigation links (continuing due to --allow-broken-links):", len(brokenLinks))
+		} else {
+			g.logger.Error("Found %d broken navigation links:", len(brokenLinks))
 		}
-		return nil, fmt.Errorf("build failed: %d broken navigation links found", len(brokenLinks))
+		for _, link := range brokenLinks {
+			if g.config.AllowBrokenLinks {
+				g.logger.Warning("  %s", link)
+			} else {
+				g.logger.Error("  %s", link)
+			}
+		}
+		if !g.config.AllowBrokenLinks {
+			return nil, fmt.Errorf("build failed: %d broken navigation links found", len(brokenLinks))
+		}
 	}
 
 	// Step 7: Verify all internal links in content resolve
@@ -248,32 +270,70 @@ func (g *Generator) Generate() (*Result, error) {
 	brokenContentLinks := g.verifyContentLinks(validURLs)
 	if len(brokenContentLinks) > 0 {
 		g.logger.Println("")
-		g.logger.Error("Found %d broken internal link(s):", len(brokenContentLinks))
+		if g.config.AllowBrokenLinks {
+			g.logger.Warning("Found %d broken internal link(s) (continuing due to --allow-broken-links):", len(brokenContentLinks))
+		} else {
+			g.logger.Error("Found %d broken internal link(s):", len(brokenContentLinks))
+		}
 		for i, bl := range brokenContentLinks {
-			g.logger.Error("")
-			g.logger.Error("Link #%d:", i+1)
+			if g.config.AllowBrokenLinks {
+				g.logger.Warning("")
+				g.logger.Warning("Link #%d:", i+1)
+			} else {
+				g.logger.Error("")
+				g.logger.Error("Link #%d:", i+1)
+			}
 			if bl.SourceFile != "" {
 				if bl.LineNumber > 0 {
-					g.logger.Error("  File: %s:%d", bl.SourceFile, bl.LineNumber)
+					if g.config.AllowBrokenLinks {
+						g.logger.Warning("  File: %s:%d", bl.SourceFile, bl.LineNumber)
+					} else {
+						g.logger.Error("  File: %s:%d", bl.SourceFile, bl.LineNumber)
+					}
 				} else {
-					g.logger.Error("  File: %s", bl.SourceFile)
+					if g.config.AllowBrokenLinks {
+						g.logger.Warning("  File: %s", bl.SourceFile)
+					} else {
+						g.logger.Error("  File: %s", bl.SourceFile)
+					}
 				}
 			}
 			if bl.OriginalSyntax != "" {
-				g.logger.Error("  Syntax: %s", bl.OriginalSyntax)
+				if g.config.AllowBrokenLinks {
+					g.logger.Warning("  Syntax: %s", bl.OriginalSyntax)
+				} else {
+					g.logger.Error("  Syntax: %s", bl.OriginalSyntax)
+				}
 			}
 			if bl.LinkText != "" && bl.LinkText != bl.LinkURL {
-				g.logger.Error("  Text: %s", bl.LinkText)
+				if g.config.AllowBrokenLinks {
+					g.logger.Warning("  Text: %s", bl.LinkText)
+				} else {
+					g.logger.Error("  Text: %s", bl.LinkText)
+				}
 			}
-			g.logger.Error("  Broken URL: %s", bl.LinkURL)
+			if g.config.AllowBrokenLinks {
+				g.logger.Warning("  Broken URL: %s", bl.LinkURL)
+			} else {
+				g.logger.Error("  Broken URL: %s", bl.LinkURL)
+			}
 			if len(bl.Suggestions) > 0 {
-				g.logger.Error("  Suggestions:")
-				for _, suggestion := range bl.Suggestions {
-					g.logger.Error("    - %s", suggestion)
+				if g.config.AllowBrokenLinks {
+					g.logger.Warning("  Suggestions:")
+					for _, suggestion := range bl.Suggestions {
+						g.logger.Warning("    - %s", suggestion)
+					}
+				} else {
+					g.logger.Error("  Suggestions:")
+					for _, suggestion := range bl.Suggestions {
+						g.logger.Error("    - %s", suggestion)
+					}
 				}
 			}
 		}
-		return nil, fmt.Errorf("build failed: %d broken internal links found", len(brokenContentLinks))
+		if !g.config.AllowBrokenLinks {
+			return nil, fmt.Errorf("build failed: %d broken internal links found", len(brokenContentLinks))
+		}
 	}
 
 	// Step 8: Generate PWA assets if enabled
@@ -281,6 +341,22 @@ func (g *Generator) Generate() (*Result, error) {
 		if err := g.generatePWA(site.AllPages, foldersNeedingIndex); err != nil {
 			return nil, fmt.Errorf("failed to generate PWA assets: %w", err)
 		}
+	}
+
+	// Step 9: Generate search assets if enabled
+	if g.searchEnabled && g.searchIndex != nil {
+		if err := search.GenerateSearchIndex(g.config.OutputDir, g.searchIndex); err != nil {
+			return nil, fmt.Errorf("failed to generate search index: %w", err)
+		}
+		g.logger.Verbose("  search-index.json")
+
+		// Write search.js
+		searchJS := search.GenerateSearchJS("")
+		searchJSPath := filepath.Join(g.config.OutputDir, "search.js")
+		if err := os.WriteFile(searchJSPath, []byte(searchJS), 0644); err != nil {
+			return nil, fmt.Errorf("failed to write search.js: %w", err)
+		}
+		g.logger.Verbose("  search.js")
 	}
 
 	// Print summary
@@ -453,6 +529,7 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		InstantNavJS:    g.instantNavJS,
 		ViewTransitions: g.viewTransitions,
 		PWAEnabled:      g.pwaEnabled,
+		SearchEnabled:   g.searchEnabled,
 	}
 
 	// Create output directory
@@ -479,6 +556,16 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		mdContent:   string(mdContent),
 		htmlContent: htmlContent,
 	})
+
+	// Collect search index data if enabled
+	if g.searchEnabled && g.searchIndex != nil {
+		entry := search.PageEntry{
+			Title:    page.Title,
+			URL:      urlPath,
+			Headings: search.ExtractHeadings(htmlContent),
+		}
+		g.searchIndex.Pages = append(g.searchIndex.Pages, entry)
+	}
 
 	return nil
 }
@@ -591,6 +678,29 @@ func (g *Generator) generatePWA(allPages []*tree.Node, autoIndexFolders []*tree.
 	}
 	if iconResult.Generated {
 		assetURLs = append(assetURLs, pwa.GetIconURLs(g.baseURL)...)
+	}
+	// Add search files if search is enabled
+	if g.searchEnabled {
+		searchBase := g.baseURL
+		if searchBase != "" && !strings.HasSuffix(searchBase, "/") {
+			searchBase += "/"
+		}
+		if searchBase == "" {
+			searchBase = "/"
+		}
+		assetURLs = append(assetURLs, searchBase+"search.js", searchBase+"search-index.json")
+	}
+	// Add favicon if configured
+	if g.config.FaviconPath != "" {
+		faviconName := filepath.Base(g.config.FaviconPath)
+		faviconURL := g.baseURL
+		if faviconURL != "" && !strings.HasSuffix(faviconURL, "/") {
+			faviconURL += "/"
+		}
+		if faviconURL == "" {
+			faviconURL = "/"
+		}
+		assetURLs = append(assetURLs, faviconURL+faviconName)
 	}
 
 	// 5. Generate service worker

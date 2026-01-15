@@ -233,54 +233,45 @@ func TestPrefixInternalLinks(t *testing.T) {
 	}
 }
 
-func TestExtractBasePath(t *testing.T) {
+func TestIsExternalURL(t *testing.T) {
 	tests := []struct {
 		name     string
-		baseURL  string
-		expected string
+		href     string
+		siteHost string
+		expected bool
 	}{
-		{
-			name:     "URL with subpath",
-			baseURL:  "https://example.com/volcano/",
-			expected: "/volcano",
-		},
-		{
-			name:     "URL with nested subpath",
-			baseURL:  "https://example.com/docs/v2/",
-			expected: "/docs/v2",
-		},
-		{
-			name:     "URL without subpath",
-			baseURL:  "https://example.com/",
-			expected: "",
-		},
-		{
-			name:     "URL without trailing slash",
-			baseURL:  "https://example.com/volcano",
-			expected: "/volcano",
-		},
-		{
-			name:     "URL root without trailing slash",
-			baseURL:  "https://example.com",
-			expected: "",
-		},
-		{
-			name:     "just a path",
-			baseURL:  "/volcano",
-			expected: "/volcano",
-		},
-		{
-			name:     "empty string",
-			baseURL:  "",
-			expected: "",
-		},
+		// Empty and special URLs
+		{"empty URL", "", "example.com", false},
+		{"anchor only", "#section", "example.com", false},
+		{"relative path", "/page/", "example.com", false},
+		{"relative path no slash", "page.html", "example.com", false},
+
+		// Protocol-specific URLs
+		{"mailto link", "mailto:test@example.com", "example.com", false},
+		{"tel link", "tel:+1234567890", "example.com", false},
+		{"javascript link", "javascript:void(0)", "example.com", false},
+
+		// External URLs
+		{"external https", "https://other.com/page", "example.com", true},
+		{"external http", "http://other.com/page", "example.com", true},
+
+		// Same site URLs
+		{"same site", "https://example.com/page", "example.com", false},
+		{"same site with www", "https://www.example.com/page", "example.com", false},
+		{"site with www same host", "https://example.com/page", "www.example.com", false},
+
+		// No site host
+		{"external no site host", "https://example.com", "", true},
+
+		// Invalid URLs
+		{"invalid URL", "://invalid", "example.com", false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := extractBasePath(tc.baseURL)
+			result := isExternalURL(tc.href, tc.siteHost)
 			if result != tc.expected {
-				t.Errorf("extractBasePath(%q) = %q, want %q", tc.baseURL, result, tc.expected)
+				t.Errorf("isExternalURL(%q, %q) = %v, want %v", tc.href, tc.siteHost, result, tc.expected)
 			}
 		})
 	}

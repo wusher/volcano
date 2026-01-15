@@ -18,7 +18,7 @@ const instantNavJSRaw = `
     const PREFETCH_DELAY = 65; // ms to wait before prefetching on hover
     const CONTENT_SELECTOR = '.content';
     const NAV_SELECTOR = '.tree-nav';
-    const TOC_SELECTOR = '.toc';
+    const TOC_SELECTOR = '.toc-sidebar';
     const BREADCRUMBS_SELECTOR = '.breadcrumbs';
     const TITLE_SELECTOR = 'title';
 
@@ -71,6 +71,8 @@ const instantNavJSRaw = `
         const href = link.getAttribute('href');
         if (!href || href.startsWith('#')) return false;
         if (href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return false;
+        // Skip same-page anchor links (e.g., /current-page/#section)
+        if (link.pathname === window.location.pathname && link.hash) return false;
         return true;
     }
 
@@ -180,10 +182,15 @@ const instantNavJSRaw = `
         const newTOC = newDoc.querySelector(TOC_SELECTOR);
         if (oldTOC && newTOC) {
             oldTOC.innerHTML = newTOC.innerHTML;
+            oldTOC.style.display = ''; // Restore display in case it was hidden
         } else if (oldTOC && !newTOC) {
             oldTOC.style.display = 'none';
         } else if (!oldTOC && newTOC) {
-            // TOC appeared - need to add it
+            // TOC appeared - insert it into the page
+            const contentArea = document.querySelector('.content-area');
+            if (contentArea) {
+                contentArea.insertBefore(newTOC.cloneNode(true), contentArea.firstChild);
+            }
         }
 
         // Update breadcrumbs

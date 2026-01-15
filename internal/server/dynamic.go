@@ -4,6 +4,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -22,6 +23,7 @@ import (
 	"github.com/wusher/volcano/internal/markdown"
 	"github.com/wusher/volcano/internal/navigation"
 	"github.com/wusher/volcano/internal/pwa"
+	"github.com/wusher/volcano/internal/search"
 	"github.com/wusher/volcano/internal/styles"
 	"github.com/wusher/volcano/internal/templates"
 	"github.com/wusher/volcano/internal/toc"
@@ -45,6 +47,7 @@ type DynamicConfig struct {
 	InstantNav      bool   // Enable instant navigation with hover prefetching
 	ViewTransitions bool   // Enable browser view transitions API
 	PWA             bool   // Enable PWA manifest and service worker
+	Search          bool   // Enable search index and command palette
 }
 
 // DynamicServer serves markdown files with live rendering
@@ -61,12 +64,15 @@ type DynamicServer struct {
 	faviconData     []byte        // Favicon file content (in memory)
 	faviconMime     string        // Favicon MIME type
 	faviconName     string        // Favicon filename (e.g., "logo.png")
+	appleTouchIcon  []byte        // Apple touch icon (180x180)
+	faviconIco      []byte        // favicon.ico (32x32)
 	instantNavJS    template.JS   // Instant navigation JavaScript (if enabled)
 	viewTransitions bool          // Enable browser view transitions API
 	pwaEnabled      bool          // PWA manifest and service worker enabled
 	pwaIcon192      []byte        // PWA 192x192 icon (generated from favicon)
 	pwaIcon512      []byte        // PWA 512x512 icon (generated from favicon)
 	pwaHasIcons     bool          // Whether PWA icons were generated
+	searchEnabled   bool          // Whether search is enabled
 }
 
 // NewDynamicServer creates a new dynamic server
@@ -97,6 +103,7 @@ func NewDynamicServer(config DynamicConfig, writer io.Writer) (*DynamicServer, e
 		cssLoader:       cssLoader,
 		viewTransitions: config.ViewTransitions,
 		pwaEnabled:      config.PWA,
+		searchEnabled:   config.Search,
 	}
 
 	// Initialize instant navigation JS if enabled
@@ -137,6 +144,7 @@ func (s *DynamicServer) loadFavicon() error {
 
 	// Get filename and MIME type
 	filename := filepath.Base(s.config.FaviconPath)
+	ext := strings.ToLower(filepath.Ext(filename))
 	mimeType := assets.GetFaviconMimeType(filename)
 	if mimeType == "" {
 		return fmt.Errorf("unsupported favicon format: %s", filename)
@@ -147,32 +155,73 @@ func (s *DynamicServer) loadFavicon() error {
 	s.faviconMime = mimeType
 	s.faviconName = filename
 
+	// Generate Apple touch icon and favicon.ico from resizable formats
+	if ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif" {
+		// Generate 180x180 Apple touch icon
+		if appleIcon, err := pwa.GenerateIconBytes(data, ext, 180); err == nil {
+			s.appleTouchIcon = appleIcon
+		}
+		// Generate 32x32 favicon.ico
+		if faviconIco, err := pwa.GenerateIconBytes(data, ext, 32); err == nil {
+			s.faviconIco = faviconIco
+		}
+	}
+
 	// Generate HTML link tags
 	links := []assets.FaviconLink{{
 		Rel:  "icon",
 		Type: mimeType,
 		Href: "/" + filename,
 	}}
+	// Add Apple touch icon link if generated
+	if s.appleTouchIcon != nil {
+		links = append(links, assets.FaviconLink{
+			Rel:   "apple-touch-icon",
+			Type:  "image/png",
+			Sizes: "180x180",
+			Href:  "/apple-touch-icon.png",
+		})
+	}
 	s.faviconLinks = assets.RenderFaviconLinks(links)
 
 	return nil
 }
 
-// serveFavicon serves the favicon from memory
+// serveFavicon serves the favicon and Apple touch icons from memory
 func (s *DynamicServer) serveFavicon(w http.ResponseWriter, urlPath string) bool {
+	requestedFile := strings.TrimPrefix(urlPath, "/")
+
+	// Serve Apple touch icons
+	switch requestedFile {
+	case "apple-touch-icon.png", "apple-touch-icon-precomposed.png":
+		if s.appleTouchIcon != nil {
+			w.Header().Set("Content-Type", "image/png")
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+			_, _ = w.Write(s.appleTouchIcon)
+			return true
+		}
+		return false
+	case "favicon.ico":
+		if s.faviconIco != nil {
+			w.Header().Set("Content-Type", "image/x-icon")
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+			_, _ = w.Write(s.faviconIco)
+			return true
+		}
+		// Fall through to check if original favicon is favicon.ico
+	}
+
+	// Serve the original favicon
 	if s.faviconData == nil || s.faviconName == "" {
 		return false
 	}
 
-	// Check if the request is for the favicon
-	requestedFile := strings.TrimPrefix(urlPath, "/")
 	if requestedFile != s.faviconName {
 		return false
 	}
 
-	// Serve from memory
 	w.Header().Set("Content-Type", s.faviconMime)
-	w.Header().Set("Cache-Control", "public, max-age=3600") // Cache for 1 hour
+	w.Header().Set("Cache-Control", "public, max-age=3600")
 	_, _ = w.Write(s.faviconData)
 	return true
 }
@@ -260,6 +309,16 @@ func (s *DynamicServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	rec.Header().Set("Vary", "*")
 
 	urlPath := r.URL.Path
+
+	// Serve search assets if search is enabled
+	if s.serveSearchIndex(rec, urlPath) {
+		s.logRequest(r.Method, urlPath, rec.statusCode, time.Since(start))
+		return
+	}
+	if s.serveSearchJS(rec, urlPath) {
+		s.logRequest(r.Method, urlPath, rec.statusCode, time.Since(start))
+		return
+	}
 
 	// Serve PWA files (manifest.json, sw.js, icons) if PWA is enabled
 	if s.servePWA(rec, urlPath) {
@@ -416,8 +475,19 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 	validURLs := tree.BuildValidURLMap(site, "")
 	brokenLinks := markdown.ValidateLinksWithSource(htmlContent, nodeURLPath, fullMdPath, string(mdContent), validURLs)
 	if len(brokenLinks) > 0 {
-		s.serveBrokenLinksError(w, nodeURLPath, brokenLinks, site)
-		return true // We handled the request (with an error page)
+		// Log broken links to console
+		s.logError("Page %s has %d broken internal link(s):", nodeURLPath, len(brokenLinks))
+		for _, bl := range brokenLinks {
+			if bl.SourceFile != "" && bl.LineNumber > 0 {
+				s.logError("  -> %s:%d - %s", bl.SourceFile, bl.LineNumber, bl.LinkURL)
+			} else {
+				s.logError("  -> %s", bl.LinkURL)
+			}
+		}
+
+		// Add warning banner to the top of the content (dev server shows inline warnings)
+		warningBanner := s.buildBrokenLinksWarning(brokenLinks)
+		htmlContent = warningBanner + htmlContent
 	}
 
 	// Calculate reading time
@@ -469,6 +539,7 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 		InstantNavJS:    s.instantNavJS,
 		ViewTransitions: s.viewTransitions,
 		PWAEnabled:      s.pwaEnabled,
+		SearchEnabled:   s.searchEnabled,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -499,12 +570,44 @@ func (s *DynamicServer) resolveMarkdownPath(urlPath string) string {
 	// Remove trailing slash for processing
 	urlPath = strings.TrimSuffix(urlPath, "/")
 
-	// Root path - look for index.md
+	// Root path - look for index.md, README.md, or first file
 	if urlPath == "" {
+		// Try index.md first
 		fullPath := filepath.Join(s.config.SourceDir, "index.md")
 		if _, err := s.fs.Stat(fullPath); err == nil {
 			return "index.md"
 		}
+
+		// Try README.md (case-insensitive)
+		entries, err := os.ReadDir(s.config.SourceDir)
+		if err != nil {
+			return ""
+		}
+
+		var firstMdFile string
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			name := entry.Name()
+			nameLower := strings.ToLower(name)
+
+			// Check for README files
+			if nameLower == "readme.md" || nameLower == "readme.markdown" {
+				return name
+			}
+
+			// Track first markdown file as fallback
+			if firstMdFile == "" && tree.IsMarkdownFile(name) && !tree.IsIndexFile(name) {
+				firstMdFile = name
+			}
+		}
+
+		// Fallback to first markdown file
+		if firstMdFile != "" {
+			return firstMdFile
+		}
+
 		return ""
 	}
 
@@ -578,11 +681,7 @@ func (s *DynamicServer) findPrefixedFile(slugDir, slug string) string {
 		}
 
 		// Extract metadata to get the slug
-		info, err := entry.Info()
-		if err != nil {
-			continue
-		}
-		meta := tree.ExtractFileMetadata(name, info.ModTime())
+		meta := tree.ExtractFileMetadata(name)
 
 		// Check if the slug matches
 		if meta.Slug == slug {
@@ -650,6 +749,14 @@ func findNodeBySourcePath(node *tree.Node, sourcePath string) *tree.Node {
 		return node
 	}
 
+	// Also check the filename from SourcePath (for fallback index files where Path was changed)
+	if node.SourcePath != "" {
+		sourceFilename := filepath.Base(node.SourcePath)
+		if strings.EqualFold(sourceFilename, sourcePath) {
+			return node
+		}
+	}
+
 	// For folders with index, check the index path
 	if node.IsFolder && node.HasIndex && strings.EqualFold(node.IndexPath, sourcePath) {
 		return &tree.Node{
@@ -669,7 +776,61 @@ func findNodeBySourcePath(node *tree.Node, sourcePath string) *tree.Node {
 	return nil
 }
 
-// serveBrokenLinksError renders an error page showing broken internal links
+// buildBrokenLinksWarning creates a warning banner HTML for broken links (shown inline in dev server)
+func (s *DynamicServer) buildBrokenLinksWarning(brokenLinks []markdown.BrokenLink) string {
+	var sb strings.Builder
+
+	sb.WriteString(`<div style="margin-bottom: 1.5rem; padding: 1rem; background: linear-gradient(135deg, #ff6b6b22, #ff8e5322); border: 1px solid #ff6b6b55; border-left: 4px solid #ff6b6b; border-radius: 8px;">`)
+	sb.WriteString(`<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.75rem;">`)
+	sb.WriteString(`<span style="font-size: 1.25rem;">⚠️</span>`)
+	sb.WriteString(fmt.Sprintf(`<strong style="color: #ff6b6b;">%d Broken Link`, len(brokenLinks)))
+	if len(brokenLinks) != 1 {
+		sb.WriteString(`s`)
+	}
+	sb.WriteString(` Found</strong>`)
+	sb.WriteString(`</div>`)
+	sb.WriteString(`<div style="font-size: 0.875rem; color: var(--text-secondary, #666);">`)
+
+	for i, bl := range brokenLinks {
+		if i > 0 {
+			sb.WriteString(`<hr style="border: none; border-top: 1px solid var(--border-color, #ddd); margin: 0.5rem 0;">`)
+		}
+		sb.WriteString(`<div style="margin: 0.5rem 0;">`)
+
+		// File location
+		if bl.SourceFile != "" && bl.LineNumber > 0 {
+			sb.WriteString(fmt.Sprintf(`<code style="background: var(--code-bg, #f5f5f5); padding: 2px 6px; border-radius: 3px; font-size: 0.8rem;">%s:%d</code> `,
+				template.HTMLEscapeString(filepath.Base(bl.SourceFile)), bl.LineNumber))
+		}
+
+		// Original syntax or URL
+		if bl.OriginalSyntax != "" {
+			sb.WriteString(fmt.Sprintf(`<code style="background: #ff6b6b22; padding: 2px 6px; border-radius: 3px; color: #ff6b6b;">%s</code>`,
+				template.HTMLEscapeString(bl.OriginalSyntax)))
+		} else {
+			sb.WriteString(fmt.Sprintf(`→ <code style="color: #ff6b6b;">%s</code>`,
+				template.HTMLEscapeString(bl.LinkURL)))
+		}
+
+		// Suggestions
+		if len(bl.Suggestions) > 0 {
+			sb.WriteString(fmt.Sprintf(` <span style="color: #22c55e;">Did you mean: <code>%s</code>?</span>`,
+				template.HTMLEscapeString(bl.Suggestions[0])))
+		}
+
+		sb.WriteString(`</div>`)
+	}
+
+	sb.WriteString(`</div>`)
+	sb.WriteString(`<div style="margin-top: 0.75rem; font-size: 0.75rem; color: var(--text-muted, #999);">`)
+	sb.WriteString(`This warning only appears in the dev server. Fix these links before building for production.`)
+	sb.WriteString(`</div>`)
+	sb.WriteString(`</div>`)
+
+	return sb.String()
+}
+
+// serveBrokenLinksError renders an error page showing broken internal links (legacy, kept for reference)
 func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage string, brokenLinks []markdown.BrokenLink, site *tree.Site) {
 	// Log the error
 	s.logError("Page %s has %d broken internal links:", sourcePage, len(brokenLinks))
@@ -776,6 +937,7 @@ func (s *DynamicServer) serveBrokenLinksError(w http.ResponseWriter, sourcePage 
 		InstantNavJS:    s.instantNavJS,
 		ViewTransitions: s.viewTransitions,
 		PWAEnabled:      s.pwaEnabled,
+		SearchEnabled:   s.searchEnabled,
 	}
 
 	// Get renderer
@@ -820,6 +982,7 @@ func (s *DynamicServer) serve404(w http.ResponseWriter, _ *http.Request) {
 		InstantNavJS:    s.instantNavJS,
 		ViewTransitions: s.viewTransitions,
 		PWAEnabled:      s.pwaEnabled,
+		SearchEnabled:   s.searchEnabled,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -942,6 +1105,7 @@ func (s *DynamicServer) renderAutoIndex(w http.ResponseWriter, urlPath string, n
 		InstantNavJS:    s.instantNavJS,
 		ViewTransitions: s.viewTransitions,
 		PWAEnabled:      s.pwaEnabled,
+		SearchEnabled:   s.searchEnabled,
 	}
 
 	// Get renderer (re-reads CSS if using custom CSS file)
@@ -1089,10 +1253,22 @@ func (s *DynamicServer) serveServiceWorker(w http.ResponseWriter) {
 	// Add root path
 	pageURLs = append([]string{"/"}, pageURLs...)
 
-	// Build asset URLs (icons if available)
+	// Build asset URLs (icons, search files, favicon)
 	var assetURLs []string
 	if s.pwaHasIcons {
 		assetURLs = append(assetURLs, "/icon-192.png", "/icon-512.png")
+	}
+	if s.searchEnabled {
+		assetURLs = append(assetURLs, "/search.js", "/search-index.json")
+	}
+	if s.faviconName != "" {
+		assetURLs = append(assetURLs, "/"+s.faviconName)
+	}
+	if s.appleTouchIcon != nil {
+		assetURLs = append(assetURLs, "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png")
+	}
+	if s.faviconIco != nil {
+		assetURLs = append(assetURLs, "/favicon.ico")
 	}
 
 	config := pwa.ServiceWorkerConfig{
@@ -1125,4 +1301,87 @@ func collectPageURLs(node *tree.Node, urls *[]string) {
 	for _, child := range node.Children {
 		collectPageURLs(child, urls)
 	}
+}
+
+// serveSearchIndex generates and serves search-index.json dynamically
+func (s *DynamicServer) serveSearchIndex(w http.ResponseWriter, urlPath string) bool {
+	if !s.searchEnabled || urlPath != "/search-index.json" {
+		return false
+	}
+
+	// Scan the tree to get all pages
+	site, err := s.scanner.Scan(s.config.SourceDir)
+	if err != nil {
+		http.Error(w, "Failed to scan site", http.StatusInternalServerError)
+		return true
+	}
+
+	// Build search index
+	index := &search.Index{Pages: []search.PageEntry{}}
+
+	// Process each page
+	for _, node := range site.AllPages {
+		fullMdPath := filepath.Join(s.config.SourceDir, node.Path)
+
+		// Read markdown content
+		mdContent, err := s.fs.ReadFile(fullMdPath)
+		if err != nil {
+			continue
+		}
+
+		// Compute source directory for wikilink resolution
+		relDir := filepath.Dir(node.Path)
+		sourceDir := "/"
+		if relDir != "." && relDir != "" {
+			sourceDir = "/" + tree.SlugifyPath(relDir) + "/"
+		}
+
+		// Transform markdown to HTML
+		outputPath := tree.GetOutputPath(node)
+		urlPath := tree.GetURLPath(node)
+		page, err := s.transformer.TransformMarkdown(
+			mdContent,
+			sourceDir,
+			fullMdPath,
+			outputPath,
+			urlPath,
+			node.Name,
+		)
+		if err != nil {
+			continue
+		}
+
+		// Extract search data
+		entry := search.PageEntry{
+			Title:    page.Title,
+			URL:      urlPath,
+			Headings: search.ExtractHeadings(page.Content),
+		}
+		index.Pages = append(index.Pages, entry)
+	}
+
+	// Serialize to JSON
+	data, err := json.MarshalIndent(index, "", "  ")
+	if err != nil {
+		http.Error(w, "Failed to generate search index", http.StatusInternalServerError)
+		return true
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = w.Write(data)
+	return true
+}
+
+// serveSearchJS generates and serves search.js dynamically
+func (s *DynamicServer) serveSearchJS(w http.ResponseWriter, urlPath string) bool {
+	if !s.searchEnabled || urlPath != "/search.js" {
+		return false
+	}
+
+	js := search.GenerateSearchJS("")
+	w.Header().Set("Content-Type", "application/javascript")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = w.Write([]byte(js))
+	return true
 }

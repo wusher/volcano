@@ -1,11 +1,6 @@
 // Package tree provides functionality for building a tree structure from markdown files.
 package tree
 
-import (
-	"os"
-	"time"
-)
-
 // Node represents a node in the content tree
 type Node struct {
 	Name       string  // Clean display label (from H1 or filename)
@@ -70,18 +65,6 @@ func (n *Node) HasMarkdownContent() bool {
 	return false
 }
 
-// ModTime returns the file modification time for the source file
-func (n *Node) ModTime() time.Time {
-	if n.SourcePath == "" {
-		return time.Now()
-	}
-	info, err := os.Stat(n.SourcePath)
-	if err != nil {
-		return time.Now()
-	}
-	return info.ModTime()
-}
-
 // BuildValidURLMap creates a map of all valid URLs from a site structure.
 // This is used for validating internal links in generated content.
 // If baseURL is provided (e.g., "https://example.com/volcano/"), URLs will be prefixed with the base path.
@@ -89,7 +72,7 @@ func BuildValidURLMap(site *Site, baseURL string) map[string]bool {
 	validURLs := make(map[string]bool)
 
 	// Extract base path from baseURL
-	basePath := extractBasePath(baseURL)
+	basePath := ExtractBasePath(baseURL)
 
 	// Add root URL (with or without base path)
 	if basePath != "" {
@@ -122,7 +105,7 @@ func BuildValidURLMapWithAutoIndex(allPages []*Node, autoIndexFolders []*Node, b
 	validURLs := make(map[string]bool)
 
 	// Extract base path from baseURL
-	basePath := extractBasePath(baseURL)
+	basePath := ExtractBasePath(baseURL)
 
 	// Add root URL (with or without base path)
 	if basePath != "" {

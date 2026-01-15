@@ -92,6 +92,23 @@ Templates and CSS use Go's `//go:embed` directive:
 - `internal/templates/layout.html` - main HTML structure
 - `internal/styles/themes/*.css` - theme stylesheets
 
+### Bug Fixing Process
+
+When a bug is reported:
+
+1. **First, create an e2e test** in the `e2e/` directory that reproduces the bug
+   - The test should fail initially, confirming the bug exists
+   - Use existing spec files or create a new one if needed
+   - Run with `make e2e` to verify the test fails
+
+2. **Then fix the bug** in the source code
+   - Run `make e2e` to verify the fix works
+   - Run `go test ./...` to ensure no regressions
+
+3. **Commit both** the test and the fix together
+
+This ensures bugs don't regress and documents expected behavior.
+
 ### Test Fixtures
 
 When fixing wiki link or markdown processing bugs, always store test fixtures in the `testdata/` folder:

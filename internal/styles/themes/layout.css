@@ -1092,3 +1092,121 @@ body.drawer-open .mobile-menu-btn {
 .chroma .lnt { margin-right: 0.4em; padding: 0 0.4em; }
 .chroma .ln { margin-right: 0.4em; padding: 0 0.4em; }
 
+/* ==========================================================================
+   COMMAND PALETTE SEARCH
+   ========================================================================== */
+
+.command-palette {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+}
+
+.command-palette.open {
+  display: flex;
+}
+
+.command-palette-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.command-palette-modal {
+  position: relative;
+  width: 90%;
+  max-width: 600px;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+}
+
+.command-palette-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.command-palette-header .search-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+#command-palette-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  outline: none;
+  color: var(--text-primary);
+}
+
+#command-palette-input::placeholder {
+  color: var(--text-muted);
+}
+
+.command-palette-hint {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+}
+
+.command-palette-results {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.command-palette-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.command-palette-result {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.command-palette-result:hover,
+.command-palette-result.selected {
+  background: var(--bg-secondary);
+}
+
+.result-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent, var(--text-muted));
+}
+
+.result-title {
+  font-weight: 500;
+}
+
+.result-snippet {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-muted);
+}
+
+body.command-palette-open {
+  overflow: hidden;
+}
+

@@ -15,6 +15,37 @@ type ModifiedDate struct {
 	Relative string // "3 days ago"
 }
 
+// GitCommandRunner is an interface for running git commands (DIP: Dependency Inversion)
+type GitCommandRunner interface {
+	GetLastCommitDate(filePath string) (string, error)
+}
+
+// DefaultGitRunner is the default implementation using exec.Command
+type DefaultGitRunner struct{}
+
+// GetLastCommitDate runs git log to get the last commit date
+func (r DefaultGitRunner) GetLastCommitDate(filePath string) (string, error) {
+	cmd := exec.Command("git", "log", "-1", "--format=%cI", "--", filePath)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+// gitRunner is the package-level git command runner (can be replaced for testing)
+var gitRunner GitCommandRunner = DefaultGitRunner{}
+
+// SetGitRunner allows replacing the git runner for testing
+func SetGitRunner(runner GitCommandRunner) {
+	gitRunner = runner
+}
+
+// ResetGitRunner restores the default git runner
+func ResetGitRunner() {
+	gitRunner = DefaultGitRunner{}
+}
+
 // GetLastModified retrieves the last modified date for a file.
 // It first tries to get the date from git, falling back to filesystem.
 func GetLastModified(filePath string) ModifiedDate {
@@ -30,13 +61,11 @@ func GetLastModified(filePath string) ModifiedDate {
 
 // getGitModifiedDate gets the last commit date for a file from git
 func getGitModifiedDate(filePath string) (ModifiedDate, error) {
-	cmd := exec.Command("git", "log", "-1", "--format=%cI", "--", filePath)
-	output, err := cmd.Output()
+	dateStr, err := gitRunner.GetLastCommitDate(filePath)
 	if err != nil {
 		return ModifiedDate{}, err
 	}
 
-	dateStr := strings.TrimSpace(string(output))
 	if dateStr == "" {
 		return ModifiedDate{}, os.ErrNotExist
 	}

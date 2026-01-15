@@ -25,9 +25,9 @@ test:
 		awk -v c="$$COVERAGE" 'BEGIN { exit (c >= 90) ? 0 : 1 }' || (echo "Coverage $$COVERAGE% is below 90% threshold" && exit 1); \
 		rm -f coverage.out
 
-# Run linter
+# Run linter with auto-fix
 lint:
-	$(GOBIN)/golangci-lint run
+	$(GOBIN)/golangci-lint run --fix
 
 # Run tests with coverage
 coverage:
@@ -35,24 +35,10 @@ coverage:
 	go tool cover -func=coverage.out | grep total
 	@rm -f coverage.out
 
-# Run end-to-end tests
+# Run end-to-end tests (Playwright)
 e2e: build
-	@echo "Running e2e tests..."
-	@rm -rf output/
-	./volcano ./example
-	@echo "Verifying output structure..."
-	@test -f ./output/index.html || (echo "FAIL: index.html not found" && exit 1)
-	@test -f ./output/404.html || (echo "FAIL: 404.html not found" && exit 1)
-	@echo "Verifying HTML content..."
-	@grep -q "<title>" ./output/index.html || (echo "FAIL: title tag not found" && exit 1)
-	@grep -q "nav" ./output/index.html || (echo "FAIL: nav element not found" && exit 1)
-	@echo "Testing serve mode..."
-	@./volcano -s -p 8888 ./output & PID=$$!; \
-		sleep 2; \
-		curl -sf http://localhost:8888/ > /dev/null || (kill $$PID 2>/dev/null; echo "FAIL: serve mode not responding" && exit 1); \
-		kill $$PID 2>/dev/null
-	@rm -rf output/
-	@echo "All e2e tests passed!"
+	@echo "Running Playwright e2e tests..."
+	cd e2e && npm test
 
 # Clean build artifacts
 clean:

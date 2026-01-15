@@ -246,6 +246,23 @@ func TestLoadOrDiscover(t *testing.T) {
 			t.Errorf("path should be empty, got %q", path)
 		}
 	})
+
+	t.Run("discovered config with invalid JSON", func(t *testing.T) {
+		inputDir := t.TempDir()
+		configPath := filepath.Join(inputDir, ConfigFileName)
+		invalidContent := `{invalid json`
+		if err := os.WriteFile(configPath, []byte(invalidContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		_, path, err := LoadOrDiscover("", inputDir)
+		if err == nil {
+			t.Error("LoadOrDiscover() should return error for invalid JSON")
+		}
+		if path != configPath {
+			t.Errorf("path = %q, want %q", path, configPath)
+		}
+	})
 }
 
 func TestBoolPtr(t *testing.T) {

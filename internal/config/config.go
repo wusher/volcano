@@ -35,6 +35,7 @@ type FileConfig struct {
 	InstantNav   *bool `json:"instantNav,omitempty"`   // Enable instant navigation
 	InlineAssets *bool `json:"inlineAssets,omitempty"` // Embed CSS/JS inline
 	PWA          *bool `json:"pwa,omitempty"`          // Enable PWA support
+	Search       *bool `json:"search,omitempty"`       // Enable search
 
 	// Content
 	LastModified *bool `json:"lastModified,omitempty"` // Show last modified date

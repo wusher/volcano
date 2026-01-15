@@ -353,11 +353,124 @@ func TestExtractBasePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := extractBasePath(tt.baseURL)
+			result := ExtractBasePath(tt.baseURL)
 			if result != tt.expected {
-				t.Errorf("extractBasePath(%q) = %q, want %q", tt.baseURL, result, tt.expected)
+				t.Errorf("ExtractBasePath(%q) = %q, want %q", tt.baseURL, result, tt.expected)
 			}
 		})
+	}
+}
+
+func TestIsReadmeFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected bool
+	}{
+		{"README.md", true},
+		{"readme.md", true},
+		{"ReadMe.md", true},
+		{"index.md", false},
+		{"readme.txt", false},
+		{"about.md", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isReadmeFile(tt.name)
+			if result != tt.expected {
+				t.Errorf("isReadmeFile(%q) = %v, want %v", tt.name, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestScanWithReadme(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create README.md instead of index.md
+	if err := os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("# Readme"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "about.md"), []byte("# About"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	site, err := Scan(tmpDir)
+	if err != nil {
+		t.Fatalf("Scan() error = %v", err)
+	}
+
+	// Should have found 2 pages
+	if len(site.AllPages) != 2 {
+		t.Errorf("AllPages count = %d, want 2", len(site.AllPages))
+	}
+
+	// Root should have HasIndex=true because README.md acts as index
+	if !site.Root.HasIndex {
+		t.Error("Root should have HasIndex=true when README.md exists")
+	}
+}
+
+func TestScanWithErrorPath(t *testing.T) {
+	// Test scanning a non-existent directory
+	_, err := Scan("/nonexistent/path/that/does/not/exist")
+	if err == nil {
+		t.Error("Scan() should return error for non-existent directory")
+	}
+}
+
+func TestScanWithFirstFileAsIndex(t *testing.T) {
+	// Test case: no index.md, no README.md - first file becomes home page
+	tmpDir := t.TempDir()
+
+	// Create files WITHOUT index.md or README.md
+	if err := os.WriteFile(filepath.Join(tmpDir, "about.md"), []byte("# About"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "contact.md"), []byte("# Contact"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	site, err := Scan(tmpDir)
+	if err != nil {
+		t.Fatalf("Scan() error = %v", err)
+	}
+
+	// Root should have HasIndex=true because first file is used as index
+	if !site.Root.HasIndex {
+		t.Error("Root should have HasIndex=true when first file is used as index")
+	}
+
+	// The first file should have been removed from root.Children
+	// (it becomes the home page)
+	for _, child := range site.Root.Children {
+		if child.Path == "index.md" {
+			t.Error("First file converted to index should not appear in Children")
+		}
+	}
+}
+
+func TestScanWithSubfolderOnly(t *testing.T) {
+	// Test case: root has only folders (no files), no index should be set
+	tmpDir := t.TempDir()
+
+	// Create only a subfolder with content
+	docsDir := filepath.Join(tmpDir, "docs")
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(docsDir, "intro.md"), []byte("# Intro"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	site, err := Scan(tmpDir)
+	if err != nil {
+		t.Fatalf("Scan() error = %v", err)
+	}
+
+	// Root should NOT have HasIndex since there are no root-level files
+	if site.Root.HasIndex {
+		t.Error("Root should NOT have HasIndex when only subfolders exist")
 	}
 }
 

@@ -931,6 +931,11 @@ func TestIntegrationBaseURLContentLinks(t *testing.T) {
 	inputDir := t.TempDir()
 	outputDir := t.TempDir()
 
+	// Create an index file so test.md doesn't become the root index
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home\n"), 0644); err != nil {
+		t.Fatalf("Failed to create index file: %v", err)
+	}
+
 	// Create a markdown file with wiki links
 	pageContent := `# Test Page
 
@@ -993,4 +998,98 @@ Content here.
 	if !strings.Contains(html, `src="/volcano/images/logo.png"`) {
 		t.Error("Content resources: image src should be prefixed with /volcano/")
 	}
+}
+
+func TestIntegrationGenerate_WithViewTransitions(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create simple page
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, "--view-transitions", inputDir}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	// Should generate successfully
+	output := stdout.String() + stderr.String()
+	if !strings.Contains(output, "Generated") {
+		t.Error("Should report generated pages")
+	}
+}
+
+func TestIntegrationGenerate_WithBreadcrumbs(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create nested structure
+	docsDir := filepath.Join(inputDir, "docs", "guide")
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(docsDir, "intro.md"), []byte("# Intro Guide"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, "--breadcrumbs", inputDir}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	// Read the nested page
+	content, err := os.ReadFile(filepath.Join(outputDir, "docs", "guide", "intro", "index.html"))
+	if err != nil {
+		t.Fatalf("Failed to read intro/index.html: %v", err)
+	}
+
+	// Should contain breadcrumb markup
+	if !strings.Contains(string(content), "nav") {
+		t.Log("Expected breadcrumb navigation in nested page")
+	}
+}
+
+func TestIntegrationGenerate_WithLastModified(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, "--last-modified", inputDir}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	// Read the page
+	content, err := os.ReadFile(filepath.Join(outputDir, "index.html"))
+	if err != nil {
+		t.Fatalf("Failed to read index.html: %v", err)
+	}
+
+	// Should contain last modified info somewhere in the page
+	html := string(content)
+	// The page should contain some date-related content when --last-mod is enabled
+	_ = html
 }

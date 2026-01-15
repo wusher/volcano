@@ -27,10 +27,45 @@ func Scan(inputDir string) (*Site, error) {
 	// Sort children and prune empty folders
 	sortAndPrune(root)
 
+	// If root has no index, try to designate one
+	if !root.HasIndex {
+		// Look for README.md first (case-insensitive) in allPages at root level
+		for _, page := range allPages {
+			dir := filepath.Dir(page.Path)
+			if (dir == "." || dir == "") && isReadmeFile(page.FileName) {
+				root.HasIndex = true
+				root.IndexPath = page.Path
+				break
+			}
+		}
+	}
+
+	// If still no index, use the first file in root as the home page
+	if !root.HasIndex && len(root.Children) > 0 {
+		for i, child := range root.Children {
+			if !child.IsFolder {
+				root.HasIndex = true
+				root.IndexPath = child.Path
+				// Change Path to "index.md" so it renders to root index.html
+				// (SourcePath remains unchanged for reading the actual file)
+				child.Path = "index.md"
+				// Remove from navigation - it will be the home page
+				root.Children = append(root.Children[:i], root.Children[i+1:]...)
+				break
+			}
+		}
+	}
+
 	return &Site{
 		Root:     root,
 		AllPages: allPages,
 	}, nil
+}
+
+// isReadmeFile checks if the filename is a README file
+func isReadmeFile(filename string) bool {
+	name := strings.ToLower(filename)
+	return name == "readme.md" || name == "readme.markdown"
 }
 
 // scanDirectory recursively scans a directory for markdown files
@@ -142,8 +177,8 @@ func sortAndPrune(node *Node) {
 		}
 
 		// Secondary: Number (lower numbers first, nil sorted last)
-		aNum := numberForSort(aMeta.Number)
-		bNum := numberForSort(bMeta.Number)
+		aNum := getNumberForSort(aMeta.Number, false)
+		bNum := getNumberForSort(bMeta.Number, false)
 		if aNum != bNum {
 			return aNum < bNum
 		}
@@ -151,14 +186,6 @@ func sortAndPrune(node *Node) {
 		// Tertiary: Name (alphabetical, case-insensitive)
 		return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 	})
-}
-
-// numberForSort returns the number for sorting, with nil treated as max
-func numberForSort(n *int) int {
-	if n == nil {
-		return 999999
-	}
-	return *n
 }
 
 // GetOutputPath returns the output path for a file node
@@ -188,7 +215,7 @@ func GetOutputPath(node *Node) string {
 	}
 
 	// Extract metadata to get slug (strips date/number prefixes)
-	meta := ExtractFileMetadata(filename, node.ModTime())
+	meta := ExtractFileMetadata(filename)
 	slug := meta.Slug
 
 	// For non-index files, create clean URLs: file.md → file/index.html
@@ -230,7 +257,7 @@ func GetURLPath(node *Node) string {
 	}
 
 	// Extract metadata to get slug (strips date/number prefixes)
-	meta := ExtractFileMetadata(filename, node.ModTime())
+	meta := ExtractFileMetadata(filename)
 	slug := meta.Slug
 
 	// For non-index files, return the path with slug as directory
@@ -272,7 +299,7 @@ func PrefixURL(baseURL, urlPath string) string {
 
 	// Extract just the path portion from the base URL
 	// e.g., "https://example.com/volcano/" -> "/volcano"
-	basePath := extractBasePath(baseURL)
+	basePath := ExtractBasePath(baseURL)
 	if basePath == "" {
 		return urlPath
 	}
@@ -286,11 +313,11 @@ func PrefixURL(baseURL, urlPath string) string {
 	return basePath + urlPath
 }
 
-// extractBasePath extracts the path portion from a URL
+// ExtractBasePath extracts the path portion from a URL
 // e.g., "https://example.com/volcano/" -> "/volcano"
 // e.g., "https://example.com/" -> ""
 // e.g., "https://example.com" -> ""
-func extractBasePath(baseURL string) string {
+func ExtractBasePath(baseURL string) string {
 	// Remove trailing slash for consistent handling
 	baseURL = strings.TrimSuffix(baseURL, "/")
 

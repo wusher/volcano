@@ -85,6 +85,11 @@ func TestIntegrationError_CorruptedMarkdown_UnclosedAdmonition(t *testing.T) {
 	inputDir := t.TempDir()
 	outputDir := t.TempDir()
 
+	// Create an index file so test.md doesn't become the root index
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home\n"), 0644); err != nil {
+		t.Fatalf("Failed to create index file: %v", err)
+	}
+
 	// Create markdown with unclosed admonition
 	if err := os.WriteFile(filepath.Join(inputDir, "test.md"), []byte(`
 # Test

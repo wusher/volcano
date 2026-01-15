@@ -12,6 +12,11 @@ func TestIntegrationMarkdown_WikiLinksComplex(t *testing.T) {
 	inputDir := t.TempDir()
 	outputDir := t.TempDir()
 
+	// Create an index file so test.md doesn't become the root index
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home\n"), 0644); err != nil {
+		t.Fatalf("Failed to create index file: %v", err)
+	}
+
 	// Create markdown with basic wiki links
 	complexWikiLinks := `# Wiki Links Test
 
@@ -98,6 +103,11 @@ func TestIntegrationMarkdown_AdmonitionEdgeCases(t *testing.T) {
 	inputDir := t.TempDir()
 	outputDir := t.TempDir()
 
+	// Create an index file so test.md doesn't become the root index
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home\n"), 0644); err != nil {
+		t.Fatalf("Failed to create index file: %v", err)
+	}
+
 	// Create markdown with complex admonition scenarios
 	admonitionContent := "# Admonition Edge Cases\n\n## Basic Admonitions\n:::note Simple Note\nThis is a simple note.\n:::\n\n:::warning\nWarning without custom title.\n:::\n\n## Admonitions with Code Blocks\n:::tip Code Example\nHere's some code:\n\n```go\nfunc example() {\n    return \"nested code\"\n}\n```\n\nAnd more text.\n:::\n\n## Admonitions with Lists\n:::info Information\n- Item 1\n- Item 2\n  - Nested item\n- Item 3\n:::\n\n## Admonitions in Lists\n- Normal list item\n:::warning List Warning\nThis warning is inside a list.\n:::\n- Another normal item\n\n## Unclosed Admonition\n:::note Unclosed\nThis admonition block doesn't have proper closing."
 
@@ -145,6 +155,11 @@ func TestIntegrationMarkdown_AdmonitionEdgeCases(t *testing.T) {
 func TestIntegrationMarkdown_CodeBlockFeatures(t *testing.T) {
 	inputDir := t.TempDir()
 	outputDir := t.TempDir()
+
+	// Create an index file so test.md doesn't become the root index
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home\n"), 0644); err != nil {
+		t.Fatalf("Failed to create index file: %v", err)
+	}
 
 	// Create markdown with various code block scenarios
 	codeContent := `# Code Block Features

@@ -1,7 +1,6 @@
 package tree
 
 import (
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -35,8 +34,7 @@ type FileMetadata struct {
 }
 
 // ExtractFileMetadata parses date/number prefixes from filename
-// Only extracts date from filename prefix - does not use file modification time
-func ExtractFileMetadata(filename string, _ time.Time) FileMetadata {
+func ExtractFileMetadata(filename string) FileMetadata {
 	// Only strip known markdown extensions, not arbitrary "extensions"
 	// This prevents "0. Inbox" from being trimmed to "0"
 	stem := filename
@@ -163,15 +161,8 @@ func SortNodes(nodes []*Node, newestFirst bool) {
 
 // GetNodeMetadata extracts metadata from a node's filename
 func GetNodeMetadata(node *Node) FileMetadata {
-	var modTime time.Time
-	if info, err := os.Stat(node.SourcePath); err == nil {
-		modTime = info.ModTime()
-	} else {
-		modTime = time.Now()
-	}
-
 	filename := filepath.Base(node.SourcePath)
-	return ExtractFileMetadata(filename, modTime)
+	return ExtractFileMetadata(filename)
 }
 
 // getNumberForSort returns the number for sorting, handling nil

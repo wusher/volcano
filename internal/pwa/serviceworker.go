@@ -105,21 +105,38 @@ self.addEventListener('fetch', (event) => {
         }
 
         // Otherwise fetch from network
-        return fetch(event.request).then((response) => {
-          // Don't cache non-successful responses
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+        return fetch(event.request)
+          .then((response) => {
+            // Don't cache non-successful responses
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // Clone the response for caching
+            const responseToCache = response.clone();
+
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+
             return response;
-          }
-
-          // Clone the response for caching
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
+          })
+          .catch(() => {
+            // Network failed and not in cache - return offline page if it's a navigation request
+            if (event.request.mode === 'navigate') {
+              return caches.match('/').then((cachedHome) => {
+                if (cachedHome) {
+                  return cachedHome;
+                }
+                return new Response(
+                  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline</title></head><body style="font-family:system-ui,sans-serif;text-align:center;padding:2rem"><h1>Offline</h1><p>This page is not available offline. Please connect to the internet and try again.</p></body></html>',
+                  { headers: { 'Content-Type': 'text/html' } }
+                );
+              });
+            }
+            // For other resources, just fail
+            return new Response('Offline', { status: 503 });
           });
-
-          return response;
-        });
       })
   );
 });

@@ -56,34 +56,25 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - name: Build binary
         run: go build -o volcano .
-      - name: Generate site
-        run: ./volcano -o ./test-output --title="E2E Test" ./example
-      - name: Verify output structure
-        run: test -d ./test-output
-      - name: Test serve mode starts
+      - name: Install Playwright dependencies
+        working-directory: ./e2e
         run: |
-          ./volcano -s -p 8888 ./example &
-          SERVER_PID=$!
-          sleep 2
-          # Server starts (will fail to respond as full implementation is pending)
-          kill $SERVER_PID 2>/dev/null || true
-      - name: Verify CLI commands work
-        run: |
-          ./volcano --help
-          ./volcano --version
-          ./volcano ./example 2>&1 | grep -q "Generating site" && echo "Generate command works"
-      - name: Test serve command output
-        run: |
-          timeout 3s ./volcano -s ./example 2>&1 | grep -qE "(Serving|Live server)" && echo "Serve command works" || true
-      - name: Test base URL prefixing
-        run: |
-          ./volcano -o ./url-test-output --url="https://wusher.github.io/volcano/" ./example
-          # Verify navigation links are prefixed with /volcano/
-          grep -q 'href="/volcano/' ./url-test-output/index.html && echo "Base URL prefixing works"
-          # Verify 404 page has prefixed home link
-          grep -q 'href="/volcano/"' ./url-test-output/404.html && echo "404 base URL works"
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Run Playwright e2e tests
+        working-directory: ./e2e
+        run: npm test
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/test-results/
 
   docs:
     runs-on: ubuntu-latest

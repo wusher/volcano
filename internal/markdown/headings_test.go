@@ -100,3 +100,115 @@ func TestAddHeadingAnchorsMultiple(t *testing.T) {
 		t.Error("should contain second-section id")
 	}
 }
+
+func TestEscapePseudoHTMLTags(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "escapes pseudo tags",
+			input:    "-o, --output <dir>",
+			expected: "-o, --output &lt;dir&gt;",
+		},
+		{
+			name:     "escapes multiple pseudo tags",
+			input:    "--port <port> --host <host>",
+			expected: "--port &lt;port&gt; --host &lt;host&gt;",
+		},
+		{
+			name:     "preserves valid HTML tags",
+			input:    "Use <code>command</code> here",
+			expected: "Use <code>command</code> here",
+		},
+		{
+			name:     "preserves strong and em",
+			input:    "<strong>bold</strong> and <em>italic</em>",
+			expected: "<strong>bold</strong> and <em>italic</em>",
+		},
+		{
+			name:     "no tags",
+			input:    "Simple text",
+			expected: "Simple text",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := escapePseudoHTMLTags(tc.input)
+			if result != tc.expected {
+				t.Errorf("escapePseudoHTMLTags(%q) = %q, want %q", tc.input, result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestAddHeadingAnchorsWithPseudoTags(t *testing.T) {
+	input := "<h3>-o, --output <dir></h3>"
+
+	result := AddHeadingAnchors(input)
+
+	// Should escape <dir> in the heading content
+	if !strings.Contains(result, "&lt;dir&gt;") {
+		t.Errorf("should escape <dir> to &lt;dir&gt;\ngot: %s", result)
+	}
+
+	// Should include escaped version in the slug
+	if !strings.Contains(result, "ltdirgt") {
+		t.Errorf("slug should include ltdirgt\ngot: %s", result)
+	}
+}
+
+func TestStripHTMLTags(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "no tags",
+			input:    "Hello World",
+			expected: "Hello World",
+		},
+		{
+			name:     "simple tag",
+			input:    "<b>bold</b>",
+			expected: "bold",
+		},
+		{
+			name:     "nested tags",
+			input:    "<div><span>content</span></div>",
+			expected: "content",
+		},
+		{
+			name:     "tag with attributes",
+			input:    `<a href="http://example.com">link</a>`,
+			expected: "link",
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "only tags",
+			input:    "<br/><hr/>",
+			expected: "",
+		},
+		{
+			name:     "mixed content",
+			input:    "Text <b>bold</b> and <i>italic</i> text",
+			expected: "Text bold and italic text",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := stripHTMLTags(tc.input)
+			if result != tc.expected {
+				t.Errorf("stripHTMLTags(%q) = %q, want %q", tc.input, result, tc.expected)
+			}
+		})
+	}
+}

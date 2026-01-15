@@ -1,0 +1,13 @@
+{
+  "name": "volcano-e2e",
+  "version": "1.0.0",
+  "description": "E2E tests for Volcano static site generator",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}

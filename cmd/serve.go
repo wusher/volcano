@@ -40,6 +40,7 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress non-error output")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Enable debug output")
 	fs.BoolVar(&cfg.PWA, "pwa", false, "Enable PWA manifest and service worker for offline support")
+	fs.BoolVar(&cfg.Search, "search", false, "Enable site search with Cmd+K command palette")
 	fs.BoolVar(&showHelp, "h", false, "Show help")
 	fs.BoolVar(&showHelp, "help", false, "Show help")
 
@@ -147,6 +148,7 @@ func Serve(cfg *Config, w io.Writer) error {
 			ViewTransitions: cfg.ViewTransitions,
 			FaviconPath:     cfg.FaviconPath,
 			PWA:             cfg.PWA,
+			Search:          cfg.Search,
 		}
 
 		srv, err := server.NewDynamicServer(dynamicCfg, w)
@@ -224,6 +226,9 @@ func printServeUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "PWA:")
 	_, _ = fmt.Fprintln(w, "  --pwa                Enable PWA manifest and service worker")
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "Search:")
+	_, _ = fmt.Fprintln(w, "  --search             Enable site search with Cmd+K command palette")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Other:")
 	_, _ = fmt.Fprintln(w, "  -h, --help           Show this help message")

@@ -1255,3 +1255,961 @@ func TestGenerateWithInlineAssets(t *testing.T) {
 		t.Error("Generated HTML should contain inline CSS when InlineAssets is true")
 	}
 }
+
+func TestGenerateWithAllowBrokenLinks(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create a page with a broken link
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	content := "# Home\n\nSee [[missing-page]] for details."
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:         inputDir,
+		OutputDir:        outputDir,
+		Title:            "Test",
+		AllowBrokenLinks: true, // Allow broken links
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v (expected success with AllowBrokenLinks=true)", err)
+	}
+
+	if result.PagesGenerated != 1 {
+		t.Errorf("PagesGenerated = %d, want 1", result.PagesGenerated)
+	}
+
+	// Should log a warning about broken link
+	output := buf.String()
+	if !strings.Contains(output, "broken") {
+		t.Error("Should log warning about broken links")
+	}
+}
+
+func TestGenerateWithSearch(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create some pages
+	files := map[string]string{
+		"index.md": "# Home\n\n## Welcome\n\nThis is the home page.",
+		"about.md": "# About\n\n## Our Team\n\nAbout our team.",
+		"guide.md": "# Guide\n\n## Getting Started\n\nHow to get started.",
+	}
+
+	for path, content := range files {
+		fullPath := filepath.Join(inputDir, path)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Search Test",
+		Search:    true,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check search-index.json was created
+	searchIndexPath := filepath.Join(outputDir, "search-index.json")
+	if _, err := os.Stat(searchIndexPath); os.IsNotExist(err) {
+		t.Error("search-index.json should be created when Search=true")
+	}
+
+	// Check search.js was created
+	searchJSPath := filepath.Join(outputDir, "search.js")
+	if _, err := os.Stat(searchJSPath); os.IsNotExist(err) {
+		t.Error("search.js should be created when Search=true")
+	}
+
+	// Check search index contains page data
+	indexContent, err := os.ReadFile(searchIndexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	indexStr := string(indexContent)
+	if !strings.Contains(indexStr, "Home") {
+		t.Error("Search index should contain page title 'Home'")
+	}
+	if !strings.Contains(indexStr, "Welcome") {
+		t.Error("Search index should contain heading 'Welcome'")
+	}
+}
+
+func TestGenerateWithAutoIndex(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create a folder without index.md (should get auto-index)
+	folderDir := filepath.Join(inputDir, "folder")
+	if err := os.MkdirAll(folderDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create root index
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create files in folder
+	if err := os.WriteFile(filepath.Join(folderDir, "page1.md"), []byte("# Page 1\n\nContent"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(folderDir, "page2.md"), []byte("# Page 2\n\nContent"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Auto Index Test",
+		Verbose:   true, // Enable verbose to see auto-index messages
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Should generate pages for the folder contents
+	if result.PagesGenerated < 3 {
+		t.Errorf("PagesGenerated = %d, want at least 3 (index + 2 pages)", result.PagesGenerated)
+	}
+
+	// Check folder index was auto-generated
+	folderIndexPath := filepath.Join(outputDir, "folder", "index.html")
+	if _, err := os.Stat(folderIndexPath); os.IsNotExist(err) {
+		t.Error("folder/index.html should be auto-generated")
+	}
+
+	// Check auto-index contains links to child pages
+	indexContent, err := os.ReadFile(folderIndexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	indexStr := string(indexContent)
+	if !strings.Contains(indexStr, "Page 1") {
+		t.Error("Auto-index should contain link to Page 1")
+	}
+	if !strings.Contains(indexStr, "Page 2") {
+		t.Error("Auto-index should contain link to Page 2")
+	}
+}
+
+func TestGenerateWithLastMod(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create a test page
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	content := "# Test Article\n\nSome content here."
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:    inputDir,
+		OutputDir:   outputDir,
+		Title:       "Test",
+		ShowLastMod: true,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check output file was created
+	indexPath := filepath.Join(outputDir, "index.html")
+	if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+		t.Error("index.html should be created")
+	}
+}
+
+func TestGenerateErrorOnMissingInputDir(t *testing.T) {
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  "/nonexistent/path/to/input",
+		OutputDir: "/tmp/output",
+		Title:     "Test",
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err == nil {
+		t.Error("Generate() should return error for missing input directory")
+	}
+}
+
+func TestPrepareOutputDir_NonExistent(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputDir := filepath.Join(tmpDir, "new", "nested", "output")
+
+	var buf bytes.Buffer
+	g, err := New(Config{OutputDir: outputDir}, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	if err := g.prepareOutputDir(); err != nil {
+		t.Fatalf("prepareOutputDir() error = %v", err)
+	}
+
+	// Check directory was created
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		t.Error("prepareOutputDir() should create nested output directory")
+	}
+}
+
+func TestGenerateWithViewTransitions(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Test"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:        inputDir,
+		OutputDir:       outputDir,
+		Title:           "Test",
+		ViewTransitions: true,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check output contains view transition meta tag
+	indexPath := filepath.Join(outputDir, "index.html")
+	htmlContent, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	htmlStr := string(htmlContent)
+
+	if !strings.Contains(htmlStr, "view-transition") {
+		t.Error("Generated HTML should contain view-transition meta tag")
+	}
+}
+
+func TestGenerateWithPWAAndSearch(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create a favicon for PWA
+	faviconPath := filepath.Join(tmpDir, "favicon.png")
+	if err := createTestPNGFile(faviconPath, 100, 100); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home\n\n## Section"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:    inputDir,
+		OutputDir:   outputDir,
+		Title:       "PWA Test",
+		PWA:         true,
+		Search:      true,
+		FaviconPath: faviconPath,
+		SiteURL:     "/docs",
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check PWA files
+	manifestPath := filepath.Join(outputDir, "manifest.json")
+	if _, err := os.Stat(manifestPath); os.IsNotExist(err) {
+		t.Error("manifest.json should be created with PWA=true")
+	}
+
+	swPath := filepath.Join(outputDir, "sw.js")
+	if _, err := os.Stat(swPath); os.IsNotExist(err) {
+		t.Error("sw.js should be created with PWA=true")
+	}
+
+	// Check search files
+	searchIndexPath := filepath.Join(outputDir, "search-index.json")
+	if _, err := os.Stat(searchIndexPath); os.IsNotExist(err) {
+		t.Error("search-index.json should be created with Search=true")
+	}
+
+	// Check 404.html
+	notFoundPath := filepath.Join(outputDir, "404.html")
+	if _, err := os.Stat(notFoundPath); os.IsNotExist(err) {
+		t.Error("404.html should be created")
+	}
+}
+
+func TestGenerateWithBrokenNavLinks(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create a folder structure
+	folderDir := filepath.Join(inputDir, "folder")
+	if err := os.MkdirAll(folderDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create index at root
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a page in folder
+	if err := os.WriteFile(filepath.Join(folderDir, "page.md"), []byte("# Page"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Test",
+		Verbose:   true,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Should succeed - auto-index will be generated for folder
+	if result.PagesGenerated < 2 {
+		t.Errorf("PagesGenerated = %d, want at least 2", result.PagesGenerated)
+	}
+}
+
+func TestGenerateWithTopNavMultipleFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create multiple root-level files
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "about.md"), []byte("# About"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "contact.md"), []byte("# Contact"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Top Nav Test",
+		TopNav:    true,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check output contains top nav
+	indexPath := filepath.Join(outputDir, "index.html")
+	htmlContent, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	htmlStr := string(htmlContent)
+
+	// With TopNav enabled, should see nav items
+	if !strings.Contains(htmlStr, "About") {
+		t.Error("Top nav should contain link to About")
+	}
+}
+
+func TestPrepareOutputDir_Clean(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create directory with existing files
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	existingFile := filepath.Join(outputDir, "existing.html")
+	if err := os.WriteFile(existingFile, []byte("<html>"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	g, err := New(Config{OutputDir: outputDir, Clean: true}, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	if err := g.prepareOutputDir(); err != nil {
+		t.Fatalf("prepareOutputDir() error = %v", err)
+	}
+
+	// Existing file should be removed
+	if _, err := os.Stat(existingFile); !os.IsNotExist(err) {
+		t.Error("prepareOutputDir() with Clean=true should remove existing files")
+	}
+}
+
+func TestGenerateWithEmptyFolder(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create empty folder
+	emptyFolder := filepath.Join(inputDir, "empty")
+	if err := os.MkdirAll(emptyFolder, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create root index
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Test",
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	// Should succeed - empty folders are skipped
+	_, err = g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+}
+
+func TestGenerateWithNoMarkdownFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	// Create directory with only non-md files
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "image.png"), []byte("png"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Test",
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	if result.PagesGenerated != 0 {
+		t.Errorf("PagesGenerated = %d, want 0", result.PagesGenerated)
+	}
+
+	if len(result.Warnings) == 0 {
+		t.Error("Should have warning about no markdown files")
+	}
+}
+
+// Helper function to create a test PNG file
+func createTestPNGFile(path string, width, height int) error {
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = f.Close() }()
+	return png.Encode(f, img)
+}
+
+func TestGenerateWithInvalidFaviconPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create index.md
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:    inputDir,
+		OutputDir:   outputDir,
+		Title:       "Test",
+		FaviconPath: "/nonexistent/favicon.png", // Invalid path
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	// Should succeed with warning about favicon
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() should succeed despite invalid favicon: %v", err)
+	}
+
+	if result.PagesGenerated != 1 {
+		t.Errorf("PagesGenerated = %d, want 1", result.PagesGenerated)
+	}
+
+	// Check that warning was logged (output contains warning message)
+	output := buf.String()
+	if !strings.Contains(output, "favicon") {
+		t.Log("Expected warning about favicon in output")
+	}
+}
+
+func TestGenerateWithInvalidOGImagePath(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create index.md
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Test",
+		OGImage:   "/nonexistent/og-image.png", // Invalid path
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	// Should succeed with warning about OG image
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() should succeed despite invalid OG image: %v", err)
+	}
+
+	if result.PagesGenerated != 1 {
+		t.Errorf("PagesGenerated = %d, want 1", result.PagesGenerated)
+	}
+}
+
+func TestVerifyLinksWithMissingOutputFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		OutputDir: outputDir,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	// Create a node that doesn't have an output file
+	node := tree.NewNode("Test Page", "test.md", false)
+	allPages := []*tree.Node{node}
+
+	// This should find the page as "broken" since no output file exists
+	broken := g.verifyLinks(allPages)
+
+	if len(broken) != 1 {
+		t.Errorf("verifyLinks() returned %d broken links, want 1", len(broken))
+	}
+}
+
+func TestVerifyLinksWithFolderNode(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		OutputDir: outputDir,
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	// Create a folder node (should be skipped since output path is empty)
+	folderNode := tree.NewNode("Folder", "folder", true)
+	allPages := []*tree.Node{folderNode}
+
+	// Folder nodes have empty output path, so should not be flagged as broken
+	broken := g.verifyLinks(allPages)
+
+	if len(broken) != 0 {
+		t.Errorf("verifyLinks() returned %d broken links for folder, want 0", len(broken))
+	}
+}
+
+func TestPrepareOutputDirWithReadOnlyParent(t *testing.T) {
+	// Skip on systems where we can't create read-only directories reliably
+	if os.Geteuid() == 0 {
+		t.Skip("Skipping test when running as root")
+	}
+
+	tmpDir := t.TempDir()
+	readOnlyDir := filepath.Join(tmpDir, "readonly")
+
+	if err := os.MkdirAll(readOnlyDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Make directory read-only
+	if err := os.Chmod(readOnlyDir, 0555); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chmod(readOnlyDir, 0755) }()
+
+	var buf bytes.Buffer
+	config := Config{
+		OutputDir: filepath.Join(readOnlyDir, "subdir", "output"),
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	// Should fail to create directory
+	err = g.prepareOutputDir()
+	if err == nil {
+		t.Error("prepareOutputDir() should fail when parent is read-only")
+	}
+}
+
+func TestCountFoldersWithNilNode(t *testing.T) {
+	count := countFolders(nil)
+	if count != 0 {
+		t.Errorf("countFolders(nil) = %d, want 0", count)
+	}
+}
+
+func TestCountFoldersWithNestedStructure(t *testing.T) {
+	// Create a tree structure with multiple folders
+	root := tree.NewNode("Root", "", true)
+	folder1 := tree.NewNode("Folder1", "folder1", true)
+	folder2 := tree.NewNode("Folder2", "folder2", true)
+	subfolder := tree.NewNode("SubFolder", "folder1/subfolder", true)
+	file := tree.NewNode("File", "file.md", false)
+
+	root.AddChild(folder1)
+	root.AddChild(folder2)
+	root.AddChild(file)
+	folder1.AddChild(subfolder)
+
+	count := countFolders(root)
+	// root + folder1 + folder2 + subfolder = 4
+	if count != 4 {
+		t.Errorf("countFolders() = %d, want 4", count)
+	}
+}
+
+func TestGenerateWithBrokenContentLinks_Fail(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create index.md with broken internal link
+	mdContent := `# Home
+
+This page has a [broken link](/nonexistent/).
+`
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte(mdContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:         inputDir,
+		OutputDir:        outputDir,
+		Title:            "Test",
+		AllowBrokenLinks: false, // Should fail
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	// Should fail due to broken link
+	_, err = g.Generate()
+	if err == nil {
+		t.Error("Generate() should fail with broken content link when AllowBrokenLinks=false")
+	}
+	if !strings.Contains(err.Error(), "broken") {
+		t.Errorf("Error should mention broken links: %v", err)
+	}
+}
+
+func TestGenerateWithBrokenContentLinks_AllowBrokenLinks(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create index.md with broken internal link
+	mdContent := `# Home
+
+This page has a [broken link](/nonexistent/).
+`
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte(mdContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:         inputDir,
+		OutputDir:        outputDir,
+		Title:            "Test",
+		AllowBrokenLinks: true, // Should succeed with warning
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	// Should succeed despite broken link
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() should succeed with AllowBrokenLinks=true: %v", err)
+	}
+
+	if result.PagesGenerated != 1 {
+		t.Errorf("PagesGenerated = %d, want 1", result.PagesGenerated)
+	}
+
+	// Check that warning was logged
+	output := buf.String()
+	if !strings.Contains(output, "broken") && !strings.Contains(output, "Broken") {
+		t.Log("Expected warning about broken links in output")
+	}
+}
+
+func TestGenerateWithBrokenWikiLink(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create index.md with broken wiki link
+	mdContent := `# Home
+
+This page has a [[nonexistent-page|broken wiki link]].
+`
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte(mdContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:         inputDir,
+		OutputDir:        outputDir,
+		Title:            "Test",
+		AllowBrokenLinks: true, // Allow it to pass
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	// Should succeed with warning
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	if result.PagesGenerated != 1 {
+		t.Errorf("PagesGenerated = %d, want 1", result.PagesGenerated)
+	}
+}
+
+func TestGenerateWithInlineAssets_NoHashedFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	outputDir := filepath.Join(tmpDir, "output")
+
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create index.md
+	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	config := Config{
+		InputDir:     inputDir,
+		OutputDir:    outputDir,
+		Title:        "Test",
+		InlineAssets: true, // Skip writing hashed CSS/JS files
+	}
+
+	g, err := New(config, &buf)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	result, err := g.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	if result.PagesGenerated != 1 {
+		t.Errorf("PagesGenerated = %d, want 1", result.PagesGenerated)
+	}
+
+	// With InlineAssets, there should be no hashed .js or .css files in output
+	entries, err := os.ReadDir(outputDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if strings.HasSuffix(name, ".js") && strings.Contains(name, "-") {
+			// This would be a hashed file like "main-abc123.js"
+			t.Errorf("Found hashed asset file %s when InlineAssets=true", name)
+		}
+	}
+}

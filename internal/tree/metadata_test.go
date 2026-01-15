@@ -3,12 +3,9 @@ package tree
 import (
 	"os"
 	"testing"
-	"time"
 )
 
 func TestExtractFileMetadata(t *testing.T) {
-	modTime := time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC)
-
 	tests := []struct {
 		name        string
 		filename    string
@@ -104,7 +101,7 @@ func TestExtractFileMetadata(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			meta := ExtractFileMetadata(tc.filename, modTime)
+			meta := ExtractFileMetadata(tc.filename)
 
 			if meta.Slug != tc.wantSlug {
 				t.Errorf("Slug = %q, want %q", meta.Slug, tc.wantSlug)
