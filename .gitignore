@@ -36,7 +36,6 @@ output/
 node_modules/
 npm-debug.log*
 .npm
-package-lock.json
 
 # Playwright
 playwright-report/
