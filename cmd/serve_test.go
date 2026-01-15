@@ -14,16 +14,22 @@ import (
 	"time"
 )
 
-// syncWriter wraps an io.Writer with a mutex for thread-safe writes
-type syncWriter struct {
-	w  io.Writer
-	mu *sync.Mutex
+// syncBuffer is a thread-safe buffer for testing
+type syncBuffer struct {
+	buf bytes.Buffer
+	mu  sync.Mutex
 }
 
-func (sw *syncWriter) Write(p []byte) (n int, err error) {
-	sw.mu.Lock()
-	defer sw.mu.Unlock()
-	return sw.w.Write(p)
+func (sb *syncBuffer) Write(p []byte) (n int, err error) {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buf.Write(p)
+}
+
+func (sb *syncBuffer) String() string {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buf.String()
 }
 
 func TestServeStaticDirectory(t *testing.T) {
@@ -354,24 +360,18 @@ func TestServeCommandDeprecatedViewTransitions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var mu sync.Mutex
-	var stderr bytes.Buffer
-	stderrWriter := &syncWriter{w: &stderr, mu: &mu}
-
+	stderr := &syncBuffer{}
 	// Use a port that won't actually start (we're testing the deprecation warning, not the server)
 	// We need the command to fail before starting the server, so use an invalid port
 	go func() {
 		// This will start a server - we just want to verify the warning is logged
-		_ = ServeCommand([]string{"--view-transitions", "-p", "18799", tmpDir}, io.Discard, stderrWriter)
+		_ = ServeCommand([]string{"--view-transitions", "-p", "18799", tmpDir}, io.Discard, stderr)
 	}()
 
 	// Give it time to process flags and log warning
 	time.Sleep(200 * time.Millisecond)
 
-	mu.Lock()
 	stderrOutput := stderr.String()
-	mu.Unlock()
-
 	if !strings.Contains(stderrOutput, "deprecated") {
 		t.Errorf("Stderr should contain deprecation warning, got: %q", stderrOutput)
 	}

@@ -698,7 +698,9 @@
 {{end}}
 {{if .PWAEnabled}}    <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('{{.BaseURL}}/sw.js');
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('{{.BaseURL}}/sw.js');
+  });
 }
     </script>
 {{end}}

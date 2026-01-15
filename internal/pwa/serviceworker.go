@@ -13,11 +13,12 @@ import (
 // ServiceWorkerConfig holds configuration for service worker generation.
 type ServiceWorkerConfig struct {
 	BaseURL   string   // Base URL path prefix
-	PageURLs  []string // All page URLs to precache (from tree.AllPages)
-	AssetURLs []string // CSS, JS, icon URLs
+	PageURLs  []string // All page URLs to precache
+	AssetURLs []string // CSS, JS, icon URLs to precache
 }
 
 // GenerateServiceWorker creates and writes the sw.js file.
+// All pages and assets are precached, but registration is deferred until after page load.
 func GenerateServiceWorker(outputDir string, config ServiceWorkerConfig) error {
 	// Collect all URLs to cache
 	allURLs := make([]string, 0, len(config.PageURLs)+len(config.AssetURLs))
@@ -48,6 +49,8 @@ func generateCacheVersion(urls []string) string {
 }
 
 // buildServiceWorkerJS generates the service worker JavaScript code.
+// All URLs (pages and assets) are precached at install time.
+// Registration is deferred until after page load to avoid blocking initial render.
 func buildServiceWorkerJS(cacheName string, urls []string) string {
 	// Build URL array string
 	var urlsJS strings.Builder
@@ -68,6 +71,7 @@ const CACHE_NAME = %q;
 const URLS_TO_CACHE = %s;
 
 // Install event - precache all pages and assets
+// Note: Registration is deferred until after page load to avoid blocking initial render
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -144,17 +148,21 @@ self.addEventListener('fetch', (event) => {
 }
 
 // GetServiceWorkerRegistration returns the JS code to register the service worker.
+// Registration is deferred until after page load to avoid blocking initial render.
 func GetServiceWorkerRegistration(baseURL string) string {
 	swPath := "/sw.js"
 	if baseURL != "" {
 		swPath = baseURL + "/sw.js"
 	}
 	return fmt.Sprintf(`if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('%s');
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('%s');
+  });
 }`, swPath)
 }
 
 // BuildServiceWorker creates sw.js content in memory and returns it as a string.
+// All pages and assets are precached, but registration is deferred until after page load.
 func BuildServiceWorker(config ServiceWorkerConfig) string {
 	// Collect all URLs to cache
 	allURLs := make([]string, 0, len(config.PageURLs)+len(config.AssetURLs))

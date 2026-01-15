@@ -91,7 +91,7 @@ jobs:
       - name: Build volcano
         run: go build -o volcano .
       - name: Build docs with volcano
-        run: ./volcano ./docs -o ./_site --theme docs --title "🌋 Volcano 🌋" --url="https://wusher.github.io/volcano/" --favicon="docs/logo.png" --og-image="docs/logo.png" --accent-color="#ff0033" --breadcrumbs --instant-nav --view-transitions  --pwa
+        run: ./volcano ./docs -o ./_site --theme docs --title "🌋 Volcano 🌋" --url="https://wusher.github.io/volcano/" --favicon="docs/logo.png" --og-image="docs/logo.png" --accent-color="#ff0033" --breadcrumbs  --view-transitions  --pwa
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
