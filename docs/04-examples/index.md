@@ -15,7 +15,7 @@ volcano ./docs -o ./public --title="My Site" --url="https://example.com" --searc
 
 **Development server:**
 ```bash
-volcano -s ./docs
+volcano serve ./docs
 ```
 
 **Custom theme:**
