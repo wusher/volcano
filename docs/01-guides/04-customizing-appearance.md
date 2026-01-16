@@ -35,7 +35,7 @@ volcano ./docs --css ./custom.css
 ```
 
 :::tip Generate with AI
-Use the [[prompts/custom-theme|custom theme prompt]] to generate a complete theme with AI. Just describe your desired look and get production-ready CSS.
+You can use AI tools like Claude to generate custom CSS themes. Just describe your desired look and get production-ready CSS that works with Volcano's vanilla theme.
 :::
 
 ## Branding
