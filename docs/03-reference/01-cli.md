@@ -62,261 +62,95 @@ volcano css -o my-theme.css
 
 ## Flags
 
-### Output Options
+### Output
 
-#### `-o, --output <dir>`
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-o, --output` | `./output` | Output directory |
 
-Output directory for generated HTML files.
+### Server
 
-- **Default:** `./output`
-- **Type:** String (directory path)
-
-```bash
-volcano ./docs -o ./public
-volcano ./docs --output ./dist
-```
-
-### Server Options
-
-#### `-s, --serve`
-
-Run in serve mode instead of generating.
-
-- **Default:** `false`
-- **Type:** Boolean
-
-```bash
-volcano -s ./public
-volcano --serve ./docs
-```
-
-#### `-p, --port <port>`
-
-Port for the HTTP server.
-
-- **Default:** `1776`
-- **Type:** Integer
-
-```bash
-volcano -s -p 8080 ./public
-volcano -s --port 3000 ./docs
-```
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-s, --serve` | `false` | Run in serve mode |
+| `-p, --port` | `1776` | Server port |
 
 ### Site Metadata
 
-#### `--title <title>`
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--title` | `My Site` | Site title for header and meta tags |
+| `--url` | (none) | Base URL for canonical links and SEO |
+| `--author` | (none) | Author for meta tags |
+| `--og-image` | (none) | Default Open Graph image URL |
+| `--favicon` | (none) | Path to favicon file (.ico, .png, .svg) |
 
-Site title displayed in the header and used in meta tags.
-
-- **Default:** `My Site`
-- **Type:** String
-
-```bash
-volcano ./docs --title="My Project Documentation"
-```
-
-#### `--url <url>`
-
-Base URL for the site. Used for:
-- Canonical link tags
-- Open Graph URLs
-- Subpath prefix for all internal links
-- Sitemap generation
-
-- **Default:** (none)
-- **Type:** URL string
-
-```bash
-volcano ./docs --url="https://docs.example.com"
-```
-
-**Subpath Deployments:**
-
-When deploying to a subpath (e.g., GitHub Pages project sites), include the path:
+For subpath deployments, include the path in `--url`:
 
 ```bash
 volcano ./docs --url="https://username.github.io/my-repo"
 ```
 
-All internal links will be prefixed with `/my-repo/` automatically.
+### Navigation
 
-#### `--author <name>`
-
-Site author for meta tags.
-
-- **Default:** (none)
-- **Type:** String
-
-```bash
-volcano ./docs --author="Jane Smith"
-```
-
-#### `--og-image <url>`
-
-Default Open Graph image URL for social sharing.
-
-- **Default:** (none)
-- **Type:** URL string
-
-```bash
-volcano ./docs --og-image="https://example.com/og-image.png"
-```
-
-#### `--favicon <path>`
-
-Path to favicon file. Supports `.ico`, `.png`, and `.svg` formats.
-
-- **Default:** (none)
-- **Type:** File path
-
-```bash
-volcano ./docs --favicon="./favicon.ico"
-```
-
-### Navigation Options
-
-#### `--top-nav`
-
-Display root-level files in a top navigation bar instead of the sidebar.
-
-- **Default:** `false`
-- **Type:** Boolean
-
-```bash
-volcano ./docs --top-nav
-```
-
-#### `--page-nav`
-
-Show previous/next page navigation at the bottom of each page.
-
-- **Default:** `false`
-- **Type:** Boolean
-
-```bash
-volcano ./docs --page-nav
-```
-
-#### `--breadcrumbs`
-
-Show breadcrumb trail navigation at the top of each page. Breadcrumbs help users understand their location in the site hierarchy and provide quick navigation to parent pages.
-
-- **Default:** `true`
-- **Type:** Boolean
-
-```bash
-# Enable breadcrumbs (default)
-volcano ./docs --breadcrumbs
-
-# Disable breadcrumbs
-volcano ./docs --breadcrumbs=false
-```
-
-#### `--instant-nav`
-
-Enable instant navigation with hover prefetching. When enabled, pages are prefetched when users hover over links, making navigation feel instantaneous.
-
-- **Default:** `false`
-- **Type:** Boolean
-
-```bash
-volcano ./docs --instant-nav
-```
-
-#### `--last-modified`
-
-Show last modified date on pages.
-
-- **Default:** `false`
-- **Type:** Boolean
-
-```bash
-volcano ./docs --last-modified
-```
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--top-nav` | `false` | Show root files in top navigation bar |
+| `--page-nav` | `false` | Show previous/next page links |
+| `--breadcrumbs` | `true` | Show breadcrumb trail |
+| `--instant-nav` | `false` | Enable hover prefetching |
+| `--last-modified` | `false` | Show last modified date |
 
 ### Theming
 
-#### `--theme <name>`
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--theme` | `docs` | Built-in theme: `docs`, `blog`, `vanilla` |
+| `--css` | (none) | Custom CSS file (overrides theme) |
+| `--accent-color` | (none) | Custom accent color (hex, e.g., `#ff6600`) |
 
-Built-in theme to use.
+### Advanced
 
-- **Default:** `docs`
-- **Options:** `docs`, `blog`, `vanilla`
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--search` | `false` | Enable site search with Cmd+K command palette |
+| `--pwa` | `false` | Enable PWA manifest and service worker |
+| `--inline-assets` | `false` | Embed CSS/JS inline instead of external files |
+| `--allow-broken-links` | `false` | Don't fail build on broken internal links |
 
-```bash
-volcano ./docs --theme blog
-volcano ./docs --theme vanilla
+### Configuration
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-c, --config` | (none) | Path to config file |
+
+Place a `volcano.json` in your input directory to set defaults:
+
+```json
+{
+  "title": "My Docs",
+  "output": "./public",
+  "theme": "docs",
+  "search": true,
+  "pwa": true
+}
 ```
 
-#### `--css <path>`
-
-Path to custom CSS file. When specified, overrides the `--theme` flag.
-
-- **Default:** (none)
-- **Type:** File path
-
-```bash
-volcano ./docs --css ./my-theme.css
-```
-
-#### `--accent-color <hex>`
-
-Custom accent color in hex format. This overrides the theme's default accent color for links, buttons, and other UI elements.
-
-- **Default:** (none, uses theme default)
-- **Type:** Hex color string
-
-```bash
-volcano ./docs --accent-color="#ff6600"
-volcano ./docs --accent-color="#3b82f6"
-```
+CLI flags override config file values.
 
 ### Output Control
 
-#### `-q, --quiet`
-
-Suppress non-error output.
-
-- **Default:** `false`
-- **Type:** Boolean
-
-```bash
-volcano ./docs -q
-volcano ./docs --quiet
-```
-
-#### `--verbose`
-
-Enable debug output for troubleshooting.
-
-- **Default:** `false`
-- **Type:** Boolean
-
-```bash
-volcano ./docs --verbose
-```
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-q, --quiet` | `false` | Suppress non-error output |
+| `--verbose` | `false` | Enable debug output |
 
 ### Information
 
-#### `-v, --version`
-
-Show version information.
-
-```bash
-volcano -v
-volcano --version
-```
-
-Output: `volcano version 0.1.0`
-
-#### `-h, --help`
-
-Show help message.
-
-```bash
-volcano -h
-volcano --help
-```
+| Flag | Description |
+|------|-------------|
+| `-v, --version` | Show version |
+| `-h, --help` | Show help |
 
 ## Examples
 

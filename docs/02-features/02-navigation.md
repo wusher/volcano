@@ -34,14 +34,13 @@ The sidebar reflects your folder structure. To change navigation:
 
 ## Search
 
-The sidebar includes a search box that filters the navigation tree:
+Enable site search with `--search`:
 
-- Type to filter pages by name
-- Matching pages remain visible
-- Non-matching pages are hidden
-- Clear the search to show all pages
+```bash
+volcano ./docs --search
+```
 
-Search matches against page titles, not content.
+This adds a command palette (Cmd+K / Ctrl+K) that searches page titles and content.
 
 ## Breadcrumbs
 
@@ -163,21 +162,18 @@ Top nav works well when:
 
 ## Keyboard Shortcuts
 
-Navigate efficiently with keyboard shortcuts. Press `?` anywhere to see the shortcuts modal.
+Press `?` to see all shortcuts.
 
 | Key | Action |
 |-----|--------|
-| `/` | Focus search box |
-| `t` | Toggle dark/light theme |
-| `n` | Go to next page |
-| `p` | Go to previous page |
+| `Cmd+K` / `Ctrl+K` | Open search (requires `--search`) |
+| `t` | Toggle theme |
+| `z` | Toggle zen mode (hides sidebar) |
+| `n` | Next page (requires `--page-nav`) |
+| `p` | Previous page (requires `--page-nav`) |
 | `h` | Go to homepage |
-| `?` | Show shortcuts modal |
-| `Esc` | Close modal or blur search |
-
-:::note
-Previous/next shortcuts (`n` and `p`) require the `--page-nav` flag to be enabled.
-:::
+| `?` | Show shortcuts |
+| `Esc` | Close modal |
 
 ## Instant Navigation
 
