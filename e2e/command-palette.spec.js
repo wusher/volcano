@@ -522,6 +522,31 @@ ${LOREM}
     expect(resultHtml).toContain('&lt;');
     expect(resultHtml).toContain('&gt;');
   });
+
+  test('real keyboard typing triggers search', async ({ page }) => {
+    await page.goto(`http://localhost:${PORT}/`);
+
+    // Open command palette
+    await page.keyboard.press('Meta+k');
+    await page.waitForSelector('.command-palette.open');
+
+    // Use page.type() to simulate real keyboard input character by character
+    // This is different from page.fill() which sets the value programmatically
+    await page.type('#command-palette-input', 'faq', { delay: 50 });
+    await page.waitForTimeout(300);
+
+    // Verify the input value was set by typing
+    const inputValue = await page.inputValue('#command-palette-input');
+    expect(inputValue).toBe('faq');
+
+    // Verify search results appeared
+    const results = await page.locator('.command-palette-result').count();
+    expect(results).toBeGreaterThan(0);
+
+    // Verify the result contains FAQ
+    const resultText = await page.textContent('.command-palette-results');
+    expect(resultText).toContain('FAQ');
+  });
 });
 
 /**
