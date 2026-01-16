@@ -31,8 +31,13 @@ func GenerateSearchJS(baseURL string) string {
             const url = baseURL ? baseURL + '/search-index.json' : '/search-index.json';
             const res = await fetch(url);
             searchIndex = await res.json();
+            // If user typed while index was loading, trigger search now
+            if (input.value.trim()) {
+                doSearch();
+            }
         } catch (e) {
             console.error('Failed to load search index:', e);
+            results.innerHTML = '<div class="command-palette-empty">Failed to load search</div>';
         }
         searchLoading = false;
         return searchIndex;
@@ -81,8 +86,13 @@ func GenerateSearchJS(baseURL string) string {
 
     function doSearch() {
         const query = input.value.trim().toLowerCase();
-        if (!searchIndex || !query) {
+        if (!query) {
             results.innerHTML = '<div class="command-palette-empty">Type to search...</div>';
+            selectedIndex = -1;
+            return;
+        }
+        if (!searchIndex) {
+            results.innerHTML = '<div class="command-palette-empty">Loading...</div>';
             selectedIndex = -1;
             return;
         }
