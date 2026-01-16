@@ -102,8 +102,8 @@ ${LOREM}
     const tocVisibleBefore = await page.isVisible('.toc-sidebar');
     expect(tocVisibleBefore).toBe(true);
 
-    // Navigate to page without TOC
-    await page.click('.tree-nav a[href="/"]');
+    // Navigate to page without TOC - use site title link instead of navigation
+    await page.click('.site-title');
     await page.waitForTimeout(500);
 
     // Verify we're on the home page
@@ -132,7 +132,9 @@ ${LOREM}
     const mobileButtonVisibleBefore = await page.isVisible('.mobile-toc-toggle');
     expect(mobileButtonVisibleBefore).toBe(false);
 
-    // Navigate to page with TOC
+    // Navigate to page with TOC - open drawer first
+    await page.click('.mobile-menu-btn');
+    await page.waitForTimeout(300);
     await page.click('.tree-nav a[href="/guide/"]');
     await page.waitForTimeout(500);
 

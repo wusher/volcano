@@ -187,19 +187,53 @@ const instantNavJSRaw = `
             oldNav.innerHTML = newNav.innerHTML;
         }
 
-        // Update TOC
+        // Update TOC and main-wrapper class
         const oldTOC = document.querySelector(TOC_SELECTOR);
         const newTOC = newDoc.querySelector(TOC_SELECTOR);
+        const mainWrapper = document.querySelector('.main-wrapper');
+
         if (oldTOC && newTOC) {
             oldTOC.innerHTML = newTOC.innerHTML;
             oldTOC.style.display = ''; // Restore display in case it was hidden
+            if (mainWrapper) mainWrapper.classList.add('has-toc');
         } else if (oldTOC && !newTOC) {
             oldTOC.style.display = 'none';
+            if (mainWrapper) mainWrapper.classList.remove('has-toc');
         } else if (!oldTOC && newTOC) {
             // TOC appeared - insert it into the page
-            const contentArea = document.querySelector('.content-area');
-            if (contentArea) {
-                contentArea.insertBefore(newTOC.cloneNode(true), contentArea.firstChild);
+            const mainWrapperForInsert = document.querySelector('.main-wrapper');
+            if (mainWrapperForInsert) {
+                mainWrapperForInsert.appendChild(newTOC.cloneNode(true));
+                mainWrapperForInsert.classList.add('has-toc');
+            }
+        } else {
+            // No TOC in either page
+            if (mainWrapper) mainWrapper.classList.remove('has-toc');
+        }
+
+        // Update mobile TOC button visibility
+        const oldMobileTocButton = document.querySelector('.mobile-toc-toggle');
+        const newMobileTocButton = newDoc.querySelector('.mobile-toc-toggle');
+
+        if (oldMobileTocButton && newMobileTocButton) {
+            // Button exists in both - update it
+            oldMobileTocButton.style.display = '';
+        } else if (oldMobileTocButton && !newMobileTocButton) {
+            // Button should be hidden
+            oldMobileTocButton.style.display = 'none';
+        } else if (!oldMobileTocButton && newMobileTocButton) {
+            // Button should appear - insert it into the mobile header
+            const mobileHeader = document.querySelector('.mobile-header');
+            const searchToggle = mobileHeader ? mobileHeader.querySelector('.mobile-search-toggle') : null;
+            if (mobileHeader) {
+                if (searchToggle) {
+                    mobileHeader.insertBefore(newMobileTocButton.cloneNode(true), searchToggle);
+                } else {
+                    const themeToggle = mobileHeader.querySelector('.mobile-theme-toggle');
+                    if (themeToggle) {
+                        mobileHeader.insertBefore(newMobileTocButton.cloneNode(true), themeToggle);
+                    }
+                }
             }
         }
 
