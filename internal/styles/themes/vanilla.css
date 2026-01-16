@@ -216,12 +216,17 @@ a:hover {
 .mobile-header .mobile-toc-toggle {
 }
 
+/* Search button in mobile header that opens the search modal */
+.mobile-header .mobile-search-toggle {
+}
+
 /* Sun/moon button in mobile header that toggles light/dark mode */
 .mobile-header .mobile-theme-toggle {
 }
 
 /* TOC toggle button hover state */
-.mobile-header .mobile-toc-toggle:hover {
+.mobile-header .mobile-toc-toggle:hover,
+.mobile-header .mobile-search-toggle:hover {
 }
 
 /* TOC toggle button when the table of contents is currently open/visible */
@@ -278,6 +283,14 @@ body.toc-open .mobile-toc-toggle {
 
 /* Theme toggle keyboard focus state for accessibility */
 .theme-toggle:focus {
+}
+
+/* Search toggle button (next to theme toggle on desktop) */
+.search-toggle {
+}
+
+/* Search toggle hover state */
+.search-toggle:hover {
 }
 
 /* Zen mode toggle button (next to theme toggle on desktop) */

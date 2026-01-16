@@ -116,6 +116,12 @@
                 <line x1="21" y1="18" x2="7" y2="18"></line>
             </svg>
         </button>{{end}}
+        {{if .SearchEnabled}}<button class="mobile-search-toggle" aria-label="Open search" onclick="openMobileSearch()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+        </button>{{end}}
         <button class="mobile-theme-toggle" aria-label="Toggle dark mode" onclick="toggleTheme()">
             <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="5"></circle>
@@ -177,23 +183,9 @@
                 </svg>
             </button>
         </div>
-        <!-- Navigation search -->
-        <div class="nav-search">
-            <div class="search-input-wrapper">
-                <svg class="search-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="search" class="search-input" placeholder="Search..." aria-label="Search navigation" id="nav-search-input">
-                <button class="search-clear" aria-label="Clear search" hidden>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            </div>
-            <div id="search-results-status" class="sr-only" aria-live="polite"></div>
-        </div>
         <nav class="tree-nav" aria-label="Site navigation">
 {{.Navigation}}
         </nav>
-        <div class="search-empty" hidden>
-            <p>No pages found</p>
-        </div>
     </aside>
 
     <!-- Main content wrapper -->
@@ -228,7 +220,13 @@
 
     <!-- Desktop toolbar (theme toggle + focus mode) -->
     <div class="desktop-toolbar">
-        <button class="zen-toggle" aria-label="Toggle zen mode" onclick="toggleZenMode()">
+{{if .SearchEnabled}}        <button class="search-toggle" aria-label="Open search" onclick="openMobileSearch()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+        </button>
+{{end}}        <button class="zen-toggle" aria-label="Toggle zen mode" onclick="toggleZenMode()">
             <svg class="zen-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
             </svg>
@@ -263,8 +261,8 @@
         <h2>Keyboard Shortcuts</h2>
         <dl class="shortcuts-list">
             <div class="shortcut-group">
-                <dt><kbd>/</kbd></dt>
-                <dd>Focus search</dd>
+                <dt><kbd>⌘K</kbd></dt>
+                <dd>Open search</dd>
             </div>
             <div class="shortcut-group">
                 <dt><kbd>t</kbd></dt>
@@ -398,87 +396,6 @@
         expandActivePath();
         // Re-run after instant navigation
         document.addEventListener('instant:navigated', expandActivePath);
-
-        // Navigation search
-        (function() {
-            const input = document.getElementById('nav-search-input');
-            const clearBtn = document.querySelector('.search-clear');
-            const status = document.getElementById('search-results-status');
-            const emptyState = document.querySelector('.search-empty');
-            let debounceTimer;
-            let allNodes = [];
-
-            function initializeSearch() {
-                const tree = document.querySelector('.tree-nav');
-                allNodes = tree ? tree.querySelectorAll('[data-search-text]') : [];
-            }
-
-            function filter() {
-                const query = input.value.trim().toLowerCase();
-                if (!query) {
-                    clear();
-                    return;
-                }
-
-                clearBtn.hidden = false;
-                let matchCount = 0;
-
-                allNodes.forEach(function(node) {
-                    const text = node.getAttribute('data-search-text').toLowerCase();
-                    const matches = text.includes(query);
-
-                    if (matches) {
-                        matchCount++;
-                        node.hidden = false;
-                        node.classList.add('search-match');
-                        expandParents(node);
-                    } else {
-                        node.hidden = true;
-                        node.classList.remove('search-match');
-                    }
-                });
-
-                status.textContent = matchCount ? matchCount + ' result' + (matchCount === 1 ? '' : 's') + ' found' : 'No results found';
-                emptyState.hidden = matchCount > 0;
-            }
-
-            function expandParents(node) {
-                let parent = node.parentElement.closest('[role="treeitem"]');
-                while (parent) {
-                    parent.classList.add('expanded');
-                    parent.hidden = false;
-                    parent = parent.parentElement.closest('[role="treeitem"]');
-                }
-            }
-
-            function clear() {
-                input.value = '';
-                clearBtn.hidden = true;
-                emptyState.hidden = true;
-                status.textContent = '';
-                allNodes.forEach(function(node) {
-                    node.hidden = false;
-                    node.classList.remove('search-match');
-                });
-            }
-
-            if (input) {
-                input.addEventListener('input', function() {
-                    clearTimeout(debounceTimer);
-                    debounceTimer = setTimeout(filter, 150);
-                });
-            }
-
-            if (clearBtn) {
-                clearBtn.addEventListener('click', clear);
-            }
-
-            // Initialize on page load
-            initializeSearch();
-
-            // Reinitialize after instant navigation
-            document.addEventListener('instant:navigated', initializeSearch);
-        })();
 
         // Scroll progress indicator
         (function() {
@@ -625,9 +542,6 @@
                 '?': function() { showShortcutsModal(); }
             };
 
-            // Search input is persistent (in sidebar), so only query once
-            const searchInput = document.getElementById('nav-search-input');
-            if (searchInput) shortcuts['/'] = function() { searchInput.focus(); };
 
             // Update page navigation shortcuts (p/n keys)
             function updatePageNavShortcuts() {
@@ -694,7 +608,7 @@
     </script>
 {{end}}
 {{if .SearchEnabled}}
-<script>(function(){var l=false;document.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();if(l)return;l=true;var s=document.createElement('script');s.src='{{.BaseURL}}/search.js';document.body.appendChild(s);}});})();</script>
+<script>(function(){var l=false;window.openMobileSearch=function(){if(l){window.dispatchEvent(new CustomEvent('open-search'));return;}l=true;var s=document.createElement('script');s.src='{{.BaseURL}}/search.js';s.onload=function(){window.dispatchEvent(new CustomEvent('open-search'));};document.body.appendChild(s);};document.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openMobileSearch();}});})();</script>
 {{end}}
 {{if .PWAEnabled}}    <script>
 if ('serviceWorker' in navigator) {

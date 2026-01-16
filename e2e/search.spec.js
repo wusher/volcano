@@ -35,6 +35,40 @@ ${LOREM}
 Advanced topics and techniques.
 
 ${LOREM}
+`,
+      'long-page.md': `# Long Page With Headers
+
+Introduction paragraph.
+
+${LOREM}
+${LOREM}
+
+## First Section
+
+Content for the first section.
+
+${LOREM}
+${LOREM}
+
+## Target Section
+
+This is the target section we want to scroll to.
+
+${LOREM}
+${LOREM}
+
+## Another Section
+
+More content below.
+
+${LOREM}
+${LOREM}
+
+## Final Section
+
+End of the page.
+
+${LOREM}
 `
     });
 
@@ -117,5 +151,39 @@ ${LOREM}
     const paletteHidden = await page.isHidden('.command-palette') ||
       !(await page.locator('.command-palette.open').count());
     expect(paletteHidden).toBe(true);
+  });
+
+  test('clicking header search result scrolls to the header', async ({ page }) => {
+    await page.goto(`http://localhost:${PORT}/`);
+
+    // Open command palette
+    await page.keyboard.press('Meta+k');
+    await page.waitForSelector('.command-palette.open');
+
+    // Search for a specific header "Target Section"
+    await page.fill('#command-palette-input', 'target section');
+    await page.waitForTimeout(300);
+
+    // Verify we found a header result (h2)
+    const resultType = await page.textContent('.command-palette-result .result-type');
+    expect(resultType).toBe('h2');
+
+    // Click the result
+    await page.click('.command-palette-result');
+    await page.waitForTimeout(500);
+
+    // Should navigate to the page with the hash
+    expect(page.url()).toContain('/long-page/');
+    expect(page.url()).toContain('#target-section');
+
+    // The target header should be visible/scrolled into view
+    const targetHeader = page.locator('#target-section');
+    await expect(targetHeader).toBeVisible();
+
+    // Check that the header is near the top of the viewport (scrolled to)
+    const boundingBox = await targetHeader.boundingBox();
+    expect(boundingBox).not.toBeNull();
+    // The header should be within the top portion of the viewport (allowing for some offset)
+    expect(boundingBox.y).toBeLessThan(200);
   });
 });
