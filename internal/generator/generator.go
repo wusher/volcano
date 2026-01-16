@@ -351,7 +351,7 @@ func (g *Generator) Generate() (*Result, error) {
 		g.logger.Verbose("  search-index.json")
 
 		// Write search.js
-		searchJS := search.GenerateSearchJS("")
+		searchJS := search.GenerateSearchJS(g.baseURL)
 		searchJSPath := filepath.Join(g.config.OutputDir, "search.js")
 		if err := os.WriteFile(searchJSPath, []byte(searchJS), 0644); err != nil {
 			return nil, fmt.Errorf("failed to write search.js: %w", err)
