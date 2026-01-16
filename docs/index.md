@@ -33,7 +33,7 @@ go install github.com/wusher/volcano@latest
 volcano ./my-notes --title="My Site"
 
 # Preview it
-volcano -s ./output
+volcano serve ./output
 ```
 
 Your folder structure becomes the site navigation. That's it.

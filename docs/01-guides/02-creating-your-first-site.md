@@ -24,7 +24,7 @@ volcano ./docs -o ./public --title="My Site"
 ## Preview
 
 ```bash
-volcano -s ./public
+volcano serve ./public
 ```
 
 Open http://localhost:1776
@@ -34,7 +34,7 @@ Open http://localhost:1776
 Serve source files directly (regenerates on each request):
 
 ```bash
-volcano -s ./docs
+volcano serve ./docs
 ```
 
 ## Output Structure

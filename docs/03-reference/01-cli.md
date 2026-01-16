@@ -23,19 +23,19 @@ volcano ./docs -o ./public --title="My Documentation"
 Serve a generated site or regenerate on request:
 
 ```bash
-volcano -s <folder> [flags]
+volcano serve <folder> [flags]
 ```
 
 **Static serving (pre-generated):**
 
 ```bash
-volcano -s ./public -p 8080
+volcano serve ./public -p 8080
 ```
 
 **Dynamic regeneration (source folder):**
 
 ```bash
-volcano -s ./docs -p 8080
+volcano serve ./docs -p 8080
 ```
 
 When serving a source folder, pages are regenerated on each request.
@@ -70,9 +70,10 @@ volcano css -o my-theme.css
 
 ### Server
 
+Use `volcano serve <folder>` instead of the build command:
+
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-s, --serve` | `false` | Run in serve mode |
 | `-p, --port` | `1776` | Server port |
 
 ### Site Metadata
@@ -176,7 +177,7 @@ volcano ./docs \
 ### Development Server
 
 ```bash
-volcano -s -p 3000 ./docs
+volcano serve -p 3000 ./docs
 ```
 
 Serves with dynamic regeneration at `http://localhost:3000`.
@@ -250,7 +251,7 @@ When broken links are found:
 
 ### Dynamic Server
 
-When using `volcano -s ./docs` (dynamic serving), broken links are shown inline on the page with detailed error messages instead of failing silently.
+When using `volcano serve ./docs` (dynamic serving), broken links are shown inline on the page with detailed error messages instead of failing silently.
 
 ## Generated Files
 

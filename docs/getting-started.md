@@ -46,7 +46,7 @@ volcano . -o ./public --title="My Docs"
 ## Preview
 
 ```bash
-volcano -s ./public
+volcano serve ./public
 ```
 
 Open [http://localhost:1776](http://localhost:1776)

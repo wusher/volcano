@@ -8,8 +8,8 @@ Volcano offers two ways to preview your site:
 
 | Mode | Command | Best For |
 |------|---------|----------|
-| Static | `volcano -s ./output` | Testing final output |
-| Dynamic | `volcano -s ./docs` | Active development |
+| Static | `volcano serve ./output` | Testing final output |
+| Dynamic | `volcano serve ./docs` | Active development |
 
 ## Static Server Mode
 
@@ -20,7 +20,7 @@ Serve pre-generated HTML files:
 volcano ./docs -o ./output --title="My Site"
 
 # Then serve the output
-volcano -s ./output
+volcano serve ./output
 ```
 
 Open [http://localhost:1776](http://localhost:1776)
@@ -40,7 +40,7 @@ Open [http://localhost:1776](http://localhost:1776)
 Render pages on-the-fly from markdown source:
 
 ```bash
-volcano -s ./docs
+volcano serve ./docs
 ```
 
 Volcano detects that `./docs` contains markdown files (not generated HTML) and automatically uses dynamic rendering.
@@ -61,10 +61,10 @@ Change the server port with `-p`:
 
 ```bash
 # Static mode on port 8080
-volcano -s -p 8080 ./output
+volcano serve -p 8080 ./output
 
 # Dynamic mode on port 3000
-volcano -s -p 3000 ./docs
+volcano serve -p 3000 ./docs
 ```
 
 ## Development Cycle
@@ -73,7 +73,7 @@ volcano -s -p 3000 ./docs
 
 Using dynamic mode (fastest iteration):
 
-1. Start the server: `volcano -s ./docs`
+1. Start the server: `volcano serve ./docs`
 2. Edit your markdown files
 3. Refresh your browser to see changes
 4. Repeat
@@ -82,7 +82,7 @@ Using dynamic mode (fastest iteration):
 
 If using custom CSS:
 
-1. Start the server: `volcano -s ./output`
+1. Start the server: `volcano serve ./output`
 2. Edit your CSS file
 3. Regenerate: `volcano ./docs --css ./custom.css`
 4. Refresh your browser
@@ -160,7 +160,7 @@ Volcano automatically validates all internal links during generation. If any bro
 
 This catches broken wiki links, markdown links, and navigation references before deployment.
 
-In dynamic serve mode (`volcano -s ./docs`), broken links are displayed inline on the page with helpful error messages.
+In dynamic serve mode (`volcano serve ./docs`), broken links are displayed inline on the page with helpful error messages.
 
 ## Manual Testing
 
@@ -171,7 +171,7 @@ After generating, you can also manually verify your site:
 volcano ./docs -o ./output
 
 # Start the server
-volcano -s ./output
+volcano serve ./output
 ```
 
 Navigate through your site checking:
@@ -194,7 +194,7 @@ For sites with many pages:
 
 For the fastest preview cycle:
 
-1. Start dynamic server: `volcano -s ./docs`
+1. Start dynamic server: `volcano serve ./docs`
 2. Make your changes
 3. Refresh — no regeneration needed
 
@@ -206,7 +206,7 @@ If you see "address already in use":
 
 ```bash
 # Use a different port
-volcano -s -p 8081 ./output
+volcano serve -p 8081 ./output
 
 # Or find and stop the process using the port
 lsof -i :1776
@@ -232,7 +232,7 @@ The title is set at generation time:
 volcano ./docs --title="Correct Title"
 
 # Serving doesn't change the title
-volcano -s ./output
+volcano serve ./output
 ```
 
 ## Next Steps
