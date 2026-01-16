@@ -181,6 +181,7 @@ a:hover {
 
 .mobile-header .mobile-menu-btn,
 .mobile-header .mobile-toc-toggle,
+.mobile-header .mobile-search-toggle,
 .mobile-header .mobile-theme-toggle {
   background: none;
   border: none;
@@ -188,7 +189,8 @@ a:hover {
   color: var(--text-primary);
 }
 
-.mobile-header .mobile-toc-toggle:hover {
+.mobile-header .mobile-toc-toggle:hover,
+.mobile-header .mobile-search-toggle:hover {
   color: var(--text-secondary);
 }
 
@@ -220,7 +222,8 @@ body.toc-open .mobile-toc-toggle {
    ========================================================================== */
 
 .theme-toggle,
-.zen-toggle {
+.zen-toggle,
+.search-toggle {
   background: none;
   border: none;
   cursor: pointer;
@@ -228,7 +231,8 @@ body.toc-open .mobile-toc-toggle {
 }
 
 .theme-toggle:hover,
-.zen-toggle:hover {
+.zen-toggle:hover,
+.search-toggle:hover {
   color: var(--text-primary);
 }
 

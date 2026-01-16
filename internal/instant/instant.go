@@ -131,8 +131,18 @@ const instantNavJSRaw = `
                 // Update page content
                 updateContent(newDoc);
 
-                // Scroll to top
-                window.scrollTo({ top: 0, behavior: 'instant' });
+                // Scroll to anchor if URL has a hash, otherwise scroll to top
+                const hash = new URL(url, window.location.origin).hash;
+                if (hash) {
+                    const target = document.querySelector(hash);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'instant' });
+                    } else {
+                        window.scrollTo({ top: 0, behavior: 'instant' });
+                    }
+                } else {
+                    window.scrollTo({ top: 0, behavior: 'instant' });
+                }
 
                 // Re-initialize page-specific features
                 reinitialize();

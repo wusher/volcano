@@ -199,7 +199,8 @@ body {
   gap: 0.5rem;
 }
 
-.zen-toggle {
+.zen-toggle,
+.search-toggle {
   display: flex;
   align-items: center;
   padding: 0.5rem;
