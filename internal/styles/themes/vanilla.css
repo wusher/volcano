@@ -285,6 +285,14 @@ body.toc-open .mobile-toc-toggle {
 .theme-toggle:focus {
 }
 
+/* Theme toggle focus state for sun icon */
+.theme-toggle:focus .sun-icon {
+}
+
+/* Theme toggle focus state for moon icon */
+.theme-toggle:focus .moon-icon {
+}
+
 /* Search toggle button (next to theme toggle on desktop) */
 .search-toggle {
 }
@@ -367,6 +375,10 @@ body.toc-open .mobile-toc-toggle {
    Hierarchical list of pages and folders in the sidebar.
    Folders can expand/collapse to show nested pages.
    ============================================================================= */
+
+/* The navigation tree container */
+.tree-nav {
+}
 
 /* Individual page links in the navigation tree */
 .tree-nav a {
