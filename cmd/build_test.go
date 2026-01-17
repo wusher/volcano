@@ -84,7 +84,7 @@ func TestBuildInvalidTheme(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	err := Build([]string{"--theme=nonexistent", inputDir}, &stdout, &stderr)
+	err := Build([]string{"--theme=nonexistent", "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if err == nil {
 		t.Error("Build with invalid theme should return error")
 	}
@@ -101,7 +101,7 @@ func TestBuildNonexistentCSS(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	err := Build([]string{"--css=/nonexistent/style.css", inputDir}, &stdout, &stderr)
+	err := Build([]string{"--css=/nonexistent/style.css", "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if err == nil {
 		t.Error("Build with nonexistent CSS should return error")
 	}
@@ -123,7 +123,7 @@ func TestBuildSuccess(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	err := Build([]string{"-o", outputDir, "--title=Test", inputDir}, &stdout, &stderr)
+	err := Build([]string{"-o", outputDir, "--title=Test", "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if err != nil {
 		t.Errorf("Build should succeed, got error: %v", err)
 	}
@@ -148,7 +148,7 @@ func TestBuildWithOutputFlag(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	err := Build([]string{"--output", outputDir, inputDir}, &stdout, &stderr)
+	err := Build([]string{"--output", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if err != nil {
 		t.Errorf("Build should succeed, got error: %v", err)
 	}
@@ -171,7 +171,7 @@ func TestBuildWithQuietFlag(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	err := Build([]string{"-q", "-o", outputDir, inputDir}, &stdout, &stderr)
+	err := Build([]string{"-q", "-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if err != nil {
 		t.Errorf("Build should succeed, got error: %v", err)
 	}
@@ -200,7 +200,7 @@ func TestBuildWithCustomCSS(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	err := Build([]string{"--css", cssPath, "-o", outputDir, inputDir}, &stdout, &stderr)
+	err := Build([]string{"--css", cssPath, "-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if err != nil {
 		t.Errorf("Build with custom CSS should succeed, got error: %v", err)
 	}
@@ -474,7 +474,7 @@ func TestApplyFileConfig(t *testing.T) {
 			PWA:          config.BoolPtr(true),
 		}
 
-		applyFileConfig(cfg, fileCfg)
+		applyFileConfig(cfg, fileCfg, newConfigTracker())
 
 		if cfg.OutputDir != "./public" {
 			t.Errorf("OutputDir = %q, want %q", cfg.OutputDir, "./public")
@@ -530,7 +530,7 @@ func TestApplyFileConfig(t *testing.T) {
 
 		fileCfg := &config.FileConfig{}
 
-		applyFileConfig(cfg, fileCfg)
+		applyFileConfig(cfg, fileCfg, newConfigTracker())
 
 		if cfg.Title != originalTitle {
 			t.Errorf("Title changed from %q to %q", originalTitle, cfg.Title)
@@ -548,7 +548,7 @@ func TestApplyFileConfig(t *testing.T) {
 			PWA:   config.BoolPtr(true),
 		}
 
-		applyFileConfig(cfg, fileCfg)
+		applyFileConfig(cfg, fileCfg, newConfigTracker())
 
 		if cfg.Title != "Custom Title" {
 			t.Errorf("Title = %q, want %q", cfg.Title, "Custom Title")
@@ -579,6 +579,7 @@ func TestBuildWithConfigFile(t *testing.T) {
 	configContent := `{
 		"title": "Config Title",
 		"output": "` + outputDir + `",
+		"url": "https://example.com",
 		"pwa": true
 	}`
 	configPath := filepath.Join(inputDir, "volcano.json")

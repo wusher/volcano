@@ -61,7 +61,7 @@ func TestIntegrationServer_PortValidation(t *testing.T) {
 	outputDir := t.TempDir()
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Failed to generate site: %s", stderr.String())
 	}
@@ -84,7 +84,7 @@ func TestIntegrationServer_ValidSiteServing(t *testing.T) {
 	outputDir := t.TempDir()
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Failed to generate site: %s", stderr.String())
 	}
@@ -127,7 +127,7 @@ func TestIntegrationServer_SpecialCharactersInPaths(t *testing.T) {
 
 	// Generate site
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Failed to generate site: %s", stderr.String())
 	}

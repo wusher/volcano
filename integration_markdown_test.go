@@ -60,7 +60,7 @@ func TestIntegrationMarkdown_WikiLinksComplex(t *testing.T) {
 
 	// Generate site
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Failed to generate site: %s", stderr.String())
 	}
@@ -117,7 +117,7 @@ func TestIntegrationMarkdown_AdmonitionEdgeCases(t *testing.T) {
 
 	// Generate site
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Failed to generate site: %s", stderr.String())
 	}
@@ -221,7 +221,7 @@ func mixed() {
 
 	// Generate site
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Failed to generate site: %s", stderr.String())
 	}
@@ -272,7 +272,7 @@ func TestIntegrationMarkdown_ExternalLinks(t *testing.T) {
 
 	// Generate site
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		// Check if it failed due to broken internal link (expected)
 		errOutput := stderr.String()
@@ -334,7 +334,7 @@ func TestIntegrationMarkdown_WikiLinksWithNumberPrefixes(t *testing.T) {
 
 	// Generate site from testdata fixtures
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Failed to generate site (exit code %d):\nstdout: %s\nstderr: %s",
 			exitCode, stdout.String(), stderr.String())
@@ -398,7 +398,7 @@ func TestIntegrationMarkdown_WikiLinksWithMdAnchor(t *testing.T) {
 
 	// Generate site from testdata fixtures
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Failed to generate site (exit code %d):\nstdout: %s\nstderr: %s",
 			exitCode, stdout.String(), stderr.String())
@@ -444,7 +444,7 @@ func TestIntegrationMarkdown_WikiLinksWithAttachments(t *testing.T) {
 
 	// Generate site from testdata fixtures
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Failed to generate site (exit code %d):\nstdout: %s\nstderr: %s",
 			exitCode, stdout.String(), stderr.String())

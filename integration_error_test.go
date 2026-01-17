@@ -101,7 +101,7 @@ This admonition block doesn't have a closing !!!
 	}
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Errorf("Should handle unclosed admonition gracefully, got exit code %d, stderr: %s", exitCode, stderr.String())
 	}
@@ -122,7 +122,7 @@ func TestIntegrationError_CorruptedMarkdown_InvalidCodeBlock(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Errorf("Should handle malformed code block gracefully, got exit code %d, stderr: %s", exitCode, stderr.String())
 	}
@@ -137,7 +137,7 @@ func TestIntegrationError_InvalidTheme(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 
 	// Test with invalid theme
-	exitCode := Run([]string{"-o", outputDir, "--theme=nonexistent", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--theme=nonexistent", "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode == 0 {
 		t.Error("Should fail with invalid theme")
 	}
@@ -157,7 +157,7 @@ func TestIntegrationError_NonExistentCSS(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 
 	// Test with non-existent custom CSS
-	exitCode := Run([]string{"-o", outputDir, "--css=/non/existent/style.css", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--css=/non/existent/style.css", "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode == 0 {
 		t.Error("Should fail with non-existent custom CSS")
 	}
@@ -171,20 +171,18 @@ func TestIntegrationError_InvalidFaviconPath(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
 
-	// Test with non-existent favicon
-	_ = Run([]string{"-o", outputDir, "--favicon=/non/existent/favicon.ico", "./example"}, &stdout, &stderr)
+	// Test with non-existent favicon - build should fail during generation when favicon can't be found
+	exitCode := Run([]string{"-o", outputDir, "--favicon=/non/existent/favicon.ico", "--url=https://example.com", "./example"}, &stdout, &stderr)
 
-	// The application warns but continues - check both stdout and stderr for warning
-	stdoutOutput := stdout.String()
-	stderrOutput := stderr.String()
-	output := stdoutOutput + stderrOutput
-	if !strings.Contains(output, "favicon") || !strings.Contains(output, "not found") {
-		t.Errorf("Should warn about missing favicon, stdout: %s, stderr: %s", stdoutOutput, stderrOutput)
+	// The generation should fail with error about missing favicon
+	if exitCode == 0 {
+		t.Error("Build should fail when favicon file does not exist")
 	}
 
-	// Should still generate files despite the warning
-	if _, err := os.Stat(filepath.Join(outputDir, "index.html")); os.IsNotExist(err) {
-		t.Error("Should still generate HTML despite missing favicon")
+	// Check error message mentions favicon
+	stderrOutput := stderr.String()
+	if !strings.Contains(stderrOutput, "favicon") {
+		t.Errorf("Error should mention favicon, got: %s", stderrOutput)
 	}
 }
 
@@ -198,7 +196,7 @@ func TestIntegrationError_ConflictingFlags(t *testing.T) {
 
 	// Test potentially conflicting flags (if any exist)
 	// This test assumes some flags might conflict - adjust based on actual flag behavior
-	exitCode := Run([]string{"-o", outputDir, "--theme=docs", "--theme=blog", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--theme=docs", "--theme=blog", "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode == 0 {
 		// If the command doesn't fail, that's also valid - just test it doesn't crash
 		t.Log("Conflicting theme flags handled gracefully")
@@ -227,7 +225,7 @@ func TestIntegrationError_EmptyInputDirectory(t *testing.T) {
 
 	// Don't create any files in inputDir
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Errorf("Should handle empty directory gracefully, got exit code %d, stderr: %s", exitCode, stderr.String())
 	}

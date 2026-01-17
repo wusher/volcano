@@ -38,7 +38,7 @@ func TestIntegrationGenerateFromExample(t *testing.T) {
 
 	// Run the generator
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "--title=Integration Test", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--title=Integration Test", "--url=https://example.com", "./example"}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Generation failed with exit code %d, stderr: %s", exitCode, stderr.String())
@@ -85,7 +85,7 @@ func TestIntegrationHTMLContent(t *testing.T) {
 
 	// Run the generator
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "--title=Content Test", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--title=Content Test", "--url=https://example.com", "./example"}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Generation failed with exit code %d, stderr: %s", exitCode, stderr.String())
@@ -134,7 +134,7 @@ func TestIntegrationSyntaxHighlighting(t *testing.T) {
 
 	// Run the generator
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Generation failed with exit code %d, stderr: %s", exitCode, stderr.String())
@@ -167,7 +167,7 @@ func TestIntegrationNavigation(t *testing.T) {
 
 	// Run the generator
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Generation failed with exit code %d, stderr: %s", exitCode, stderr.String())
@@ -207,7 +207,7 @@ func TestIntegration404Page(t *testing.T) {
 
 	// Run the generator
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Generation failed with exit code %d, stderr: %s", exitCode, stderr.String())
@@ -238,7 +238,7 @@ func TestIntegration404Page(t *testing.T) {
 func TestIntegrationStory14_TOC(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -261,7 +261,7 @@ func TestIntegrationStory14_TOC(t *testing.T) {
 func TestIntegrationStory15_Breadcrumbs(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "--title=Test Site", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--title=Test Site", "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -283,7 +283,7 @@ func TestIntegrationStory15_Breadcrumbs(t *testing.T) {
 func TestIntegrationStory16_PageNavigation(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "--page-nav", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--page-nav", "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -304,7 +304,7 @@ func TestIntegrationStory16_PageNavigation(t *testing.T) {
 func TestIntegrationStory17_HeadingAnchors(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -325,7 +325,7 @@ func TestIntegrationStory17_HeadingAnchors(t *testing.T) {
 func TestIntegrationStory18_ExternalLinks(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -344,7 +344,7 @@ func TestIntegrationStory18_ExternalLinks(t *testing.T) {
 func TestIntegrationStory19_CopyButton(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -365,7 +365,7 @@ func TestIntegrationStory19_CopyButton(t *testing.T) {
 func TestIntegrationStory20_KeyboardShortcuts(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -387,7 +387,7 @@ func TestIntegrationStory20_KeyboardShortcuts(t *testing.T) {
 func TestIntegrationStory21_PrintStyles(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -412,7 +412,7 @@ func TestIntegrationStory21_PrintStyles(t *testing.T) {
 func TestIntegrationStory22_ReadingTime(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -433,7 +433,7 @@ func TestIntegrationStory22_ReadingTime(t *testing.T) {
 func TestIntegrationStory24_ScrollProgress(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -454,7 +454,7 @@ func TestIntegrationStory24_ScrollProgress(t *testing.T) {
 func TestIntegrationStory25_BackToTop(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -528,7 +528,7 @@ func TestIntegrationStory28_Favicon(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "--favicon=" + faviconPath, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--favicon=" + faviconPath, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -546,7 +546,7 @@ func TestIntegrationStory28_Favicon(t *testing.T) {
 func TestIntegrationStory29_Admonitions(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -570,7 +570,7 @@ func TestIntegrationStory29_Admonitions(t *testing.T) {
 func TestIntegrationStory30_LineHighlighting(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -591,7 +591,7 @@ func TestIntegrationStory30_LineHighlighting(t *testing.T) {
 func TestIntegrationStory31_SmoothScroll(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -616,7 +616,7 @@ func TestIntegrationStory31_SmoothScroll(t *testing.T) {
 func TestIntegrationStory32_ClickableFolders(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -634,7 +634,7 @@ func TestIntegrationStory32_ClickableFolders(t *testing.T) {
 func TestIntegrationStory33_NavSearch(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -652,7 +652,7 @@ func TestIntegrationStory33_NavSearch(t *testing.T) {
 func TestIntegrationStory34_TopNav(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "--top-nav", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--top-nav", "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -676,7 +676,7 @@ func TestIntegrationStory34_TopNav(t *testing.T) {
 func TestIntegrationStory35_AutoIndex(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -700,7 +700,7 @@ func TestIntegrationStory35_AutoIndex(t *testing.T) {
 func TestIntegrationStory36_H1Labels(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -719,7 +719,7 @@ func TestIntegrationStory36_H1Labels(t *testing.T) {
 func TestIntegrationStory37_FilenamePrefix(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -987,7 +987,7 @@ func TestIntegrationGenerate_WithViewTransitions(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "--view-transitions", inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--view-transitions", "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -1018,7 +1018,7 @@ func TestIntegrationGenerate_WithBreadcrumbs(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "--breadcrumbs", inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--breadcrumbs", "--url=https://example.com", inputDir}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
