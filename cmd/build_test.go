@@ -472,7 +472,6 @@ func TestApplyFileConfig(t *testing.T) {
 			InstantNav:   config.BoolPtr(true),
 			InlineAssets: config.BoolPtr(true),
 			PWA:          config.BoolPtr(true),
-			LastModified: config.BoolPtr(true),
 		}
 
 		applyFileConfig(cfg, fileCfg)
@@ -521,9 +520,6 @@ func TestApplyFileConfig(t *testing.T) {
 		}
 		if !cfg.PWA {
 			t.Error("PWA should be true")
-		}
-		if !cfg.ShowLastMod {
-			t.Error("ShowLastMod should be true")
 		}
 	})
 

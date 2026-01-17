@@ -1,22 +1,16 @@
 # Features
 
-## Content
-
-- [[markdown-syntax]] — GitHub Flavored Markdown
-- [[wiki-links]] — Obsidian-style `[[Page Name]]` links
-- [[admonitions]] — Note, tip, warning, info callouts
-- [[code-blocks]] — Syntax highlighting with copy button
-
 ## Navigation
 
-- [[navigation]] — Sidebar, breadcrumbs, TOC, search, keyboard shortcuts
+- [[navigation]] — Navigation overview
+- [[search]] — Command palette (Cmd+K)
+- [[breadcrumbs]] — Hierarchical page location
+- [[table-of-contents]] — Auto-generated TOC sidebar
+- [[page-navigation]] — Previous/next page links
+- [[top-navigation]] — Horizontal nav bar
+- [[instant-navigation]] — Hover prefetching for fast loads
+- [[keyboard-shortcuts]] — Navigate with keyboard
 
-## Appearance
+## Advanced
 
-- [[theming]] — Built-in themes and custom CSS
-
-## Automation
-
-- [[auto-index]] — Automatic folder index pages
-- [[reading-time]] — Estimated reading time
-- [[seo-and-meta]] — Auto-generated SEO tags
+- [[progressive-web-app]] — PWA support for offline access

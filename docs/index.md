@@ -29,11 +29,11 @@ Point Volcano at any markdown folder and get a beautiful, navigable website. Wor
 # Install
 go install github.com/wusher/volcano@latest
 
-# Generate a site
-volcano ./my-notes --title="My Site"
+# Preview your notes
+volcano serve ./my-notes --title="My Site"
 
-# Preview it
-volcano serve ./output
+# Or build for deployment
+volcano ./my-notes --title="My Site"
 ```
 
 Your folder structure becomes the site navigation. That's it.

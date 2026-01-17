@@ -611,7 +611,6 @@ func TestGenerateWithAllOptionsEnabled(t *testing.T) {
 		SiteURL:     "https://example.com",
 		Theme:       "docs",
 		ShowPageNav: true,
-		ShowLastMod: true,
 		InstantNav:  true,
 		AccentColor: "#ff0000",
 	}
@@ -1448,10 +1447,9 @@ func TestGenerateWithLastMod(t *testing.T) {
 
 	var buf bytes.Buffer
 	config := Config{
-		InputDir:    inputDir,
-		OutputDir:   outputDir,
-		Title:       "Test",
-		ShowLastMod: true,
+		InputDir:  inputDir,
+		OutputDir: outputDir,
+		Title:     "Test",
 	}
 
 	g, err := New(config, &buf)

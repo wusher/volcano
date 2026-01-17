@@ -19,7 +19,6 @@ func Generate(cfg *Config, w io.Writer) error {
 		Author:           cfg.Author,
 		OGImage:          cfg.OGImage,
 		FaviconPath:      cfg.FaviconPath,
-		ShowLastMod:      cfg.ShowLastMod,
 		TopNav:           cfg.TopNav,
 		ShowPageNav:      cfg.ShowPageNav,
 		ShowBreadcrumbs:  cfg.ShowBreadcrumbs,

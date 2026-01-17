@@ -52,7 +52,6 @@ func Build(args []string, stdout, stderr io.Writer) error {
 	fs.StringVar(&cfg.Author, "author", cfg.Author, "Site author")
 	fs.StringVar(&cfg.OGImage, "og-image", cfg.OGImage, "Default Open Graph image URL")
 	fs.StringVar(&cfg.FaviconPath, "favicon", cfg.FaviconPath, "Path to favicon file")
-	fs.BoolVar(&cfg.ShowLastMod, "last-modified", cfg.ShowLastMod, "Show last modified date")
 	fs.BoolVar(&cfg.TopNav, "top-nav", cfg.TopNav, "Display root files in top navigation bar")
 	fs.BoolVar(&cfg.ShowPageNav, "page-nav", cfg.ShowPageNav, "Show previous/next page navigation")
 	fs.BoolVar(&cfg.ShowBreadcrumbs, "breadcrumbs", cfg.ShowBreadcrumbs, "Show breadcrumb navigation")
@@ -188,9 +187,6 @@ func printBuildUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  --pwa                Enable PWA manifest and service worker for offline support")
 	_, _ = fmt.Fprintln(w, "  --search             Enable site search with Cmd+K command palette")
 	_, _ = fmt.Fprintln(w, "  --allow-broken-links Don't fail build on broken internal links")
-	_, _ = fmt.Fprintln(w, "")
-	_, _ = fmt.Fprintln(w, "Content:")
-	_, _ = fmt.Fprintln(w, "  --last-modified      Show last modified date on pages")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "SEO:")
 	_, _ = fmt.Fprintln(w, "  --og-image <path>    Default Open Graph image")
@@ -375,8 +371,5 @@ func applyFileConfig(cfg *Config, fileCfg *config.FileConfig) {
 	}
 	if fileCfg.Search != nil {
 		cfg.Search = *fileCfg.Search
-	}
-	if fileCfg.LastModified != nil {
-		cfg.ShowLastMod = *fileCfg.LastModified
 	}
 }

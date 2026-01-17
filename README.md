@@ -23,16 +23,18 @@ Volcano is an opinionated static site generator for people who just want their m
 ## Features
 
 - **Tree navigation** — Collapsible sidebar mirrors your folder structure
-- **Clean URLs** — `guides/intro.md` → `/guides/intro/`
+- **Instant navigation** — Hover prefetching and smooth page transitions
+- **Search** — Command palette (Cmd+K) searches pages and headings
 - **Table of contents** — Auto-generated from headings with scroll tracking
 - **Dark mode** — Automatic detection with manual toggle
+- **Wiki links** — Obsidian-style `[[Page Name]]` linking
 - **Admonitions** — Note, tip, warning, and info callout blocks
 - **Code highlighting** — Syntax highlighting with copy button
-- **SEO ready** — Meta tags, Open Graph, and sitemaps
+- **SEO ready** — Meta tags, Open Graph, and automatic sitemaps
 - **Keyboard shortcuts** — Press `?` to see all navigation shortcuts
+- **PWA support** — Progressive Web App for offline access
 - **Reading time** — Estimated time displayed on each page
 - **Breadcrumbs** — Always know where you are in the hierarchy
-- **Search** — Filter navigation by typing
 - **Mobile responsive** — Drawer navigation on small screens
 
 ## Installation
@@ -68,13 +70,13 @@ The release workflow builds cross-platform binaries and attaches them to the Git
 volcano <input-folder> -o <output-folder> --title="My Site"
 ```
 
-### Serve a static site
+### Preview locally
 
 ```bash
-volcano -s -p 1776 <folder>
+volcano serve ./docs
 ```
 
-### Flags
+### Common Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
@@ -83,60 +85,51 @@ volcano -s -p 1776 <folder>
 | `-p, --port` | Server port | `1776` |
 | `--title` | Site title | `My Site` |
 | `--url` | Site base URL (for SEO) | |
-| `--author` | Site author | |
-| `--og-image` | Default Open Graph image URL | |
-| `--favicon` | Path to favicon file (.ico, .png, .svg) | |
-| `--last-modified` | Show last modified date on pages | `false` |
-| `--top-nav` | Display root files in top navigation bar | `false` |
+| `--theme` | Built-in theme: docs, blog, vanilla | `docs` |
+| `--accent-color` | Custom accent color (hex) | |
+| `--instant-nav` | Enable hover prefetching | `false` |
+| `--search` | Enable search (Cmd+K) | `false` |
+| `--pwa` | Enable PWA support | `false` |
+| `--top-nav` | Display root files in top nav bar | `false` |
+| `--page-nav` | Show previous/next page links | `false` |
 | `-q, --quiet` | Suppress non-error output | `false` |
-| `--verbose` | Enable debug output | `false` |
 | `-v, --version` | Show version | |
 | `-h, --help` | Show help | |
 
-## Markdown Features
+Run `volcano --help` or `volcano serve --help` for all options.
 
-### Admonition Blocks
+## Key Features
 
-Use fenced blocks to create callouts:
+### Wiki Links
+
+Link between pages using `[[Page Name]]` syntax:
 
 ```markdown
-:::note
-This is a note callout.
-:::
-
-:::tip
-This is a tip callout.
-:::
-
-:::warning
-This is a warning callout.
-:::
-
-:::danger
-This is a danger callout.
-:::
-
-:::info
-This is an info callout.
-:::
+See the [[Installation]] guide for setup instructions.
+Check out [[Advanced/Configuration]] for more options.
 ```
 
-### Code Blocks with Line Highlighting
+### Instant Navigation
 
-Highlight specific lines in code blocks using the `{lines}` annotation:
+Enable hover prefetching for near-instant page loads:
 
-````markdown
-```go {3-5}
-func main() {
-    // These lines
-    // will be
-    // highlighted
-    fmt.Println("Hello")
-}
+```bash
+volcano ./docs --instant-nav --search
 ```
-````
 
-### Filename Prefixes
+Pages prefetch on hover and use smooth view transitions for seamless navigation.
+
+### Search
+
+Add a command palette with `--search`:
+
+```bash
+volcano ./docs --search
+```
+
+Press Cmd+K (or Ctrl+K) to search pages and headings across your entire site.
+
+### Filename Organization
 
 Files with date or number prefixes are automatically cleaned:
 
@@ -146,45 +139,47 @@ Files with date or number prefixes are automatically cleaned:
 
 ## Examples
 
-Generate site from `./docs` to `./public`:
+### Basic Documentation
 
 ```bash
-volcano ./docs -o ./public --title="My Documentation"
+volcano ./docs --title="My Documentation"
 ```
 
-Generate with SEO options:
+### Full-Featured Site
 
 ```bash
-volcano ./docs -o ./public \
+volcano ./docs \
   --title="My Docs" \
-  --url="https://mydocs.example.com" \
-  --author="Your Name" \
-  --og-image="https://mydocs.example.com/og-image.png" \
-  --favicon="./favicon.ico"
+  --theme docs \
+  --instant-nav \
+  --search \
+  --url="https://docs.example.com"
 ```
 
-Generate with top navigation bar:
+### Blog Setup
 
 ```bash
-volcano ./docs -o ./public --title="My Docs" --top-nav
+volcano ./posts \
+  --theme blog \
+  --page-nav \
+  --title="My Blog"
 ```
 
-Serve the generated site:
+### Development Server
 
 ```bash
-volcano -s -p 8080 ./public
+volcano serve ./docs
 ```
+
+Changes appear on browser refresh.
 
 ## Example Site
 
 The `example/` folder contains sample markdown content demonstrating all features:
 
 ```bash
-# Generate the example site
-volcano ./example -o ./output --title="Volcano Docs"
-
-# Serve it locally
-volcano -s ./output
+# Preview the example site
+volcano serve ./example --title="Volcano Docs"
 
 # Open http://localhost:1776 in your browser
 ```
@@ -243,7 +238,7 @@ volcano/
 ├── cmd/                     # Command implementations
 ├── internal/
 │   ├── assets/              # Favicon handling
-│   ├── content/             # Reading time, last modified
+│   ├── content/             # Reading time calculation
 │   ├── generator/           # Site generation engine
 │   ├── markdown/            # Markdown parsing, admonitions, headings
 │   ├── navigation/          # Breadcrumbs, pagination

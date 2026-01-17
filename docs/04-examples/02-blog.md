@@ -20,7 +20,7 @@ volcano ./blog \
   --theme blog \
   --title="My Blog" \
   --url="https://blog.example.com" \
-  --last-modified
+  --page-nav
 ```
 
 ## Organization Options

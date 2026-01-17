@@ -429,28 +429,6 @@ func TestIntegrationStory22_ReadingTime(t *testing.T) {
 	}
 }
 
-// Story 23: Last Modified Display
-func TestIntegrationStory23_LastModified(t *testing.T) {
-	outputDir := t.TempDir()
-	var stdout, stderr bytes.Buffer
-	// Use --last-modified flag
-	exitCode := Run([]string{"-o", outputDir, "--last-modified", "./example"}, &stdout, &stderr)
-	if exitCode != 0 {
-		t.Fatalf("Generation failed: %s", stderr.String())
-	}
-
-	content, _ := os.ReadFile(filepath.Join(outputDir, "getting-started/index.html"))
-	html := string(content)
-
-	// Story 23 acceptance: last modified
-	if !strings.Contains(html, "last-modified") {
-		t.Error("Story 23: should have last-modified class")
-	}
-	if !strings.Contains(html, "Updated") {
-		t.Error("Story 23: should show 'Updated' label")
-	}
-}
-
 // Story 24: Scroll Progress Indicator
 func TestIntegrationStory24_ScrollProgress(t *testing.T) {
 	outputDir := t.TempDir()
@@ -1055,35 +1033,4 @@ func TestIntegrationGenerate_WithBreadcrumbs(t *testing.T) {
 	if !strings.Contains(string(content), "nav") {
 		t.Log("Expected breadcrumb navigation in nested page")
 	}
-}
-
-func TestIntegrationGenerate_WithLastModified(t *testing.T) {
-	tmpDir := t.TempDir()
-	inputDir := filepath.Join(tmpDir, "input")
-	outputDir := filepath.Join(tmpDir, "output")
-
-	if err := os.MkdirAll(inputDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile(filepath.Join(inputDir, "index.md"), []byte("# Home"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "--last-modified", inputDir}, &stdout, &stderr)
-	if exitCode != 0 {
-		t.Fatalf("Generation failed: %s", stderr.String())
-	}
-
-	// Read the page
-	content, err := os.ReadFile(filepath.Join(outputDir, "index.html"))
-	if err != nil {
-		t.Fatalf("Failed to read index.html: %v", err)
-	}
-
-	// Should contain last modified info somewhere in the page
-	html := string(content)
-	// The page should contain some date-related content when --last-mod is enabled
-	_ = html
 }

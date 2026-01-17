@@ -46,7 +46,7 @@ volcano . -o ./public --title="My Docs"
 ## Preview
 
 ```bash
-volcano serve ./public
+volcano serve .
 ```
 
 Open [http://localhost:1776](http://localhost:1776)
@@ -56,6 +56,6 @@ You'll see sidebar navigation, breadcrumbs, wiki links, and styled admonitions.
 ## Next Steps
 
 - [[guides/organizing-content]] — Structure your content
-- [[guides/customizing-appearance]] — Themes and styles
-- [[features/markdown-syntax]] — Supported markdown features
+- [[guides/theming]] — Themes and styles
+- [[features/navigation]] — Navigation and search features
 - [[reference/cli]] — All CLI options

@@ -15,7 +15,6 @@ type Config struct {
 	Author           string // Site author
 	OGImage          string // Default Open Graph image
 	FaviconPath      string // Path to favicon file
-	ShowLastMod      bool   // Show last modified date
 	TopNav           bool   // Display root files in top navigation bar
 	ShowPageNav      bool   // Show previous/next page navigation
 	ShowBreadcrumbs  bool   // Show breadcrumb navigation

@@ -37,7 +37,6 @@ type PageData struct {
 	MetaTags        template.HTML // SEO meta tags
 	FaviconLinks    template.HTML // Favicon link tags
 	ReadingTime     string        // Reading time display (e.g., "5 min read")
-	LastModified    string        // Last modified date (e.g., "January 5, 2025")
 	HasTOC          bool          // Whether to show TOC sidebar
 	ShowSearch      bool          // Whether to show nav search
 	TopNavItems     []TopNavItem  // Items for top navigation bar (when --top-nav enabled)

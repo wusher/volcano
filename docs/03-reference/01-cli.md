@@ -10,7 +10,10 @@ Generate a static site from markdown files:
 
 ```bash
 volcano <input-folder> [flags]
+volcano build <input-folder> [flags]
 ```
+
+Both commands do the same thing.
 
 **Example:**
 
@@ -20,25 +23,19 @@ volcano ./docs -o ./public --title="My Documentation"
 
 ### Serve
 
-Serve a generated site or regenerate on request:
+Serve your markdown source directory for local preview:
 
 ```bash
 volcano serve <folder> [flags]
 ```
 
-**Static serving (pre-generated):**
-
-```bash
-volcano serve ./public -p 8080
-```
-
-**Dynamic regeneration (source folder):**
+**Example:**
 
 ```bash
 volcano serve ./docs -p 8080
 ```
 
-When serving a source folder, pages are regenerated on each request.
+Pages are rendered on each request. Changes appear on browser refresh.
 
 ### CSS Export
 
@@ -100,7 +97,6 @@ volcano ./docs --url="https://username.github.io/my-repo"
 | `--page-nav` | `false` | Show previous/next page links |
 | `--breadcrumbs` | `true` | Show breadcrumb trail |
 | `--instant-nav` | `false` | Enable hover prefetching |
-| `--last-modified` | `false` | Show last modified date |
 
 ### Theming
 
@@ -114,8 +110,8 @@ volcano ./docs --url="https://username.github.io/my-repo"
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--search` | `false` | Enable site search with Cmd+K command palette |
-| `--pwa` | `false` | Enable PWA manifest and service worker |
+| `--search` | `false` | Enable site search with Cmd+K command palette (see [[features/navigation#search\|Navigation]]) |
+| `--pwa` | `false` | Enable PWA manifest and service worker (see [[features/progressive-web-app\|PWA]]) |
 | `--inline-assets` | `false` | Embed CSS/JS inline instead of external files |
 | `--allow-broken-links` | `false` | Don't fail build on broken internal links |
 
@@ -189,7 +185,7 @@ volcano ./posts \
   -o ./blog \
   --theme blog \
   --title="My Blog" \
-  --last-modified
+  --page-nav
 ```
 
 ### Custom Theme
@@ -212,7 +208,7 @@ volcano ./docs \
   --page-nav \
   --breadcrumbs \
   --instant-nav \
-  --last-modified
+  --search
 ```
 
 ### CI/CD Build
@@ -283,8 +279,23 @@ Volcano detects terminal capabilities automatically:
 - Colored output when stderr is a TTY
 - Progress indicators in interactive mode
 
+## Front Matter Support
+
+Volcano strips YAML front matter from markdown files during rendering:
+
+```markdown
+---
+title: My Page
+date: 2024-01-15
+---
+
+# Page Content
+```
+
+Front matter is removed so it doesn't appear in the output. While front matter values aren't currently used, this ensures compatibility with Obsidian, Hugo, Jekyll, and other tools that use front matter.
+
+**Note:** Page titles come from H1 headings, not front matter `title` fields.
+
 ## Related
 
 - [[url-structure]] — URL generation rules
-- [[front-matter]] — YAML front matter support
-- [[guides/installation]] — Installation methods

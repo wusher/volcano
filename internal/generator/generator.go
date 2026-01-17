@@ -38,7 +38,6 @@ type Config struct {
 	Author           string // Site author
 	OGImage          string // Path to local OG image file (copied to output)
 	FaviconPath      string // Path to favicon file
-	ShowLastMod      bool   // Show last modified date
 	TopNav           bool   // Display root files in top navigation bar
 	ShowPageNav      bool   // Show previous/next page navigation
 	ShowBreadcrumbs  bool   // Show breadcrumb navigation
@@ -466,13 +465,6 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 	rt := content.CalculateReadingTime(htmlContent)
 	readingTime := content.FormatReadingTime(rt)
 
-	// Get last modified date if enabled
-	var lastModified string
-	if g.config.ShowLastMod {
-		mod := content.GetLastModified(node.SourcePath)
-		lastModified = content.FormatLastModified(mod, false) // Use absolute format
-	}
-
 	// Build breadcrumbs (with base URL prefixing) - only if enabled
 	var breadcrumbsHTML template.HTML
 	if g.config.ShowBreadcrumbs {
@@ -518,7 +510,6 @@ func (g *Generator) generatePage(node *tree.Node, root *tree.Node, allPages []*t
 		MetaTags:        metaTagsHTML,
 		FaviconLinks:    g.faviconLinks,
 		ReadingTime:     readingTime,
-		LastModified:    lastModified,
 		HasTOC:          hasTOC,
 		ShowSearch:      true,
 		TopNavItems:     g.topNavItems,
