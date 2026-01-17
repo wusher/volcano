@@ -37,9 +37,6 @@ type FileConfig struct {
 	PWA          *bool `json:"pwa,omitempty"`          // Enable PWA support
 	Search       *bool `json:"search,omitempty"`       // Enable search
 
-	// Content
-	LastModified *bool `json:"lastModified,omitempty"` // Show last modified date
-
 	// SEO
 	OGImage string `json:"ogImage,omitempty"` // Default Open Graph image
 }

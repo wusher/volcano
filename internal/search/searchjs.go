@@ -146,7 +146,12 @@ func GenerateSearchJS(baseURL string) string {
 
     function updateSelection(items) {
         items.forEach(function(item, i) {
-            item.classList.toggle('selected', i === selectedIndex);
+            if (i === selectedIndex) {
+                item.classList.add('selected');
+                item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            } else {
+                item.classList.remove('selected');
+            }
         });
     }
 

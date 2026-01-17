@@ -1,5 +1,4 @@
 # Reference
 
-- [[cli|CLI Reference]] — All commands and flags
-- [[url-structure|URL Structure]] — How URLs are generated
-- [[front-matter|Front Matter]] — YAML front matter handling
+- [[cli|CLI Reference]] — All commands, flags, and configuration
+- [[url-structure|URL Structure]] — How URLs are generated from files

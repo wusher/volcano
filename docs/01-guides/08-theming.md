@@ -412,6 +412,5 @@ To customize print styles:
 
 ## Related
 
-- [[guides/customizing-appearance]] — Quick customization guide
-- [[admonitions]] — Style callout boxes
-- [[code-blocks]] — Style code blocks
+- [[customizing-appearance]] — Quick customization guide
+- [[building-your-site]] — Build with your theme

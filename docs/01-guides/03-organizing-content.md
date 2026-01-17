@@ -208,5 +208,5 @@ blog/
 ## Next Steps
 
 - [[customizing-appearance]] — Style your site
-- [[features/wiki-links]] — Learn wiki link syntax
+- [[building-your-site]] — Generate your site
 - [[reference/url-structure]] — Understand URL generation

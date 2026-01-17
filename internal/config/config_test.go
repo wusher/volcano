@@ -27,8 +27,7 @@ func TestLoad(t *testing.T) {
 			"pageNav": true,
 			"instantNav": true,
 			"inlineAssets": true,
-			"pwa": true,
-			"lastModified": true
+			"pwa": true
 		}`
 		if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
 			t.Fatal(err)
@@ -86,9 +85,6 @@ func TestLoad(t *testing.T) {
 		}
 		if cfg.PWA == nil || !*cfg.PWA {
 			t.Error("PWA should be true")
-		}
-		if cfg.LastModified == nil || !*cfg.LastModified {
-			t.Error("LastModified should be true")
 		}
 	})
 

@@ -12,7 +12,7 @@ volcano ./docs --theme blog    # Reading-focused
 volcano ./docs --theme vanilla # Unstyled skeleton
 ```
 
-For detailed theming information, see [[features/theming]].
+For detailed theming information, see [[theming]].
 
 ## Accent Color
 
@@ -35,7 +35,7 @@ volcano ./docs --css ./custom.css
 ```
 
 :::tip Generate with AI
-Use the [[prompts/custom-theme|custom theme prompt]] to generate a complete theme with AI. Just describe your desired look and get production-ready CSS.
+You can use AI tools like Claude to generate custom CSS themes. Just describe your desired look and get production-ready CSS that works with Volcano's vanilla theme.
 :::
 
 ## Branding
@@ -57,9 +57,6 @@ volcano ./docs --url="https://docs.example.com"
 ## Display Options
 
 ```bash
-# Show last modified dates
-volcano ./docs --last-modified
-
 # Top navigation bar
 volcano ./docs --top-nav
 
@@ -84,6 +81,6 @@ volcano ./docs \
 
 ## Next Steps
 
-- [[features/theming]] — Deep dive into theming and CSS
-- [[development-workflow]] — Preview changes with dev server
-- [[deploying-your-site]] — Publish your site
+- [[theming]] — Deep dive into theming and custom CSS
+- [[building-your-site]] — Build with your custom theme
+- [[serving-your-site]] — Preview your site locally

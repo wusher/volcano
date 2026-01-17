@@ -275,4 +275,4 @@ Before deploying:
 ## Next Steps
 
 - [[reference/cli]] — See all generation options
-- [[features/seo-and-meta]] — Optimize for search engines
+- [[building-your-site]] — Build options
