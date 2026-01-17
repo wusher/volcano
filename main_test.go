@@ -185,7 +185,7 @@ func TestCLIGenerate(t *testing.T) {
 	mustMkdirAll(t, inputDir)
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"--url=https://example.com", inputDir}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Generate command failed with exit code %d, stderr: %s", exitCode, stderr.String())
@@ -300,7 +300,7 @@ func TestCLIWithTitle(t *testing.T) {
 	mustMkdirAll(t, inputDir)
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"--title=Custom Title", inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"--title=Custom Title", "--url=https://example.com", inputDir}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Command with title failed with exit code %d, stderr: %s", exitCode, stderr.String())
@@ -320,7 +320,7 @@ func TestCLIWithOutput(t *testing.T) {
 	mustMkdirAll(t, inputDir)
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Command with output flag failed with exit code %d, stderr: %s", exitCode, stderr.String())
@@ -340,7 +340,7 @@ func TestCLIWithOutputLong(t *testing.T) {
 	mustMkdirAll(t, inputDir)
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"--output", outputDir, inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"--output", outputDir, "--url=https://example.com", inputDir}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Command with output flag failed with exit code %d, stderr: %s", exitCode, stderr.String())
@@ -447,7 +447,7 @@ func TestCLIWithQuiet(t *testing.T) {
 	mustMkdirAll(t, inputDir)
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-q", inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-q", "--url=https://example.com", inputDir}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Command with quiet flag failed with exit code %d, stderr: %s", exitCode, stderr.String())
@@ -461,7 +461,7 @@ func TestCLIWithVerbose(t *testing.T) {
 	mustMkdirAll(t, inputDir)
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"--verbose", inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"--verbose", "--url=https://example.com", inputDir}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Command with verbose flag failed with exit code %d, stderr: %s", exitCode, stderr.String())
@@ -494,7 +494,7 @@ func TestCLIAllFlagsCombined(t *testing.T) {
 	mustMkdirAll(t, inputDir)
 
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "--title=Test Site", inputDir}, &stdout, &stderr)
+	exitCode := Run([]string{"-o", outputDir, "--title=Test Site", "--url=https://example.com", inputDir}, &stdout, &stderr)
 
 	if exitCode != 0 {
 		t.Fatalf("Command with multiple flags failed with exit code %d, stderr: %s", exitCode, stderr.String())

@@ -11,7 +11,7 @@ func TestIntegrationCLI_FlagOrdering(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 
 	// Test different flag ordering combinations
-	exitCode := Run([]string{"./example", "-o", "/tmp/cli_test"}, &stdout, &stderr)
+	exitCode := Run([]string{"./example", "-o", "/tmp/cli_test", "--url=https://example.com"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Errorf("Failed with flags in different order: %s", stderr.String())
 	}
@@ -27,7 +27,7 @@ func TestIntegrationCLI_EqualsSyntax(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 
 	// Test flag with equals syntax
-	exitCode := Run([]string{"-o=/tmp/equals_test", "--title=Test", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-o=/tmp/equals_test", "--title=Test", "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Errorf("Failed with equals syntax: %s", stderr.String())
 	}
@@ -77,7 +77,7 @@ func TestIntegrationCLI_QuietFlag(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 
 	// Test quiet flag
-	exitCode := Run([]string{"-q", "-o", "/tmp/quiet_test", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"-q", "-o", "/tmp/quiet_test", "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Errorf("Failed with quiet flag: %s", stderr.String())
 	}
@@ -97,7 +97,7 @@ func TestIntegrationCLI_VerboseFlag(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 
 	// Test verbose flag
-	exitCode := Run([]string{"--verbose", "-o", "/tmp/verbose_test", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"--verbose", "-o", "/tmp/verbose_test", "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Errorf("Failed with verbose flag: %s", stderr.String())
 	}
@@ -187,7 +187,7 @@ func TestIntegrationCLI_BuildSubcommand(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 
 	// Test build subcommand
-	exitCode := Run([]string{"build", "-o", "/tmp/build_test", "./example"}, &stdout, &stderr)
+	exitCode := Run([]string{"build", "-o", "/tmp/build_test", "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Errorf("Build subcommand failed: %s", stderr.String())
 	}

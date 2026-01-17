@@ -49,6 +49,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		err = cmd.Build(args[1:], stdout, stderr)
 	case "serve", "server":
 		err = cmd.ServeCommand(args[1:], stdout, stderr)
+	case "init":
+		err = cmd.Init(args[1:], stdout, stderr)
 	default:
 		// Fall through: treat as shorthand for build (backward compatibility)
 		// This allows `volcano ./docs` to work like `volcano build ./docs`
@@ -70,6 +72,7 @@ func printUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  volcano build [flags] <input>    Generate static site")
 	_, _ = fmt.Fprintln(w, "  volcano serve [flags] <input>    Start development server")
 	_, _ = fmt.Fprintln(w, "  volcano server [flags] <input>   Alias for serve")
+	_, _ = fmt.Fprintln(w, "  volcano init [flags]             Create/update volcano.json config")
 	_, _ = fmt.Fprintln(w, "  volcano css [-o file]            Output vanilla CSS")
 	_, _ = fmt.Fprintln(w, "  volcano <input>                  Shorthand for build")
 	_, _ = fmt.Fprintln(w, "")

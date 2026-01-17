@@ -12,10 +12,11 @@ import (
 const ConfigFileName = "volcano.json"
 
 // FileConfig represents the configuration options that can be set in a config file.
-// All fields use pointers so we can distinguish between "not set" and "set to zero/false".
+// All fields use pointers for booleans so we can distinguish between "not set" and "set to zero/false".
 type FileConfig struct {
 	// Output settings
 	Output string `json:"output,omitempty"` // Output directory
+	Port   *int   `json:"port,omitempty"`   // Server port
 
 	// Site configuration
 	Title  string `json:"title,omitempty"`  // Site title
@@ -39,6 +40,9 @@ type FileConfig struct {
 
 	// SEO
 	OGImage string `json:"ogImage,omitempty"` // Default Open Graph image
+
+	// Build options
+	AllowBrokenLinks *bool `json:"allowBrokenLinks,omitempty"` // Don't fail build on broken links
 }
 
 // Load reads a config file from the given path and returns the parsed configuration.
@@ -108,4 +112,108 @@ func GetBool(ptr *bool, defaultVal bool) bool {
 		return defaultVal
 	}
 	return *ptr
+}
+
+// IntPtr is a helper to create a pointer to an int value.
+func IntPtr(i int) *int {
+	return &i
+}
+
+// GetInt returns the value of an int pointer, or the default if nil.
+func GetInt(ptr *int, defaultVal int) int {
+	if ptr == nil {
+		return defaultVal
+	}
+	return *ptr
+}
+
+// DefaultFileConfig returns a FileConfig with all default values set.
+// This is used by the init command to create a complete config file.
+func DefaultFileConfig() *FileConfig {
+	return &FileConfig{
+		Output:           "./output",
+		Port:             IntPtr(1776),
+		Title:            "My Site",
+		URL:              "",
+		Author:           "",
+		Theme:            "docs",
+		CSS:              "",
+		AccentColor:      "",
+		Favicon:          "",
+		TopNav:           BoolPtr(false),
+		Breadcrumbs:      BoolPtr(true),
+		PageNav:          BoolPtr(false),
+		InstantNav:       BoolPtr(false),
+		InlineAssets:     BoolPtr(false),
+		PWA:              BoolPtr(false),
+		Search:           BoolPtr(false),
+		OGImage:          "",
+		AllowBrokenLinks: BoolPtr(false),
+	}
+}
+
+// MergeConfigs merges an existing config into a default config.
+// Values from the existing config override the defaults.
+func MergeConfigs(defaults, existing *FileConfig) *FileConfig {
+	result := *defaults
+
+	// String values - only override if not empty in existing
+	if existing.Output != "" {
+		result.Output = existing.Output
+	}
+	if existing.Title != "" {
+		result.Title = existing.Title
+	}
+	if existing.URL != "" {
+		result.URL = existing.URL
+	}
+	if existing.Author != "" {
+		result.Author = existing.Author
+	}
+	if existing.Theme != "" {
+		result.Theme = existing.Theme
+	}
+	if existing.CSS != "" {
+		result.CSS = existing.CSS
+	}
+	if existing.AccentColor != "" {
+		result.AccentColor = existing.AccentColor
+	}
+	if existing.Favicon != "" {
+		result.Favicon = existing.Favicon
+	}
+	if existing.OGImage != "" {
+		result.OGImage = existing.OGImage
+	}
+
+	// Pointer values - only override if explicitly set in existing
+	if existing.Port != nil {
+		result.Port = existing.Port
+	}
+	if existing.TopNav != nil {
+		result.TopNav = existing.TopNav
+	}
+	if existing.Breadcrumbs != nil {
+		result.Breadcrumbs = existing.Breadcrumbs
+	}
+	if existing.PageNav != nil {
+		result.PageNav = existing.PageNav
+	}
+	if existing.InstantNav != nil {
+		result.InstantNav = existing.InstantNav
+	}
+	if existing.InlineAssets != nil {
+		result.InlineAssets = existing.InlineAssets
+	}
+	if existing.PWA != nil {
+		result.PWA = existing.PWA
+	}
+	if existing.Search != nil {
+		result.Search = existing.Search
+	}
+	if existing.AllowBrokenLinks != nil {
+		result.AllowBrokenLinks = existing.AllowBrokenLinks
+	}
+
+	return &result
 }

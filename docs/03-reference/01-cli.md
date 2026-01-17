@@ -4,6 +4,29 @@ Complete reference for the Volcano CLI.
 
 ## Commands
 
+### Init
+
+Create or update a `volcano.json` configuration file:
+
+```bash
+volcano init [flags]
+```
+
+Creates a new config file with all available options and their defaults. If a config file already exists, adds any missing keys while preserving existing values.
+
+**Example:**
+
+```bash
+# Create volcano.json in current directory
+volcano init
+
+# Create in specific directory
+volcano init -o ./docs
+
+# Create with custom filename
+volcano init -o my-config.json
+```
+
 ### Generate
 
 Generate a static site from markdown files:
@@ -13,12 +36,12 @@ volcano <input-folder> [flags]
 volcano build <input-folder> [flags]
 ```
 
-Both commands do the same thing.
+Both commands do the same thing. The `--url` flag is **required** for builds.
 
 **Example:**
 
 ```bash
-volcano ./docs -o ./public --title="My Documentation"
+volcano ./docs --url="https://docs.example.com" -o ./public --title="My Documentation"
 ```
 
 ### Serve
@@ -77,8 +100,8 @@ Use `volcano serve <folder>` instead of the build command:
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `--url` | (none) | **REQUIRED** Base URL for canonical links and SEO |
 | `--title` | `My Site` | Site title for header and meta tags |
-| `--url` | (none) | Base URL for canonical links and SEO |
 | `--author` | (none) | Author for meta tags |
 | `--og-image` | (none) | Default Open Graph image URL |
 | `--favicon` | (none) | Path to favicon file (.ico, .png, .svg) |
@@ -121,10 +144,11 @@ volcano ./docs --url="https://username.github.io/my-repo"
 |------|---------|-------------|
 | `-c, --config` | (none) | Path to config file |
 
-Place a `volcano.json` in your input directory to set defaults:
+Create a config file with `volcano init` or place `volcano.json` in your input directory:
 
 ```json
 {
+  "url": "https://example.com",
   "title": "My Docs",
   "output": "./public",
   "theme": "docs",
@@ -133,7 +157,11 @@ Place a `volcano.json` in your input directory to set defaults:
 }
 ```
 
-CLI flags override config file values.
+CLI flags override config file values. When a CLI flag overrides a config file value, a message is printed:
+
+```
+CLI --title overrides config file
+```
 
 ### Output Control
 
@@ -149,12 +177,41 @@ CLI flags override config file values.
 | `-v, --version` | Show version |
 | `-h, --help` | Show help |
 
+## Config File Options
+
+All available options in `volcano.json`:
+
+```json
+{
+  "output": "./output",
+  "port": 1776,
+  "title": "My Site",
+  "url": "",
+  "author": "",
+  "theme": "docs",
+  "css": "",
+  "accentColor": "",
+  "favicon": "",
+  "topNav": false,
+  "breadcrumbs": true,
+  "pageNav": false,
+  "instantNav": false,
+  "inlineAssets": false,
+  "pwa": false,
+  "search": false,
+  "ogImage": "",
+  "allowBrokenLinks": false
+}
+```
+
+Run `volcano init` to generate a complete config file with all options.
+
 ## Examples
 
 ### Basic Generation
 
 ```bash
-volcano ./docs
+volcano ./docs --url="https://docs.example.com"
 ```
 
 Generates to `./output` with default settings.
@@ -164,8 +221,8 @@ Generates to `./output` with default settings.
 ```bash
 volcano ./docs \
   -o ./public \
-  --title="My Project" \
   --url="https://docs.example.com" \
+  --title="My Project" \
   --author="My Team" \
   --og-image="https://docs.example.com/og.png"
 ```
@@ -183,6 +240,7 @@ Serves with dynamic regeneration at `http://localhost:3000`.
 ```bash
 volcano ./posts \
   -o ./blog \
+  --url="https://blog.example.com" \
   --theme blog \
   --title="My Blog" \
   --page-nav
@@ -197,13 +255,14 @@ volcano css -o my-theme.css
 # Edit my-theme.css...
 
 # Use custom CSS
-volcano ./docs --css ./my-theme.css
+volcano ./docs --url="https://docs.example.com" --css ./my-theme.css
 ```
 
 ### Full Navigation
 
 ```bash
 volcano ./docs \
+  --url="https://docs.example.com" \
   --top-nav \
   --page-nav \
   --breadcrumbs \
@@ -218,6 +277,21 @@ volcano ./docs -o ./public -q --url="$SITE_URL"
 ```
 
 Quiet mode for cleaner CI logs.
+
+### Using Config File
+
+```bash
+# Create config with all options
+volcano init -o ./docs
+
+# Edit docs/volcano.json to set your preferences...
+
+# Build using config (--url can come from config file)
+volcano build ./docs
+
+# Override specific options via CLI
+volcano build ./docs --title="Override Title"
+```
 
 ## Link Validation
 
@@ -234,7 +308,7 @@ Volcano automatically validates all internal links during generation. The build 
 When broken links are found:
 
 ```
-✗ Found 2 broken internal links:
+Found 2 broken internal links:
   Page /guides/intro/: broken link /setup/ (not found)
   Page /reference/api/: broken link /deprecated/ (not found)
 ```
