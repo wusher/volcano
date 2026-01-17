@@ -844,9 +844,10 @@ h1, h2, h3, h4, h5, h6 {
     margin-left: auto;
   }
 
-  .mobile-toc-toggle + .mobile-search-toggle,
-  .mobile-toc-toggle + .mobile-theme-toggle,
-  .mobile-search-toggle + .mobile-theme-toggle {
+  /* When search exists, it pushes right; TOC toggle following it needs regular spacing */
+  .mobile-search-toggle + .mobile-toc-toggle,
+  .mobile-search-toggle + .mobile-theme-toggle,
+  .mobile-toc-toggle + .mobile-theme-toggle {
     margin-left: 0.25rem;
   }
 
