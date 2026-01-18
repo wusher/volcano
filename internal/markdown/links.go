@@ -17,6 +17,9 @@ var hrefRegex = regexp.MustCompile(`(?i)href="(/[^"]*)"`)
 // srcRegex matches src attributes in any tag
 var srcRegex = regexp.MustCompile(`(?i)src="(/[^"]*)"`)
 
+// imgTagRegex matches <img> tags for lazy loading
+var imgTagRegex = regexp.MustCompile(`(?i)<img\s+([^>]*)>`)
+
 // srcsetRegex matches srcset attributes in any tag
 var srcsetRegex = regexp.MustCompile(`(?i)srcset="([^"]*)"`)
 
@@ -240,4 +243,25 @@ func PrefixInternalLinks(htmlContent string, baseURL string) string {
 	})
 
 	return htmlContent
+}
+
+// AddLazyLoadingToImages adds loading="lazy" attribute to img tags that don't already have it.
+// This defers loading of below-the-fold images until they approach the viewport.
+func AddLazyLoadingToImages(htmlContent string) string {
+	return imgTagRegex.ReplaceAllStringFunc(htmlContent, func(match string) string {
+		// Check if loading attribute already exists
+		if strings.Contains(strings.ToLower(match), "loading=") {
+			return match
+		}
+
+		// Insert loading="lazy" before the closing >
+		// Match format: <img attrs> or <img attrs />
+		if strings.HasSuffix(match, "/>") {
+			// Self-closing tag: <img ... />
+			// Trim trailing space if present before />
+			prefix := strings.TrimSuffix(match[:len(match)-2], " ")
+			return prefix + ` loading="lazy" />`
+		}
+		return match[:len(match)-1] + ` loading="lazy">`
+	})
 }

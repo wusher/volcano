@@ -276,3 +276,61 @@ func TestIsExternalURL(t *testing.T) {
 		})
 	}
 }
+
+func TestAddLazyLoadingToImages(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "add loading=lazy to simple img",
+			input:    `<img src="/images/photo.jpg" alt="Photo">`,
+			expected: `<img src="/images/photo.jpg" alt="Photo" loading="lazy">`,
+		},
+		{
+			name:     "add loading=lazy to self-closing img",
+			input:    `<img src="/images/photo.jpg" alt="Photo" />`,
+			expected: `<img src="/images/photo.jpg" alt="Photo" loading="lazy" />`,
+		},
+		{
+			name:     "skip img that already has loading attribute",
+			input:    `<img src="/images/photo.jpg" loading="eager" alt="Photo">`,
+			expected: `<img src="/images/photo.jpg" loading="eager" alt="Photo">`,
+		},
+		{
+			name:     "skip img that already has loading=lazy",
+			input:    `<img src="/images/photo.jpg" loading="lazy" alt="Photo">`,
+			expected: `<img src="/images/photo.jpg" loading="lazy" alt="Photo">`,
+		},
+		{
+			name:     "handle multiple images",
+			input:    `<img src="/a.jpg"><img src="/b.jpg">`,
+			expected: `<img src="/a.jpg" loading="lazy"><img src="/b.jpg" loading="lazy">`,
+		},
+		{
+			name:     "preserve existing attributes",
+			input:    `<img src="/photo.jpg" class="hero" id="main-image" alt="Hero">`,
+			expected: `<img src="/photo.jpg" class="hero" id="main-image" alt="Hero" loading="lazy">`,
+		},
+		{
+			name:     "mixed images with and without loading",
+			input:    `<img src="/a.jpg" loading="eager"><img src="/b.jpg">`,
+			expected: `<img src="/a.jpg" loading="eager"><img src="/b.jpg" loading="lazy">`,
+		},
+		{
+			name:     "case insensitive loading attribute",
+			input:    `<img src="/photo.jpg" LOADING="eager">`,
+			expected: `<img src="/photo.jpg" LOADING="eager">`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := AddLazyLoadingToImages(tc.input)
+			if result != tc.expected {
+				t.Errorf("AddLazyLoadingToImages(%q)\ngot:  %q\nwant: %q", tc.input, result, tc.expected)
+			}
+		})
+	}
+}

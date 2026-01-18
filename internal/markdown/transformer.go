@@ -21,6 +21,7 @@ func NewContentTransformer(siteURL string) *ContentTransformer {
 // - Prefixing internal links with base URL path
 // - Processing external links (adding target="_blank" and icons)
 // - Wrapping code blocks with copy buttons
+// - Adding lazy loading to images
 func (t *ContentTransformer) Transform(htmlContent string) string {
 	// Add heading anchors
 	htmlContent = AddHeadingAnchors(htmlContent)
@@ -33,6 +34,9 @@ func (t *ContentTransformer) Transform(htmlContent string) string {
 
 	// Wrap code blocks with copy button
 	htmlContent = WrapCodeBlocks(htmlContent)
+
+	// Add lazy loading to images for better page load performance
+	htmlContent = AddLazyLoadingToImages(htmlContent)
 
 	return htmlContent
 }
