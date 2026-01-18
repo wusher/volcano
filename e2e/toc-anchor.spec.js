@@ -1,6 +1,6 @@
 // @ts-check
-const { test, expect } = require('@playwright/test');
-const { createTestSite, startServer, stopServer, LOREM } = require('./helpers');
+const { test, expect } = require("@playwright/test");
+const { createTestSite, startServer, stopServer, LOREM } = require("./helpers");
 
 /**
  * E2E tests for TOC (Table of Contents) anchor navigation
@@ -8,14 +8,14 @@ const { createTestSite, startServer, stopServer, LOREM } = require('./helpers');
  * Verifies that clicking TOC links scrolls to the correct section
  * and doesn't jump back to top (bug fix verification).
  */
-test.describe('TOC Anchor Navigation', () => {
+test.describe("TOC Anchor Navigation", () => {
   let serverProcess;
   let testDir;
   const PORT = 4250;
 
   test.beforeAll(async () => {
     testDir = createTestSite({
-      'index.md': `# Test Page
+      "index.md": `# Test Page
 
 This is intro content.
 
@@ -38,7 +38,7 @@ ${LOREM}
 ${LOREM}
 
 ${LOREM}
-`
+`,
     });
 
     serverProcess = await startServer(testDir, PORT);
@@ -48,9 +48,11 @@ ${LOREM}
     stopServer(serverProcess, testDir);
   });
 
-  test('clicking TOC link scrolls to section and stays there', async ({ page }) => {
+  test("clicking TOC link scrolls to section and stays there", async ({
+    page,
+  }) => {
     await page.goto(`http://localhost:${PORT}/`);
-    await page.waitForSelector('.toc-sidebar');
+    await page.waitForSelector(".toc-sidebar");
 
     const initialScrollY = await page.evaluate(() => window.scrollY);
     expect(initialScrollY).toBeLessThan(100);
@@ -62,28 +64,32 @@ ${LOREM}
     expect(finalScrollY).toBeGreaterThan(200);
 
     const thirdSectionRect = await page.evaluate(() => {
-      const el = document.getElementById('third-section');
+      const el = document.getElementById("third-section");
       return el ? el.getBoundingClientRect().top : null;
     });
     expect(thirdSectionRect).toBeLessThan(150);
-    expect(page.url()).toContain('#third-section');
+    expect(page.url()).toContain("#third-section");
   });
 
-  test('clicking TOC link does not trigger page reload', async ({ page }) => {
+  test("clicking TOC link does not trigger page reload", async ({ page }) => {
     await page.goto(`http://localhost:${PORT}/`);
-    await page.waitForSelector('.toc-sidebar');
+    await page.waitForSelector(".toc-sidebar");
 
-    await page.evaluate(() => { window.__noReloadMarker = true; });
+    await page.evaluate(() => {
+      window.__noReloadMarker = true;
+    });
     await page.click('.toc-sidebar a[href="#second-section"]');
     await page.waitForTimeout(300);
 
-    const markerExists = await page.evaluate(() => window.__noReloadMarker === true);
+    const markerExists = await page.evaluate(
+      () => window.__noReloadMarker === true,
+    );
     expect(markerExists).toBe(true);
   });
 
-  test('multiple TOC clicks navigate correctly', async ({ page }) => {
+  test("multiple TOC clicks navigate correctly", async ({ page }) => {
     await page.goto(`http://localhost:${PORT}/`);
-    await page.waitForSelector('.toc-sidebar');
+    await page.waitForSelector(".toc-sidebar");
 
     await page.click('.toc-sidebar a[href="#first-section"]');
     await page.waitForTimeout(300);

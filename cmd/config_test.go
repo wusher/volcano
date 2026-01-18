@@ -30,4 +30,20 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.Verbose {
 		t.Error("Verbose should be false by default")
 	}
+
+	if !cfg.ShowBreadcrumbs {
+		t.Error("ShowBreadcrumbs should be true by default")
+	}
+
+	if !cfg.ViewTransitions {
+		t.Error("ViewTransitions should be true by default")
+	}
+
+	if cfg.Colored {
+		t.Error("Colored should be false by default")
+	}
+
+	if cfg.AllowBrokenLinks {
+		t.Error("AllowBrokenLinks should be false by default")
+	}
 }

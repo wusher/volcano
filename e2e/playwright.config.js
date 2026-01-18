@@ -1,21 +1,21 @@
 // @ts-check
-const { defineConfig } = require('@playwright/test');
+const { defineConfig } = require("@playwright/test");
 
 module.exports = defineConfig({
-  testDir: '.',
+  testDir: ".",
   fullyParallel: false, // Run tests sequentially since they share a server
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  reporter: 'list',
+  reporter: "list",
   use: {
-    baseURL: 'http://localhost:4245',
-    trace: 'on-first-retry',
+    baseURL: "http://localhost:4245",
+    trace: "on-first-retry",
   },
   projects: [
     {
-      name: 'chromium',
-      use: { browserName: 'chromium' },
+      name: "chromium",
+      use: { browserName: "chromium" },
     },
   ],
 });

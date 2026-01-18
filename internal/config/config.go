@@ -13,21 +13,22 @@ const ConfigFileName = "volcano.json"
 
 // FileConfig represents the configuration options that can be set in a config file.
 // All fields use pointers for booleans so we can distinguish between "not set" and "set to zero/false".
+// String fields don't use omitempty so volcano init shows all available options.
 type FileConfig struct {
 	// Output settings
-	Output string `json:"output,omitempty"` // Output directory
-	Port   *int   `json:"port,omitempty"`   // Server port
+	Output string `json:"output"` // Output directory
+	Port   *int   `json:"port,omitempty"`
 
 	// Site configuration
-	Title  string `json:"title,omitempty"`  // Site title
-	URL    string `json:"url,omitempty"`    // Base URL for SEO
-	Author string `json:"author,omitempty"` // Site author
+	Title  string `json:"title"`  // Site title
+	URL    string `json:"url"`    // Base URL for SEO
+	Author string `json:"author"` // Site author
 
 	// Appearance
-	Theme       string `json:"theme,omitempty"`       // Theme name (docs, blog, vanilla)
-	CSS         string `json:"css,omitempty"`         // Path to custom CSS file
-	AccentColor string `json:"accentColor,omitempty"` // Custom accent color
-	Favicon     string `json:"favicon,omitempty"`     // Path to favicon file
+	Theme       string `json:"theme"`       // Theme name (docs, blog, vanilla)
+	CSS         string `json:"css"`         // Path to custom CSS file
+	AccentColor string `json:"accentColor"` // Custom accent color (hex, e.g., "#ff6600")
+	Favicon     string `json:"favicon"`     // Path to favicon file
 
 	// Navigation
 	TopNav       *bool `json:"topNav,omitempty"`       // Show top navigation bar
@@ -39,7 +40,7 @@ type FileConfig struct {
 	Search       *bool `json:"search,omitempty"`       // Enable search
 
 	// SEO
-	OGImage string `json:"ogImage,omitempty"` // Default Open Graph image
+	OGImage string `json:"ogImage"` // Default Open Graph image URL
 
 	// Build options
 	AllowBrokenLinks *bool `json:"allowBrokenLinks,omitempty"` // Don't fail build on broken links

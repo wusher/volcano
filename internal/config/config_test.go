@@ -290,3 +290,122 @@ func TestGetBool(t *testing.T) {
 		t.Error("GetBool with nil should return default (false)")
 	}
 }
+
+func TestIntPtrAndGetInt(t *testing.T) {
+	intPtr := IntPtr(42)
+	if intPtr == nil || *intPtr != 42 {
+		t.Error("IntPtr(42) should return pointer to 42")
+	}
+
+	value := 5
+	if GetInt(&value, 10) != 5 {
+		t.Error("GetInt with pointer should return value")
+	}
+	if GetInt(nil, 10) != 10 {
+		t.Error("GetInt with nil should return default")
+	}
+}
+
+func TestDefaultFileConfig(t *testing.T) {
+	cfg := DefaultFileConfig()
+	if cfg.Output != "./output" {
+		t.Errorf("Output = %q, want %q", cfg.Output, "./output")
+	}
+	if cfg.Port == nil || *cfg.Port != 1776 {
+		t.Errorf("Port = %v, want 1776", cfg.Port)
+	}
+	if cfg.Title != "My Site" {
+		t.Errorf("Title = %q, want %q", cfg.Title, "My Site")
+	}
+	if cfg.Theme != "docs" {
+		t.Errorf("Theme = %q, want %q", cfg.Theme, "docs")
+	}
+	if cfg.TopNav == nil || *cfg.TopNav {
+		t.Error("TopNav should default to false")
+	}
+	if cfg.Breadcrumbs == nil || !*cfg.Breadcrumbs {
+		t.Error("Breadcrumbs should default to true")
+	}
+	if cfg.PageNav == nil || *cfg.PageNav {
+		t.Error("PageNav should default to false")
+	}
+	if cfg.InstantNav == nil || *cfg.InstantNav {
+		t.Error("InstantNav should default to false")
+	}
+	if cfg.InlineAssets == nil || *cfg.InlineAssets {
+		t.Error("InlineAssets should default to false")
+	}
+	if cfg.PWA == nil || *cfg.PWA {
+		t.Error("PWA should default to false")
+	}
+	if cfg.Search == nil || *cfg.Search {
+		t.Error("Search should default to false")
+	}
+	if cfg.AllowBrokenLinks == nil || *cfg.AllowBrokenLinks {
+		t.Error("AllowBrokenLinks should default to false")
+	}
+}
+
+func TestMergeConfigs(t *testing.T) {
+	defaults := DefaultFileConfig()
+	existing := &FileConfig{
+		Output:           "./public",
+		Title:            "",
+		URL:              "https://example.com",
+		Theme:            "blog",
+		AccentColor:      "#ff6600",
+		Port:             IntPtr(8080),
+		TopNav:           BoolPtr(true),
+		Breadcrumbs:      nil,
+		PageNav:          BoolPtr(true),
+		InstantNav:       nil,
+		InlineAssets:     BoolPtr(true),
+		PWA:              BoolPtr(true),
+		Search:           nil,
+		AllowBrokenLinks: BoolPtr(true),
+	}
+
+	merged := MergeConfigs(defaults, existing)
+	if merged.Output != "./public" {
+		t.Errorf("Output = %q, want %q", merged.Output, "./public")
+	}
+	if merged.Title != defaults.Title {
+		t.Errorf("Title = %q, want %q", merged.Title, defaults.Title)
+	}
+	if merged.URL != "https://example.com" {
+		t.Errorf("URL = %q, want %q", merged.URL, "https://example.com")
+	}
+	if merged.Theme != "blog" {
+		t.Errorf("Theme = %q, want %q", merged.Theme, "blog")
+	}
+	if merged.AccentColor != "#ff6600" {
+		t.Errorf("AccentColor = %q, want %q", merged.AccentColor, "#ff6600")
+	}
+	if merged.Port == nil || *merged.Port != 8080 {
+		t.Errorf("Port = %v, want 8080", merged.Port)
+	}
+	if merged.TopNav == nil || !*merged.TopNav {
+		t.Error("TopNav should be true")
+	}
+	if merged.Breadcrumbs == nil || *merged.Breadcrumbs != *defaults.Breadcrumbs {
+		t.Error("Breadcrumbs should remain default")
+	}
+	if merged.PageNav == nil || !*merged.PageNav {
+		t.Error("PageNav should be true")
+	}
+	if merged.InstantNav == nil || *merged.InstantNav != *defaults.InstantNav {
+		t.Error("InstantNav should remain default")
+	}
+	if merged.InlineAssets == nil || !*merged.InlineAssets {
+		t.Error("InlineAssets should be true")
+	}
+	if merged.PWA == nil || !*merged.PWA {
+		t.Error("PWA should be true")
+	}
+	if merged.Search == nil || *merged.Search != *defaults.Search {
+		t.Error("Search should remain default")
+	}
+	if merged.AllowBrokenLinks == nil || !*merged.AllowBrokenLinks {
+		t.Error("AllowBrokenLinks should be true")
+	}
+}

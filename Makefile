@@ -28,6 +28,7 @@ test:
 # Run linter with auto-fix
 lint:
 	$(GOBIN)/golangci-lint run --fix
+	@cd e2e && npx prettier --write . --loglevel warn
 
 # Run tests with coverage
 coverage:
