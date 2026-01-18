@@ -9,10 +9,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/wusher/volcano/internal/minify"
 	"github.com/wusher/volcano/internal/tree"
 )
 
-//go:embed layout.html
+//go:embed layout.html layout.js
 var layoutFS embed.FS
 
 // TopNavItem represents an item in the top navigation bar
@@ -45,12 +46,14 @@ type PageData struct {
 	ViewTransitions bool          // Enable browser view transitions API (when --view-transitions enabled)
 	PWAEnabled      bool          // Whether PWA is enabled (adds manifest link + SW registration)
 	SearchEnabled   bool          // Whether search is enabled (adds command palette + lazy load)
+	InlineJS        template.JS   // Minified inline JavaScript for page functionality
 }
 
 // Renderer handles HTML template rendering
 type Renderer struct {
-	tmpl *template.Template
-	css  string
+	tmpl     *template.Template
+	css      string
+	inlineJS string
 }
 
 // NewRenderer creates a new template renderer
@@ -65,15 +68,24 @@ func NewRenderer(css string) (*Renderer, error) {
 		return nil, err
 	}
 
+	// Load and minify inline JavaScript
+	jsContent, err := layoutFS.ReadFile("layout.js")
+	if err != nil {
+		return nil, err
+	}
+	inlineJS := minify.JS(string(jsContent))
+
 	return &Renderer{
-		tmpl: tmpl,
-		css:  css,
+		tmpl:     tmpl,
+		css:      css,
+		inlineJS: inlineJS,
 	}, nil
 }
 
 // Render renders a page with the given data
 func (r *Renderer) Render(w io.Writer, data PageData) error {
 	data.CSS = template.CSS(r.css)
+	data.InlineJS = template.JS(r.inlineJS)
 	return r.tmpl.Execute(w, data)
 }
 

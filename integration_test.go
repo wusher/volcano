@@ -768,9 +768,9 @@ func TestIntegrationBaseURLPrefixing(t *testing.T) {
 		t.Error("Base URL: site title link should be prefixed with /volcano/")
 	}
 
-	// Verify keyboard shortcut home URL is set correctly
+	// Verify keyboard shortcut home URL is set correctly via global variable
 	// Note: Go templates escape forward slashes in JavaScript contexts
-	if !strings.Contains(html, "const baseURL = '\\/volcano'") && !strings.Contains(html, "const baseURL = '/volcano'") {
+	if !strings.Contains(html, "window.VOLCANO_BASE_URL='\\/volcano'") && !strings.Contains(html, "window.VOLCANO_BASE_URL='/volcano'") {
 		t.Error("Base URL: JavaScript baseURL should be set to /volcano")
 	}
 
@@ -891,8 +891,8 @@ func TestIntegrationBaseURLNoSubpath(t *testing.T) {
 	}
 
 	// Verify baseURL is empty in JavaScript
-	// Note: empty baseURL should produce const baseURL = '';
-	if !strings.Contains(html, "const baseURL = '';") {
+	// Note: empty baseURL should produce window.VOLCANO_BASE_URL='';
+	if !strings.Contains(html, "window.VOLCANO_BASE_URL='';") {
 		t.Error("No subpath: JavaScript baseURL should be empty")
 	}
 }
