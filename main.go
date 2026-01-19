@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 
 	"github.com/wusher/volcano/cmd"
 	"github.com/wusher/volcano/internal/output"
@@ -12,6 +13,16 @@ import (
 
 // Version is the CLI version (overridden at build time for releases)
 var Version = "dev"
+
+func init() {
+	// If Version wasn't set via ldflags, try to get it from build info
+	// This works when installed via `go install github.com/wusher/volcano@v1.0.0`
+	if Version == "dev" {
+		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+			Version = info.Main.Version
+		}
+	}
+}
 
 func main() {
 	os.Exit(Run(os.Args[1:], os.Stdout, os.Stderr))
