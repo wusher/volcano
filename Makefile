@@ -1,9 +1,25 @@
-.PHONY: setup build test lint clean coverage all e2e
+.PHONY: help setup build test lint clean coverage all e2e
 
 # Go bin path
 GOBIN := $(shell go env GOPATH)/bin
 
-# Default target
+# Default target — show help when `make` is invoked with no args
+.DEFAULT_GOAL := help
+
+help:
+	@echo "Volcano — make targets"
+	@echo ""
+	@echo "  make setup     Install Go deps and tools (golangci-lint v2)"
+	@echo "  make build     Build the volcano binary"
+	@echo "  make test      Run tests and enforce 90% coverage threshold"
+	@echo "  make coverage  Run tests and print total coverage"
+	@echo "  make lint      Run golangci-lint --fix and prettier on e2e/"
+	@echo "  make e2e       Build then run Playwright end-to-end tests"
+	@echo "  make all       lint + test + build (full quality check)"
+	@echo "  make clean     Remove build artifacts and generated output"
+	@echo "  make help      Show this help (default when run with no args)"
+
+# Full quality check
 all: lint test build
 
 # Install dependencies and tools

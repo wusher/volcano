@@ -27,7 +27,7 @@ type FileConfig struct {
 	// Appearance
 	Theme       string `json:"theme"`       // Theme name (docs, blog, vanilla)
 	CSS         string `json:"css"`         // Path to custom CSS file
-	AccentColor string `json:"accentColor"` // Custom accent color (hex, e.g., "#ff6600")
+	AccentColor string `json:"accentColor"` // Accent color: Tailwind name (e.g. "sky") or hex (e.g. "#0ea5e9")
 	Favicon     string `json:"favicon"`     // Path to favicon file
 
 	// Navigation
@@ -139,7 +139,7 @@ func DefaultFileConfig() *FileConfig {
 		Author:           "",
 		Theme:            "docs",
 		CSS:              "",
-		AccentColor:      "",
+		AccentColor:      "sky",
 		Favicon:          "",
 		TopNav:           BoolPtr(false),
 		Breadcrumbs:      BoolPtr(true),

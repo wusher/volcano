@@ -31,6 +31,10 @@ func TestDefaultConfig(t *testing.T) {
 		t.Error("Verbose should be false by default")
 	}
 
+	if cfg.AccentColor != "sky" {
+		t.Errorf("AccentColor = %q, want %q (Tailwind sky-500 default)", cfg.AccentColor, "sky")
+	}
+
 	if !cfg.ShowBreadcrumbs {
 		t.Error("ShowBreadcrumbs should be true by default")
 	}

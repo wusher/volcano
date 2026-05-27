@@ -303,6 +303,65 @@ func TestGenerateAccentCSS(t *testing.T) {
 	})
 }
 
+func TestResolveAccentColor(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{"empty", "", "", false},
+		{"hex passthrough", "#0ea5e9", "#0ea5e9", false},
+		{"hex shorthand", "#abc", "#abc", false},
+		{"tailwind sky", "sky", "#0ea5e9", false},
+		{"tailwind rose", "rose", "#f43f5e", false},
+		{"tailwind emerald", "emerald", "#10b981", false},
+		{"tailwind teal", "teal", "#14b8a6", false},
+		{"tailwind uppercase", "SKY", "#0ea5e9", false},
+		{"tailwind whitespace", "  sky  ", "#0ea5e9", false},
+		{"invalid hex", "#zzz", "", true},
+		{"unknown name", "ultraviolet", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ResolveAccentColor(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ResolveAccentColor(%q) expected error, got nil", tt.input)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("ResolveAccentColor(%q) unexpected error: %v", tt.input, err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ResolveAccentColor(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGenerateAccentCSS_TailwindName(t *testing.T) {
+	css, err := GenerateAccentCSS("sky")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(css, "#0ea5e9") {
+		t.Errorf("CSS should contain sky-500 hex value, got: %q", css)
+	}
+}
+
+func TestTailwindColorsHaveAllExpectedNames(t *testing.T) {
+	required := []string{"sky", "rose", "emerald", "teal", "slate", "indigo", "amber"}
+	for _, name := range required {
+		if _, ok := TailwindColors[name]; !ok {
+			t.Errorf("TailwindColors missing %q", name)
+		}
+	}
+}
+
 // Helper functions
 func abs(x float64) float64 {
 	if x < 0 {

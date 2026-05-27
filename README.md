@@ -76,6 +76,16 @@ volcano <input-folder> -o <output-folder> --title="My Site"
 volcano serve ./docs
 ```
 
+### Serve the current directory
+
+Run `volcano` with no arguments to start the dev server in the current working
+directory — handy for quickly previewing a notes folder:
+
+```bash
+cd ~/notes
+volcano
+```
+
 ### Common Flags
 
 | Flag | Description | Default |
@@ -85,8 +95,8 @@ volcano serve ./docs
 | `-p, --port` | Server port | `1776` |
 | `--title` | Site title | `My Site` |
 | `--url` | Site base URL (for SEO) | |
-| `--theme` | Built-in theme: docs, blog, vanilla | `docs` |
-| `--accent-color` | Custom accent color (hex) | |
+| `--theme` | Built-in theme: docs, blog, presentation, vanilla | `docs` |
+| `--accent-color` | Accent color: Tailwind name (`sky`, `rose`, `emerald`, ...) or hex | `sky` |
 | `--instant-nav` | Enable hover prefetching | `false` |
 | `--search` | Enable search (Cmd+K) | `false` |
 | `--pwa` | Enable PWA support | `false` |
@@ -162,7 +172,20 @@ volcano ./docs \
 volcano ./posts \
   --theme blog \
   --page-nav \
+  --accent-color rose \
   --title="My Blog"
+```
+
+### Presentation / Talk Deck
+
+The `presentation` theme renders pages as slide-style sections with oversized
+display typography. Great for talks, demos, or product narratives:
+
+```bash
+volcano ./talk \
+  --theme presentation \
+  --accent-color emerald \
+  --title="My Talk"
 ```
 
 ### Development Server

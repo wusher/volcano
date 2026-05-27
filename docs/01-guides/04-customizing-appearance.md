@@ -4,23 +4,36 @@ Customize your site with themes, CSS, and branding options.
 
 ## Themes
 
-Choose from three built-in themes:
+Choose from four built-in themes:
 
 ```bash
-volcano ./docs --theme docs    # Default: documentation
-volcano ./docs --theme blog    # Reading-focused
-volcano ./docs --theme vanilla # Unstyled skeleton
+volcano ./docs --theme docs         # Default: documentation
+volcano ./docs --theme blog         # Reading-focused
+volcano ./docs --theme presentation # Slide-deck / talk style
+volcano ./docs --theme vanilla      # Unstyled skeleton
 ```
 
 For detailed theming information, see [[theming]].
 
 ## Accent Color
 
-Set a custom accent color:
+Set an accent color by Tailwind name (uses the `500` shade) or any hex value.
+The default is `sky`:
 
 ```bash
+# Tailwind color names
+volcano ./docs --accent-color sky
+volcano ./docs --accent-color rose
+volcano ./docs --accent-color emerald
+volcano ./docs --accent-color teal
+
+# Hex values still work
 volcano ./docs --accent-color="#0284c7"
 ```
+
+Supported Tailwind names: `slate`, `gray`, `zinc`, `neutral`, `stone`, `red`,
+`orange`, `amber`, `yellow`, `lime`, `green`, `emerald`, `teal`, `cyan`, `sky`,
+`blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`.
 
 ## Custom CSS
 
@@ -72,7 +85,7 @@ Combine multiple options:
 volcano ./docs \
   -o ./public \
   --title="My Project" \
-  --accent-color="#0284c7" \
+  --accent-color sky \
   --theme docs \
   --favicon="./favicon.png" \
   --top-nav \

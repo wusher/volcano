@@ -37,6 +37,19 @@
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;
+  /* Match the page background so navigations don't flash white between paints */
+  background-color: var(--bg-primary);
+}
+
+/* color-scheme tells the browser which UA defaults to use (page background,
+   scrollbars, form controls). Without this, dark-mode pages briefly flash
+   the browser's white default during view transitions. */
+:root {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -270,8 +283,7 @@ body.zen-mode .mobile-header,
 body.zen-mode .breadcrumbs,
 body.zen-mode .top-nav,
 body.zen-mode .page-nav,
-body.zen-mode .back-to-top,
-body.zen-mode .scroll-progress {
+body.zen-mode .back-to-top {
   display: none !important;
 }
 

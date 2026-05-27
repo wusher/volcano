@@ -8,7 +8,6 @@ import (
 	"runtime/debug"
 
 	"github.com/wusher/volcano/cmd"
-	"github.com/wusher/volcano/internal/output"
 )
 
 // Version is the CLI version (overridden at build time for releases)
@@ -30,13 +29,12 @@ func main() {
 
 // Run executes the CLI with the given arguments and writers
 func Run(args []string, stdout, stderr io.Writer) int {
-	// Handle no arguments
+	// Handle no arguments: serve the current working directory.
 	if len(args) == 0 {
-		errLogger := output.NewLogger(stderr, output.IsStderrTTY(), false, false)
-		errLogger.Error("input folder is required")
-		_, _ = fmt.Fprintln(stderr, "")
-		printUsage(stderr)
-		return 1
+		if err := cmd.ServeCommand([]string{"."}, stdout, stderr); err != nil {
+			return 1
+		}
+		return 0
 	}
 
 	// Handle version flag at top level
@@ -86,6 +84,7 @@ func printUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  volcano init [flags]             Create/update volcano.json config")
 	_, _ = fmt.Fprintln(w, "  volcano css [-o file]            Output vanilla CSS")
 	_, _ = fmt.Fprintln(w, "  volcano <input>                  Shorthand for build")
+	_, _ = fmt.Fprintln(w, "  volcano                          Serve the current directory")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Run 'volcano <command> --help' for command-specific help.")
 	_, _ = fmt.Fprintln(w, "")

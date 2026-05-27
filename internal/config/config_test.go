@@ -320,6 +320,9 @@ func TestDefaultFileConfig(t *testing.T) {
 	if cfg.Theme != "docs" {
 		t.Errorf("Theme = %q, want %q", cfg.Theme, "docs")
 	}
+	if cfg.AccentColor != "sky" {
+		t.Errorf("AccentColor = %q, want %q", cfg.AccentColor, "sky")
+	}
 	if cfg.TopNav == nil || *cfg.TopNav {
 		t.Error("TopNav should default to false")
 	}

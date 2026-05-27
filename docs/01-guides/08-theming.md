@@ -4,7 +4,7 @@ Customize your site's appearance with built-in themes or custom CSS.
 
 ## Built-in Themes
 
-Volcano includes three themes:
+Volcano includes four themes:
 
 ### docs (Default)
 
@@ -40,6 +40,23 @@ volcano ./docs --theme blog
 
 **Best for:** Blogs, articles, announcements, changelogs.
 
+### presentation
+
+A slide-deck inspired theme for talks and demos:
+
+```bash
+volcano ./talk --theme presentation
+```
+
+**Features:**
+- Oversized, fluid display typography (H1 reads like a title slide)
+- Section dividers above every H2 — pages feel like slide decks
+- Pull-quote style blockquotes and banner admonitions
+- High-contrast palette tuned for projector legibility
+- Dark mode optimized for stage lighting
+
+**Best for:** Conference talks, product demos, internal showcases, narrative writeups.
+
 ### vanilla
 
 A structural skeleton with no visual styling:
@@ -63,6 +80,26 @@ Use the `--theme` flag:
 ```bash
 volcano ./docs --theme blog
 ```
+
+## Accent Color
+
+Every built-in theme honors a single accent color, exposed as the `--accent`
+CSS custom property. Set it with `--accent-color` using either a Tailwind
+color name (uses the `500` shade) or any hex value. The default is `sky`:
+
+```bash
+# Tailwind names (case-insensitive)
+volcano ./docs --accent-color sky
+volcano ./docs --accent-color rose
+volcano ./docs --accent-color emerald
+
+# Hex values
+volcano ./docs --accent-color "#0ea5e9"
+```
+
+Supported names: `slate`, `gray`, `zinc`, `neutral`, `stone`, `red`,
+`orange`, `amber`, `yellow`, `lime`, `green`, `emerald`, `teal`, `cyan`,
+`sky`, `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`.
 
 ## Extracting CSS
 

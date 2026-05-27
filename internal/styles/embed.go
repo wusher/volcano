@@ -28,11 +28,16 @@ var BlogCSS string
 //go:embed themes/vanilla.css
 var VanillaCSS string
 
+// PresentationCSS is the embedded presentation theme stylesheet.
+//
+//go:embed themes/presentation.css
+var PresentationCSS string
+
 // CSS is kept for backward compatibility, points to docs theme
 var CSS = LayoutCSS + "\n" + DocsCSS
 
 // ValidThemes lists all available theme names
-var ValidThemes = []string{"docs", "blog", "vanilla"}
+var ValidThemes = []string{"docs", "blog", "presentation", "vanilla"}
 
 // GetCSS returns the CSS for the specified theme
 // If theme is empty, returns the docs theme (default)
@@ -47,6 +52,8 @@ func GetThemeCSS(theme string) string {
 	switch theme {
 	case "blog":
 		return BlogCSS
+	case "presentation":
+		return PresentationCSS
 	case "vanilla":
 		return VanillaCSS
 	case "docs", "":
@@ -66,7 +73,7 @@ func ValidateTheme(theme string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("invalid theme %q, valid themes are: docs, blog, vanilla", theme)
+	return fmt.Errorf("invalid theme %q, valid themes are: docs, blog, presentation, vanilla", theme)
 }
 
 // CSSLoader provides CSS content loading functionality.

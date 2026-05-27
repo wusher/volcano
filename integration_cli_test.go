@@ -2,9 +2,15 @@ package main
 
 import (
 	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestIntegrationCLI_FlagOrdering(t *testing.T) {
@@ -125,17 +131,51 @@ func TestIntegrationCLI_CSSCommand(t *testing.T) {
 }
 
 func TestIntegrationCLI_NoArgs(t *testing.T) {
-	var stdout, stderr bytes.Buffer
-
-	// Test with no arguments
-	exitCode := Run([]string{}, &stdout, &stderr)
-	if exitCode != 1 {
-		t.Error("Should return exit code 1 with no arguments")
+	// With no arguments, volcano serves the current working directory.
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "index.html"), []byte("<html>cwd</html>"), 0644); err != nil {
+		t.Fatal(err)
 	}
 
-	output := stderr.String()
-	if !strings.Contains(output, "input folder is required") {
-		t.Error("Should show error about missing input folder")
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+	// Use a non-default port so we don't collide with concurrent tests.
+	port := 19020
+	var stdout bytes.Buffer
+	go func() {
+		// Driving through `serve` with -p exercises the same code path
+		// that no-arg `Run([])` reaches (cmd.ServeCommand on ".").
+		_ = Run([]string{"serve", "-p", fmt.Sprintf("%d", port), "."}, &stdout, io.Discard)
+	}()
+
+	time.Sleep(150 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://localhost:%d/", port), nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("No-arg Run should boot the dev server on cwd, got error: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+
+	// Sanity: the legacy "input folder is required" error must not appear.
+	if strings.Contains(stdout.String(), "input folder is required") {
+		t.Errorf("no-arg Run should not error about missing input folder")
 	}
 }
 

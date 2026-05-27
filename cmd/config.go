@@ -20,7 +20,7 @@ type Config struct {
 	ShowBreadcrumbs  bool   // Show breadcrumb navigation
 	Theme            string // Theme name (docs, blog, vanilla)
 	CSSPath          string // Path to custom CSS file
-	AccentColor      string // Custom accent color in hex format (e.g., "#ff6600")
+	AccentColor      string // Accent color: Tailwind name (e.g. "sky") or hex (e.g. "#0ea5e9")
 	InstantNav       bool   // Enable instant navigation with hover prefetching
 	ViewTransitions  bool   // Enable browser view transitions API
 	InlineAssets     bool   // Embed CSS/JS inline instead of external files
@@ -38,7 +38,8 @@ func DefaultConfig() *Config {
 		OutputDir:       "./output",
 		Port:            1776,
 		Title:           "My Site",
-		ShowBreadcrumbs: true, // Show breadcrumbs by default
-		ViewTransitions: true, // View transitions enabled by default
+		AccentColor:     "sky", // Default accent color (Tailwind sky-500)
+		ShowBreadcrumbs: true,  // Show breadcrumbs by default
+		ViewTransitions: true,  // View transitions enabled by default
 	}
 }

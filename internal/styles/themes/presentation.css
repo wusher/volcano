@@ -1,0 +1,383 @@
+/* ==========================================================================
+   VOLCANO PRESENTATION THEME
+   ==========================================================================
+   A typography-first theme for talks and demos.
+
+   The slide-feel comes from one thing: big, clean text in lots of space.
+   Everything else (sidebar, breadcrumbs, buttons) is intentionally quiet.
+   ========================================================================== */
+
+/* ==========================================================================
+   VARIABLES
+   ========================================================================== */
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #fafafa;
+  --bg-tertiary: #f0f0f0;
+
+  --text-primary: #000000;
+  --text-secondary: #1a1a1a;
+  --text-muted: #777777;
+
+  --border-color: #e5e5e5;
+  --link-color: var(--accent, #000000);
+  --link-hover: var(--text-primary);
+  --code-bg: #f5f5f5;
+
+  --accent-background: color-mix(in srgb, var(--accent) 10%, white);
+  --accent-foreground: color-mix(in srgb, var(--accent) 20%, black 80%);
+
+  /* Wider than other themes — slide-style typography needs the room */
+  --content-max-width: 1040px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #161616;
+
+  --text-primary: #ffffff;
+  --text-secondary: #e5e5e5;
+  --text-muted: #999999;
+
+  --border-color: #262626;
+  --link-color: var(--accent, #ffffff);
+  --link-hover: #ffffff;
+  --code-bg: #0a0a0a;
+
+  --accent-background: color-mix(in srgb, var(--accent) 20%, black 80%);
+  --accent-foreground: color-mix(in srgb, var(--accent) 30%, white);
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+
+html {
+  font-size: 18px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Kill default browser blue+underline on all chrome links.
+   .prose a re-enables underline below for in-content links. */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Site title in sidebar header — must override `<a>` defaults */
+.site-title {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.site-title:hover {
+  color: var(--accent, var(--text-primary));
+  text-decoration: none;
+}
+
+/* Quiet eyebrow above the title (the "4 min read" line) */
+.page-meta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+/* Quiet chrome — sidebar, tree, breadcrumbs, buttons all recede.
+   The text is the show. */
+.sidebar,
+.breadcrumbs,
+.top-nav,
+.mobile-header {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+}
+
+/* Sidebar nav: smaller, no underlines, no chevron arrows.
+   The sidebar exists to navigate, not to perform. */
+.sidebar {
+  font-size: 0.8125rem;
+}
+
+.tree-nav a,
+.breadcrumbs a,
+.top-nav-list li a,
+.folder-link,
+.folder-label,
+.toc a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.tree-nav a:hover,
+.breadcrumbs a:hover,
+.top-nav-list li a:hover,
+.folder-link:hover,
+.toc a:hover {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.tree-nav a.active,
+.toc a.active,
+.top-nav-list li a.active {
+  color: var(--accent, var(--text-primary));
+  text-decoration: none;
+}
+
+/* TOC: small, quiet — it's a roadmap, not a focal point */
+.toc-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.toc a {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* No chevron — folders just live as quiet labels */
+.folder-toggle .chevron,
+.folder-toggle svg {
+  display: none;
+}
+
+.folder-toggle {
+  padding: 0;
+  width: 0;
+}
+
+/* Scroll progress bar — thin accent line across the top */
+.scroll-progress {
+  background: var(--bg-tertiary);
+}
+
+.scroll-progress-bar {
+  background: var(--accent, var(--text-primary));
+}
+
+/* Top-right toolbar buttons (zen, theme toggle, search).
+   Browser default <button> renders a beveled gray box — flatten it. */
+.zen-toggle,
+.theme-toggle,
+.search-toggle {
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  opacity: 0.55;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.zen-toggle:hover,
+.theme-toggle:hover,
+.search-toggle:hover {
+  opacity: 1;
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   PROSE — the entire point of this theme
+   ==========================================================================
+   Massive fluid headings, generous space, comfortable line length.
+   ========================================================================== */
+
+.prose {
+  font-size: 1.375rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.prose > * + * {
+  margin-top: 1.5rem;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  color: var(--text-primary);
+}
+
+/* Title slide */
+.prose h1 {
+  font-size: clamp(3.25rem, 9vw, 6.5rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  margin: 0 0 3rem;
+}
+
+/* Section break — each H2 feels like turning to a new slide.
+   The thin top border reinforces the slide-divider feel. */
+.prose h2 {
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  margin-top: 7rem;
+  padding-top: 3rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.prose h3 {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  margin-top: 4rem;
+}
+
+.prose h4 {
+  font-size: 1.625rem;
+  margin-top: 2.5rem;
+}
+
+.prose h5,
+.prose h6 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  color: var(--text-secondary);
+}
+
+/* Paragraphs/lists fill the content width — matching the code blocks,
+   so the column has one consistent left edge instead of jagged widths. */
+.prose p,
+.prose ul,
+.prose ol {
+  max-width: none;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.5em;
+}
+
+.prose li + li {
+  margin-top: 0.5rem;
+}
+
+/* Pull-quote feel without the decoration */
+.prose blockquote {
+  border-left: 4px solid var(--accent, var(--text-primary));
+  padding-left: 1.5rem;
+  font-size: 1.75rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  max-width: 60ch;
+}
+
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 5rem 0;
+}
+
+.prose a {
+  color: var(--accent, var(--link-color));
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+
+.prose a:hover {
+  color: var(--link-hover);
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Code, big enough to read from the back row */
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--code-bg);
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+}
+
+.prose pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1.25rem 1.5rem;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  overflow-x: auto;
+}
+
+.prose pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--border-color);
+  padding: 0.6rem 0.9rem;
+}
+
+.prose th {
+  background: var(--bg-secondary);
+  font-weight: 700;
+  text-align: left;
+}
+
+/* Admonitions — same simple left-border treatment as blockquotes */
+.admonition {
+  border-left: 4px solid var(--accent, var(--border-color));
+  background: var(--bg-secondary);
+  padding: 1rem 1.5rem;
+  border-radius: 0 4px 4px 0;
+}
+
+.admonition-heading {
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   PRINT
+   ========================================================================== */
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
+
+/* ==========================================================================
+   SYNTAX HIGHLIGHTING — monochrome with one accent
+   ========================================================================== */
+
+.chroma { background: var(--code-bg); }
+.chroma .k, .chroma .kc, .chroma .kd, .chroma .kn, .chroma .kp, .chroma .kr, .chroma .kt { font-weight: 700; color: var(--text-primary); }
+.chroma .s, .chroma .sa, .chroma .sb, .chroma .sc, .chroma .dl,
+.chroma .s2, .chroma .se, .chroma .sh, .chroma .si, .chroma .sx,
+.chroma .sr, .chroma .s1, .chroma .ss { color: var(--accent, var(--text-secondary)); }
+.chroma .c, .chroma .ch, .chroma .cm, .chroma .c1, .chroma .cs { color: var(--text-muted); font-style: italic; }
+.chroma .nf, .chroma .nc { font-weight: 700; }
+.chroma .m, .chroma .mb, .chroma .mf, .chroma .mh, .chroma .mi, .chroma .il, .chroma .mo { color: var(--text-secondary); }
+.chroma .o, .chroma .ow { color: var(--text-primary); }

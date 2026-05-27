@@ -446,19 +446,19 @@ body.toc-open .mobile-toc-toggle {
 }
 
 .toc-title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .toc a {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   border-left: 2px solid transparent;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .toc a:hover {

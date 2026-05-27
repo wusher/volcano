@@ -71,6 +71,31 @@ func TestBlogCSS(t *testing.T) {
 	}
 }
 
+func TestPresentationCSS(t *testing.T) {
+	if PresentationCSS == "" {
+		t.Error("PresentationCSS should not be empty")
+	}
+
+	// Presentation theme should declare color variables for light + dark modes
+	checks := []string{
+		":root",
+		"--bg-primary",
+		"--text-primary",
+		"[data-theme=\"dark\"]",
+	}
+
+	for _, check := range checks {
+		if !strings.Contains(PresentationCSS, check) {
+			t.Errorf("PresentationCSS should contain %q", check)
+		}
+	}
+
+	// Presentation theme uses fluid display-sized H1 typography (clamp())
+	if !strings.Contains(PresentationCSS, "clamp(") {
+		t.Error("PresentationCSS should use clamp() for fluid display typography")
+	}
+}
+
 func TestVanillaCSS(t *testing.T) {
 	if VanillaCSS == "" {
 		t.Error("VanillaCSS should not be empty")
@@ -101,6 +126,7 @@ func TestGetCSS(t *testing.T) {
 	}{
 		{"docs", &DocsCSS},
 		{"blog", &BlogCSS},
+		{"presentation", &PresentationCSS},
 		{"vanilla", &VanillaCSS},
 		{"", &DocsCSS},        // Default
 		{"invalid", &DocsCSS}, // Unknown falls back to docs
@@ -130,6 +156,7 @@ func TestValidateTheme(t *testing.T) {
 	}{
 		{"docs", false},
 		{"blog", false},
+		{"presentation", false},
 		{"vanilla", false},
 		{"", false}, // Empty is valid (defaults to docs)
 		{"invalid", true},

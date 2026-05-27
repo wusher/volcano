@@ -157,24 +157,21 @@ func GenerateAccentVariants(hexColor string) (*AccentVariants, error) {
 	}, nil
 }
 
-// GenerateAccentCSS generates CSS custom properties for accent colors
-// Returns empty string if accentColor is empty
-// Uses the exact color provided by the user
+// GenerateAccentCSS generates CSS custom properties for accent colors.
+// Accepts either a hex string (e.g. "#0ea5e9") or a Tailwind color name (e.g. "sky").
+// Returns empty string if accentColor is empty.
 func GenerateAccentCSS(accentColor string) (string, error) {
-	if accentColor == "" {
-		return "", nil
-	}
-
-	// Validate the color by parsing it
-	_, _, _, err := ParseHex(accentColor)
+	hex, err := ResolveAccentColor(accentColor)
 	if err != nil {
 		return "", err
 	}
+	if hex == "" {
+		return "", nil
+	}
 
-	// Use the exact color provided - override both light and dark modes
 	css := fmt.Sprintf(`:root, [data-theme="dark"] {
   --accent: %s;
-}`, accentColor)
+}`, hex)
 
 	return css, nil
 }

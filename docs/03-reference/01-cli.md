@@ -60,6 +60,14 @@ volcano serve ./docs -p 8080
 
 Pages are rendered on each request. Changes appear on browser refresh.
 
+Running `volcano` with no arguments is a shortcut for `volcano serve .` — it
+boots the dev server on the current working directory:
+
+```bash
+cd ~/notes
+volcano
+```
+
 ### CSS Export
 
 Export the vanilla CSS skeleton for customization:
@@ -125,9 +133,9 @@ volcano ./docs --url="https://username.github.io/my-repo"
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--theme` | `docs` | Built-in theme: `docs`, `blog`, `vanilla` |
+| `--theme` | `docs` | Built-in theme: `docs`, `blog`, `presentation`, `vanilla` |
 | `--css` | (none) | Custom CSS file (overrides theme) |
-| `--accent-color` | (none) | Custom accent color (hex, e.g., `#ff6600`) |
+| `--accent-color` | `sky` | Accent color: Tailwind name (`sky`, `rose`, `emerald`, ...) or hex (`#0ea5e9`) |
 
 ### Advanced
 
