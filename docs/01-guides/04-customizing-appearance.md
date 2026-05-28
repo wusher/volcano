@@ -13,6 +13,30 @@ volcano ./docs --theme presentation # Slide-deck / talk style
 volcano ./docs --theme vanilla      # Unstyled skeleton
 ```
 
+### docs
+
+| Light | Dark |
+|-------|------|
+| ![docs theme, light mode](/images/themes/docs-light.png) | ![docs theme, dark mode](/images/themes/docs-dark.png) |
+
+### blog
+
+| Light | Dark |
+|-------|------|
+| ![blog theme, light mode](/images/themes/blog-light.png) | ![blog theme, dark mode](/images/themes/blog-dark.png) |
+
+### presentation
+
+| Light | Dark |
+|-------|------|
+| ![presentation theme, light mode](/images/themes/presentation-light.png) | ![presentation theme, dark mode](/images/themes/presentation-dark.png) |
+
+### vanilla
+
+| Light | Dark |
+|-------|------|
+| ![vanilla theme, light mode](/images/themes/vanilla-light.png) | ![vanilla theme, dark mode](/images/themes/vanilla-dark.png) |
+
 For detailed theming information, see [[theming]].
 
 ## Accent Color

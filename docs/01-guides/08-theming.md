@@ -363,6 +363,10 @@ See the vanilla CSS for the complete list of token classes.
 
 ### Minimal Light Theme
 
+A serif body, soft sidebar, classic blue links — about a dozen lines of CSS.
+
+![Minimal Light custom theme](/images/custom-themes/minimal-light.png)
+
 ```css
 :root {
   --sidebar-width: 260px;
@@ -386,6 +390,10 @@ body {
 ```
 
 ### Dark Neon Theme
+
+Deep black background, gradient sidebar, cyan accents, and a magenta-to-cyan gradient on the page title.
+
+![Dark Neon custom theme](/images/custom-themes/dark-neon.png)
 
 ```css
 :root {

@@ -115,6 +115,24 @@ a {
   font-size: 0.8125rem;
 }
 
+/* Presentation mode: sidebar and TOC are invisible until you mouse over them.
+   Layout space is preserved (no reflow) — only opacity changes. Desktop only;
+   mobile already toggles the sidebar via the drawer button. */
+@media (min-width: 769px) {
+  .sidebar,
+  .toc-sidebar {
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+
+  .sidebar:hover,
+  .sidebar:focus-within,
+  .toc-sidebar:hover,
+  .toc-sidebar:focus-within {
+    opacity: 1;
+  }
+}
+
 .tree-nav a,
 .breadcrumbs a,
 .top-nav-list li a,
@@ -235,19 +253,19 @@ a {
    The thin top border reinforces the slide-divider feel. */
 .prose h2 {
   font-size: clamp(2.5rem, 6vw, 4.5rem);
-  margin-top: 7rem;
-  padding-top: 3rem;
+  margin-top: 14rem;
+  padding-top: 6rem;
   border-top: 1px solid var(--border-color);
 }
 
 .prose h3 {
   font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-  margin-top: 4rem;
+  margin-top: 7rem;
 }
 
 .prose h4 {
   font-size: 1.625rem;
-  margin-top: 2.5rem;
+  margin-top: 4rem;
 }
 
 .prose h5,

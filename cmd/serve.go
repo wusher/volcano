@@ -528,7 +528,7 @@ func printServeUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Navigation:")
 	_, _ = fmt.Fprintln(w, "  --top-nav            Show root files in top navigation bar")
-	_, _ = fmt.Fprintln(w, "  --breadcrumbs        Show breadcrumb trail (default: true)")
+	_, _ = fmt.Fprintln(w, "  --breadcrumbs        Show breadcrumb trail (default: false)")
 	_, _ = fmt.Fprintln(w, "  --page-nav           Show previous/next page links")
 	_, _ = fmt.Fprintln(w, "  --instant-nav        Enable hover prefetching for faster navigation")
 	_, _ = fmt.Fprintln(w, "")

@@ -35,8 +35,8 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("AccentColor = %q, want %q (Tailwind sky-500 default)", cfg.AccentColor, "sky")
 	}
 
-	if !cfg.ShowBreadcrumbs {
-		t.Error("ShowBreadcrumbs should be true by default")
+	if cfg.ShowBreadcrumbs {
+		t.Error("ShowBreadcrumbs should be false by default (opt-in via --breadcrumbs)")
 	}
 
 	if !cfg.ViewTransitions {

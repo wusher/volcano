@@ -326,8 +326,8 @@ func TestDefaultFileConfig(t *testing.T) {
 	if cfg.TopNav == nil || *cfg.TopNav {
 		t.Error("TopNav should default to false")
 	}
-	if cfg.Breadcrumbs == nil || !*cfg.Breadcrumbs {
-		t.Error("Breadcrumbs should default to true")
+	if cfg.Breadcrumbs == nil || *cfg.Breadcrumbs {
+		t.Error("Breadcrumbs should default to false (opt-in via --breadcrumbs)")
 	}
 	if cfg.PageNav == nil || *cfg.PageNav {
 		t.Error("PageNav should default to false")

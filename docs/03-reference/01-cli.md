@@ -126,7 +126,7 @@ volcano ./docs --url="https://username.github.io/my-repo"
 |------|---------|-------------|
 | `--top-nav` | `false` | Show root files in top navigation bar |
 | `--page-nav` | `false` | Show previous/next page links |
-| `--breadcrumbs` | `true` | Show breadcrumb trail |
+| `--breadcrumbs` | `false` | Show breadcrumb trail |
 | `--instant-nav` | `false` | Enable hover prefetching |
 
 ### Theming

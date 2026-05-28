@@ -142,7 +142,7 @@ func DefaultFileConfig() *FileConfig {
 		AccentColor:      "sky",
 		Favicon:          "",
 		TopNav:           BoolPtr(false),
-		Breadcrumbs:      BoolPtr(true),
+		Breadcrumbs:      BoolPtr(false),
 		PageNav:          BoolPtr(false),
 		InstantNav:       BoolPtr(false),
 		InlineAssets:     BoolPtr(false),
