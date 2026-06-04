@@ -127,6 +127,7 @@ document.addEventListener('instant:navigated', expandActivePath);
             backToTop.classList.add('visible');
         } else {
             backToTop.classList.remove('visible');
+            backToTop.hidden = true;
         }
     }
 
@@ -232,6 +233,11 @@ document.addEventListener('instant:navigated', initializeCopyButtons);
     });
 })();
 
+// Presentation mode detection
+function isPresentationMode() {
+    return getComputedStyle(document.documentElement).getPropertyValue('--volcano-theme').trim() === 'presentation';
+}
+
 // Keyboard shortcuts
 (function() {
     const baseURL = window.VOLCANO_BASE_URL || '';
@@ -289,6 +295,41 @@ document.addEventListener('instant:navigated', initializeCopyButtons);
             e.preventDefault();
             handler();
         }
+    });
+})();
+
+// Presentation mode: arrow key header navigation
+(function() {
+    document.addEventListener('keydown', function(e) {
+        if (!isPresentationMode()) return;
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+        const headings = Array.from(document.querySelectorAll('.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6'));
+        if (headings.length === 0) return;
+
+        const scrollTop = window.scrollY;
+        let currentIndex = -1;
+        for (let i = 0; i < headings.length; i++) {
+            if (headings[i].offsetTop <= scrollTop + 100) {
+                currentIndex = i;
+            } else {
+                break;
+            }
+        }
+
+        let targetIndex;
+        if (e.key === 'ArrowRight') {
+            targetIndex = currentIndex + 1;
+            if (targetIndex >= headings.length) return;
+        } else {
+            if (currentIndex <= 0) return;
+            targetIndex = currentIndex - 1;
+        }
+
+        e.preventDefault();
+        const headerOffset = 80;
+        window.scrollTo({ top: headings[targetIndex].offsetTop - headerOffset, behavior: 'smooth' });
     });
 })();
 

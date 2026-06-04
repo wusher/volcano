@@ -48,6 +48,7 @@ type DynamicConfig struct {
 	ViewTransitions bool   // Enable browser view transitions API
 	PWA             bool   // Enable PWA manifest and service worker
 	Search          bool   // Enable search index and command palette
+	NoVerify        bool   // Skip internal-link validation (no console warnings, no inline banner)
 }
 
 // DynamicServer serves markdown files with live rendering
@@ -471,23 +472,26 @@ func (s *DynamicServer) renderPage(w http.ResponseWriter, _ *http.Request, urlPa
 
 	htmlContent := page.Content
 
-	// Validate internal links (no base URL for dev server)
-	validURLs := tree.BuildValidURLMap(site, "")
-	brokenLinks := markdown.ValidateLinksWithSource(htmlContent, nodeURLPath, fullMdPath, string(mdContent), validURLs)
-	if len(brokenLinks) > 0 {
-		// Log broken links to console
-		s.logError("Page %s has %d broken internal link(s):", nodeURLPath, len(brokenLinks))
-		for _, bl := range brokenLinks {
-			if bl.SourceFile != "" && bl.LineNumber > 0 {
-				s.logError("  -> %s:%d - %s", bl.SourceFile, bl.LineNumber, bl.LinkURL)
-			} else {
-				s.logError("  -> %s", bl.LinkURL)
+	// Validate internal links (no base URL for dev server). Skipped entirely
+	// when the user passed --no-verify — no console output, no inline banner.
+	if !s.config.NoVerify {
+		validURLs := tree.BuildValidURLMap(site, "")
+		brokenLinks := markdown.ValidateLinksWithSource(htmlContent, nodeURLPath, fullMdPath, string(mdContent), validURLs)
+		if len(brokenLinks) > 0 {
+			// Log broken links to console
+			s.logError("Page %s has %d broken internal link(s):", nodeURLPath, len(brokenLinks))
+			for _, bl := range brokenLinks {
+				if bl.SourceFile != "" && bl.LineNumber > 0 {
+					s.logError("  -> %s:%d - %s", bl.SourceFile, bl.LineNumber, bl.LinkURL)
+				} else {
+					s.logError("  -> %s", bl.LinkURL)
+				}
 			}
-		}
 
-		// Add warning banner to the top of the content (dev server shows inline warnings)
-		warningBanner := s.buildBrokenLinksWarning(brokenLinks)
-		htmlContent = warningBanner + htmlContent
+			// Add warning banner to the top of the content (dev server shows inline warnings)
+			warningBanner := s.buildBrokenLinksWarning(brokenLinks)
+			htmlContent = warningBanner + htmlContent
+		}
 	}
 
 	// Calculate reading time

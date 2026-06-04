@@ -12,6 +12,8 @@
    ========================================================================== */
 
 :root {
+  --volcano-theme: presentation;
+
   --bg-primary: #ffffff;
   --bg-secondary: #fafafa;
   --bg-tertiary: #f0f0f0;
@@ -215,6 +217,12 @@ a {
   color: var(--text-primary);
 }
 
+/* Presentation mode: hide zen toggle and exit button */
+.zen-toggle,
+.zen-exit {
+  display: none;
+}
+
 /* ==========================================================================
    PROSE — the entire point of this theme
    ==========================================================================
@@ -253,8 +261,8 @@ a {
    The thin top border reinforces the slide-divider feel. */
 .prose h2 {
   font-size: clamp(2.5rem, 6vw, 4.5rem);
-  margin-top: 14rem;
-  padding-top: 6rem;
+  margin-top: 18rem;
+  padding-top: 2rem;
   border-top: 1px solid var(--border-color);
 }
 

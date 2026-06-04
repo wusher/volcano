@@ -74,6 +74,7 @@ func ServeCommand(args []string, stdout, stderr io.Writer) error {
 	fs.BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "Enable debug output")
 	fs.BoolVar(&cfg.PWA, "pwa", cfg.PWA, "Enable PWA manifest and service worker for offline support")
 	fs.BoolVar(&cfg.Search, "search", cfg.Search, "Enable site search with Cmd+K command palette")
+	fs.BoolVar(&cfg.NoVerify, "no-verify", cfg.NoVerify, "Skip internal-link validation (no console warnings, no inline banner)")
 	fs.StringVar(&configFlag, "config", "", "Path to config file (default: volcano.json in input directory)")
 	fs.StringVar(&configFlag, "c", "", "Path to config file (default: volcano.json in input directory)")
 	fs.BoolVar(&showHelp, "h", false, "Show help")
@@ -459,6 +460,7 @@ func Serve(cfg *Config, w io.Writer) error {
 			FaviconPath:     cfg.FaviconPath,
 			PWA:             cfg.PWA,
 			Search:          cfg.Search,
+			NoVerify:        cfg.NoVerify,
 		}
 
 		srv, err := server.NewDynamicServer(dynamicCfg, w)
@@ -482,22 +484,54 @@ func Serve(cfg *Config, w io.Writer) error {
 }
 
 // isSourceDirectory checks if a directory is a source directory
-// (contains .md files but no index.html)
+// (contains .md files anywhere in its tree but no index.html at the root).
+// The recursion is bounded — we stop on the first .md found, so a deeply
+// nested tree (e.g. root/<numeric>/<numeric>/page.md) is still detected
+// without scanning the entire repo.
 func isSourceDirectory(dir string) bool {
-	// Check if index.html exists
+	// Check if index.html exists at root — that's a built site, serve it static
 	indexHTML := filepath.Join(dir, "index.html")
 	if _, err := os.Stat(indexHTML); err == nil {
-		return false // Has index.html, it's generated output
+		return false
 	}
 
-	// Check if any .md files exist
+	return hasMarkdownDescendant(dir, 0)
+}
+
+// hasMarkdownDescendant returns true if any .md file exists in dir or any
+// subdirectory. Caps recursion depth so pathological trees can't hang.
+const maxSourceScanDepth = 8
+
+func hasMarkdownDescendant(dir string, depth int) bool {
+	if depth > maxSourceScanDepth {
+		return false
+	}
+
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return false
 	}
 
+	// Two-pass: check files first (cheap), then descend into subdirs.
 	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".md") {
+		if entry.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(strings.ToLower(entry.Name()), ".md") {
+			return true
+		}
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		// Skip hidden and common build/dependency dirs
+		name := entry.Name()
+		if strings.HasPrefix(name, ".") || name == "node_modules" {
+			continue
+		}
+		if hasMarkdownDescendant(filepath.Join(dir, name), depth+1) {
 			return true
 		}
 	}
@@ -541,6 +575,9 @@ func printServeUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Search:")
 	_, _ = fmt.Fprintln(w, "  --search             Enable site search with Cmd+K command palette")
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "Validation:")
+	_, _ = fmt.Fprintln(w, "  --no-verify          Skip internal-link validation (no console warnings, no inline banner)")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Configuration:")
 	_, _ = fmt.Fprintln(w, "  -c, --config <path>  Config file (default: volcano.json in input dir)")

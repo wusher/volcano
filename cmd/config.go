@@ -27,6 +27,7 @@ type Config struct {
 	PWA              bool   // Enable PWA manifest and service worker generation
 	Search           bool   // Enable search index generation and command palette
 	AllowBrokenLinks bool   // Don't fail build on broken internal links
+	NoVerify         bool   // serve: skip internal-link validation (no console warnings, no inline banner)
 
 	// Internal fields (not settable via CLI)
 	configFilePath string // Path to loaded config file (for verbose logging)
