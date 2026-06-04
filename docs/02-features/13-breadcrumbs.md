@@ -2,20 +2,18 @@
 
 Breadcrumbs show the current page's location in your site hierarchy.
 
-## Default Behavior
+## Enabling Breadcrumbs
 
-**Breadcrumbs are enabled by default.** You don't need to do anything to use them.
+Breadcrumbs are off by default. Turn them on with `--breadcrumbs`:
+
+```bash
+volcano ./docs --breadcrumbs --url="https://example.com"
+```
+
+You'll see them at the top of every nested page:
 
 ```
 Home > Guides > Getting Started
-```
-
-## Disabling Breadcrumbs
-
-To turn them off:
-
-```bash
-volcano ./docs --breadcrumbs=false
 ```
 
 ## What They Show

@@ -2,30 +2,36 @@
 
 Generate static HTML from your markdown files.
 
+`--url` is required for every build (it's used for canonical and Open Graph
+tags). Either pass it on the CLI or set it once in `volcano.json` — the
+shortened examples below assume one or the other.
+
 ## Basic Build
 
 ```bash
-volcano ./docs
+volcano ./docs --url="https://docs.example.com"
 ```
 
-This generates your site to `./output` with default settings.
+This writes the site to `./output`.
 
 ## Custom Output Directory
 
 ```bash
-volcano ./docs -o ./public
+volcano ./docs -o ./public --url="https://docs.example.com"
 ```
 
 ## With Metadata
 
 ```bash
 volcano ./docs \
-  --title="My Documentation" \
   --url="https://docs.example.com" \
+  --title="My Documentation" \
   --author="Your Name"
 ```
 
 ## Build Options
+
+The flag examples below show only the option being demonstrated. Add `--url` (or a config file) when you actually run them.
 
 ### Themes
 
@@ -40,23 +46,26 @@ volcano ./docs --css ./my-theme.css
 ### Navigation Features
 
 ```bash
-# Enable instant navigation (hover prefetch)
+# Hover prefetching for fast clicks
 volcano ./docs --instant-nav
 
-# Enable search (Cmd+K command palette)
+# Cmd+K command palette
 volcano ./docs --search
 
-# Show previous/next links at bottom of pages
+# Previous/next links at bottom of pages
 volcano ./docs --page-nav
 
-# Display root files in top navigation bar
+# Horizontal bar with root pages
 volcano ./docs --top-nav
+
+# Hierarchy trail above each page
+volcano ./docs --breadcrumbs
 ```
 
 ### Advanced Features
 
 ```bash
-# Enable PWA (offline support + installable)
+# Installable site with offline support
 volcano ./docs --pwa
 
 # Custom accent color
@@ -115,13 +124,7 @@ public/
 
 ## Link Validation
 
-Volcano automatically validates all internal links:
-
-```bash
-volcano ./docs
-```
-
-If broken links are found, the build fails:
+Volcano automatically validates all internal links during the build. If broken links are found, the build fails:
 
 ```
 ✗ Found 2 broken internal links:
@@ -136,7 +139,7 @@ Fix the links and rebuild.
 For work-in-progress sites:
 
 ```bash
-volcano ./docs --allow-broken-links
+volcano ./docs --url="https://example.com" --allow-broken-links
 ```
 
 This warns about broken links but doesn't fail the build.
@@ -148,7 +151,7 @@ This warns about broken links but doesn't fail the build.
 Suppress output (useful for scripts):
 
 ```bash
-volcano ./docs -q
+volcano ./docs --url="$URL" -q
 ```
 
 ### Verbose Mode
@@ -156,7 +159,7 @@ volcano ./docs -q
 See detailed processing information:
 
 ```bash
-volcano ./docs --verbose
+volcano ./docs --url="$URL" --verbose
 ```
 
 Shows:
@@ -173,7 +176,7 @@ Create `volcano.json` in your input directory:
   "title": "My Documentation",
   "output": "./public",
   "theme": "docs",
-  "instant_nav": true,
+  "instantNav": true,
   "search": true,
   "pwa": true,
   "url": "https://docs.example.com"

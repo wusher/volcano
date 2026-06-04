@@ -91,14 +91,9 @@ a {
   text-decoration: none;
 }
 
-/* Quiet eyebrow above the title (the "4 min read" line) */
+/* Reading time + page meta are noise in a slide deck — hide entirely. */
 .page-meta {
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 1.5rem;
+  display: none;
 }
 
 /* Quiet chrome — sidebar, tree, breadcrumbs, buttons all recede.
@@ -196,14 +191,18 @@ a {
   background: var(--accent, var(--text-primary));
 }
 
-/* Top-right toolbar buttons (zen, theme toggle, search).
-   Browser default <button> renders a beveled gray box — flatten it. */
+/* Toolbar buttons (zen, theme toggle, search, code-block copy, back-to-top).
+   Browser default <button> renders a beveled gray box — flatten them all to
+   the same icon-only treatment so nothing competes with the prose. */
 .zen-toggle,
 .theme-toggle,
-.search-toggle {
+.search-toggle,
+.copy-button,
+.back-to-top {
   background: transparent;
   border: none;
   outline: none;
+  box-shadow: none;
   cursor: pointer;
   color: var(--text-muted);
   opacity: 0.55;
@@ -212,7 +211,11 @@ a {
 
 .zen-toggle:hover,
 .theme-toggle:hover,
-.search-toggle:hover {
+.search-toggle:hover,
+.copy-button:hover,
+.back-to-top:hover {
+  background: transparent;
+  border: none;
   opacity: 1;
   color: var(--text-primary);
 }
@@ -258,12 +261,10 @@ a {
 }
 
 /* Section break — each H2 feels like turning to a new slide.
-   The thin top border reinforces the slide-divider feel. */
+   Space alone does the work; no divider line needed. */
 .prose h2 {
   font-size: clamp(2.5rem, 6vw, 4.5rem);
   margin-top: 18rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--border-color);
 }
 
 .prose h3 {

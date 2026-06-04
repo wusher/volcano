@@ -135,7 +135,7 @@ volcano ./docs --url="https://username.github.io/my-repo"
 |------|---------|-------------|
 | `--theme` | `docs` | Built-in theme: `docs`, `blog`, `presentation`, `vanilla` |
 | `--css` | (none) | Custom CSS file (overrides theme) |
-| `--accent-color` | `sky` | Accent color: Tailwind name (`sky`, `rose`, `emerald`, ...) or hex (`#0ea5e9`) |
+| `--accent-color` | `sky` | Accent color: Tailwind name, hex, or two-color gradient. Examples: `sky`, `#0ea5e9`, `lime-sky`, `#444444-#555555` |
 
 ### Advanced
 
@@ -198,10 +198,10 @@ All available options in `volcano.json`:
   "author": "",
   "theme": "docs",
   "css": "",
-  "accentColor": "",
+  "accentColor": "sky",
   "favicon": "",
   "topNav": false,
-  "breadcrumbs": true,
+  "breadcrumbs": false,
   "pageNav": false,
   "instantNav": false,
   "inlineAssets": false,

@@ -41,8 +41,8 @@ For detailed theming information, see [[theming]].
 
 ## Accent Color
 
-Set an accent color by Tailwind name (uses the `500` shade) or any hex value.
-The default is `sky`:
+Set an accent color by Tailwind name (uses the `500` shade), any hex value, or
+a two-color gradient. The default is `sky`:
 
 ```bash
 # Tailwind color names
@@ -58,6 +58,45 @@ volcano ./docs --accent-color="#0284c7"
 Supported Tailwind names: `slate`, `gray`, `zinc`, `neutral`, `stone`, `red`,
 `orange`, `amber`, `yellow`, `lime`, `green`, `emerald`, `teal`, `cyan`, `sky`,
 `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`.
+
+### Gradient accent
+
+Pass two colors separated by a dash to apply a linear gradient. Each side
+can independently be a Tailwind name or a hex value:
+
+```bash
+# Two Tailwind names
+volcano ./docs --accent-color lime-sky
+
+# Two hex values
+volcano ./docs --accent-color "#444444-#555555"
+
+# Mix
+volcano ./docs --accent-color "lime-#0ea5e9"
+```
+
+When a gradient is set, four CSS custom properties are exposed:
+
+```css
+:root {
+  --accent: <start color>;
+  --accent-end: <end color>;
+  --accent-gradient: linear-gradient(to right, <start>, <end>);
+  --accent-gradient-vertical: linear-gradient(to bottom, <start>, <end>);
+}
+```
+
+The gradient is automatically applied to:
+
+- The scroll progress bar (full background)
+- The page H1 (gradient text via `background-clip: text`)
+- In-content links — both prose links and the previous/next page navigation
+- The docs-theme H2 underline (horizontal gradient via `border-image`)
+- Admonition + blockquote left borders and the TOC sidebar left rule (vertical gradient via `border-image`)
+
+Themes and custom CSS can reference either gradient variable for backgrounds,
+borders, or wherever a gradient is valid. See [[theming]] for why the two
+directions exist.
 
 ## Custom CSS
 

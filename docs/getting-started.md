@@ -37,21 +37,23 @@ Use the default installation path.
 EOF
 ```
 
-## Generate Site
-
-```bash
-volcano . -o ./public --title="My Docs"
-```
-
 ## Preview
 
 ```bash
 volcano serve .
 ```
 
-Open [http://localhost:1776](http://localhost:1776)
+Open [http://localhost:1776](http://localhost:1776).
 
-You'll see sidebar navigation, breadcrumbs, wiki links, and styled admonitions.
+You'll see sidebar navigation, wiki links, and styled admonitions.
+
+## Build for Deployment
+
+A build needs a base URL for canonical and Open Graph tags:
+
+```bash
+volcano . -o ./public --title="My Docs" --url="https://docs.example.com"
+```
 
 ## Next Steps
 

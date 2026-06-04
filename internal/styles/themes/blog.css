@@ -345,15 +345,21 @@ body.toc-open .mobile-toc-toggle {
    TREE NAVIGATION STYLING
    ========================================================================== */
 
+/* Sidebar still uses Charter (intentional blog character), just tighter:
+   smaller size and a leaner line-height so rows don't feel airy. */
+.sidebar {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
 .tree-nav {
-  font-size: 0.875rem;
   font-family: var(--font-serif);
 }
 
 .tree-nav a {
   border-radius: 0.25rem;
   color: var(--text-secondary);
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.5rem;
   transition: background-color var(--transition-speed), color var(--transition-speed);
 }
 

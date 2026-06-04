@@ -215,4 +215,3 @@ _wip.md         ← excluded from build
 
 - [[cli]] — Command line options
 - [[guides/organizing-content]] — File organization best practices
-- [[guides/organizing-content]] — Content organization

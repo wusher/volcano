@@ -158,20 +158,99 @@ func GenerateAccentVariants(hexColor string) (*AccentVariants, error) {
 }
 
 // GenerateAccentCSS generates CSS custom properties for accent colors.
-// Accepts either a hex string (e.g. "#0ea5e9") or a Tailwind color name (e.g. "sky").
-// Returns empty string if accentColor is empty.
+// Accepts a single color (Tailwind name or hex) or a two-color gradient spec
+// like "lime-sky" / "#444444-#555555". Returns empty string if accentColor is empty.
+//
+// For gradients the rule emits three variables (--accent, --accent-end,
+// --accent-gradient) and applies the gradient to the scroll progress bar and
+// the prose H1 so the user-visible effect is immediate. Themes can also opt
+// in to --accent-gradient elsewhere.
 func GenerateAccentCSS(accentColor string) (string, error) {
-	hex, err := ResolveAccentColor(accentColor)
+	start, end, err := ResolveAccentSpec(accentColor)
 	if err != nil {
 		return "", err
 	}
-	if hex == "" {
+	if start == "" {
 		return "", nil
 	}
 
-	css := fmt.Sprintf(`:root, [data-theme="dark"] {
+	if end == "" {
+		// Single color — preserve existing behavior.
+		return fmt.Sprintf(`:root, [data-theme="dark"] {
   --accent: %s;
-}`, hex)
+}`, start), nil
+	}
 
-	return css, nil
+	// Two-color gradient. Two gradient variables ship:
+	//   --accent-gradient            left-to-right — used for big backgrounds + text fills,
+	//                                where reading direction dominates the perceived blend
+	//   --accent-gradient-vertical   top-to-bottom — used for narrow vertical accents
+	//                                (left-borders on blockquotes, admonitions, etc.)
+	//
+	// A diagonal (135°) gradient looked too "first-color heavy" on wide, short
+	// headings because the gradient axis runs diagonally — most of the text
+	// bounding box sat in the first half of the gradient. Horizontal direction
+	// gives an even, predictable A→B sweep across the line.
+	return fmt.Sprintf(`:root, [data-theme="dark"] {
+  --accent: %s;
+  --accent-end: %s;
+  --accent-gradient: linear-gradient(to right, %s, %s);
+  --accent-gradient-vertical: linear-gradient(to bottom, %s, %s);
+}
+
+.scroll-progress-bar {
+  background: var(--accent-gradient);
+}
+
+/* Gradient text fill: applied to the page H1 and to in-content links
+   (prose + prev/next nav). The text-decoration-color line keeps the
+   underline visible since color: transparent would hide it otherwise. */
+.prose h1,
+.prose a,
+.page-nav-prev,
+.page-nav-next {
+  background-image: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-decoration-color: var(--accent);
+}
+
+/* The H1 is block-level and spans the full content column, so the
+   gradient (which is sized to the element's box) overshoots — the
+   second color never reaches the text. Shrink the box to the rendered
+   text width so the gradient stops map cleanly across the characters. */
+.prose h1 {
+  width: -moz-fit-content;
+  width: fit-content;
+  max-width: 100%%;
+}
+
+/* Vertical gradient on single-edge left-border accents (admonitions,
+   blockquotes). border-image paints any side that has width — so we can
+   only apply this to elements whose ONLY bordered side is the left. */
+.admonition,
+.prose blockquote {
+  border-left-color: transparent;
+  border-image: var(--accent-gradient-vertical) 1;
+}
+
+/* TOC sidebar has borders on all four sides plus a thicker accent left.
+   border-image would paint all four edges, so paint the left bar as a
+   layered background strip instead — keeps the rounded corners and the
+   existing fill color intact. */
+.toc-sidebar {
+  border-left-color: transparent;
+  background:
+    var(--accent-gradient-vertical) left center / 3px 100%% no-repeat,
+    var(--bg-primary);
+}
+
+/* Horizontal gradient on bottom-border accents (docs-theme H2 underline).
+   Only border-bottom has width, so only the bottom edge paints. */
+.prose h2 {
+  border-bottom-color: transparent;
+  border-image: var(--accent-gradient) 1;
+}`, start, end, start, end, start, end), nil
 }

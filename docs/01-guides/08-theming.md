@@ -15,12 +15,13 @@ volcano ./docs --theme docs
 ```
 
 **Features:**
-- Sidebar navigation with search
-- Breadcrumb navigation
-- Table of contents
+- Sidebar tree navigation
+- Table of contents (auto, when a page has 3+ headings)
 - Dark mode toggle
-- Professional typography
-- Responsive design
+- Typography tuned for long-form reading
+- Responsive layout
+
+Optional add-ons like search, breadcrumbs, top nav, and page nav are flag-controlled — see [[customizing-appearance]].
 
 **Best for:** Technical documentation, API references, user guides.
 
@@ -83,9 +84,10 @@ volcano ./docs --theme blog
 
 ## Accent Color
 
-Every built-in theme honors a single accent color, exposed as the `--accent`
-CSS custom property. Set it with `--accent-color` using either a Tailwind
-color name (uses the `500` shade) or any hex value. The default is `sky`:
+Every built-in theme honors an accent color. Set it with `--accent-color` using
+a Tailwind color name (uses the `500` shade), a hex value, or a two-color
+gradient. The color is exposed to CSS as the `--accent` custom property. The
+default is `sky`:
 
 ```bash
 # Tailwind names (case-insensitive)
@@ -95,11 +97,28 @@ volcano ./docs --accent-color emerald
 
 # Hex values
 volcano ./docs --accent-color "#0ea5e9"
+
+# Two-color gradient (each side can be name or hex)
+volcano ./docs --accent-color lime-sky
+volcano ./docs --accent-color "#444444-#555555"
+volcano ./docs --accent-color "lime-#0ea5e9"
 ```
 
 Supported names: `slate`, `gray`, `zinc`, `neutral`, `stone`, `red`,
 `orange`, `amber`, `yellow`, `lime`, `green`, `emerald`, `teal`, `cyan`,
 `sky`, `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`.
+
+When a gradient is set, three custom properties become available alongside
+`--accent`:
+
+- `--accent-end` — the second color (single value)
+- `--accent-gradient` — `linear-gradient(to right, start, end)`, used for wide horizontal accents (page H1, links, page-nav, scroll progress bar)
+- `--accent-gradient-vertical` — `linear-gradient(to bottom, start, end)`, used for narrow vertical accents (admonition + blockquote left borders)
+
+Two directions ship because a single 135° diagonal looked first-color-heavy on
+wide headings and didn't read as a clean top-to-bottom sweep on tall vertical
+bars. Themes and custom CSS can reference either variable wherever a gradient
+is a valid value (backgrounds, `border-image`, etc.).
 
 ## Extracting CSS
 

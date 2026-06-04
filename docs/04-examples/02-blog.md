@@ -45,14 +45,14 @@ blog/2024-03-15-post.md  →  /post/
 **Netlify:**
 ```toml
 [build]
-  command = "volcano ./blog -o ./public --theme blog --title='My Blog'"
+  command = "volcano ./blog -o ./public --theme blog --title='My Blog' --url='https://my-blog.netlify.app'"
   publish = "public"
 ```
 
 **Vercel:**
 ```json
 {
-  "buildCommand": "volcano ./blog -o ./public --theme blog",
+  "buildCommand": "volcano ./blog -o ./public --theme blog --url='https://my-blog.vercel.app'",
   "outputDirectory": "public"
 }
 ```

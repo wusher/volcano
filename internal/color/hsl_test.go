@@ -353,6 +353,110 @@ func TestGenerateAccentCSS_TailwindName(t *testing.T) {
 	}
 }
 
+func TestResolveAccentSpec(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantStart string
+		wantEnd   string
+		wantErr   bool
+	}{
+		{"empty", "", "", "", false},
+		{"single tailwind", "sky", "#0ea5e9", "", false},
+		{"single hex", "#ff6600", "#ff6600", "", false},
+		{"name-name gradient", "lime-sky", "#84cc16", "#0ea5e9", false},
+		{"hex-hex gradient", "#444444-#555555", "#444444", "#555555", false},
+		{"name-hex gradient", "lime-#ff6600", "#84cc16", "#ff6600", false},
+		{"hex-name gradient", "#ff6600-sky", "#ff6600", "#0ea5e9", false},
+		{"uppercase names", "LIME-SKY", "#84cc16", "#0ea5e9", false},
+		{"invalid first name", "ultraviolet-sky", "", "", true},
+		{"invalid second name", "sky-ultraviolet", "", "", true},
+		{"invalid hex", "#zzz-sky", "", "", true},
+		{"three colors", "red-blue-green", "", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			start, end, err := ResolveAccentSpec(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ResolveAccentSpec(%q) expected error, got nil", tt.input)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("ResolveAccentSpec(%q) unexpected error: %v", tt.input, err)
+				return
+			}
+			if start != tt.wantStart || end != tt.wantEnd {
+				t.Errorf("ResolveAccentSpec(%q) = (%q, %q), want (%q, %q)",
+					tt.input, start, end, tt.wantStart, tt.wantEnd)
+			}
+		})
+	}
+}
+
+func TestGenerateAccentCSS_Gradient(t *testing.T) {
+	css, err := GenerateAccentCSS("lime-sky")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// All three variables present
+	for _, want := range []string{"--accent:", "--accent-end:", "--accent-gradient:", "linear-gradient(to right"} {
+		if !strings.Contains(css, want) {
+			t.Errorf("gradient CSS missing %q, got: %q", want, css)
+		}
+	}
+	// Both resolved hex values
+	if !strings.Contains(css, "#84cc16") {
+		t.Errorf("CSS should contain lime-500 hex, got: %q", css)
+	}
+	if !strings.Contains(css, "#0ea5e9") {
+		t.Errorf("CSS should contain sky-500 hex, got: %q", css)
+	}
+	// Auto-applied rules for visible gradient
+	for _, sel := range []string{
+		".scroll-progress-bar",
+		".prose h1",
+		".prose a",
+		".page-nav-prev",
+		".page-nav-next",
+		".admonition",
+		".prose blockquote",
+		".toc-sidebar",
+		".prose h2",
+	} {
+		if !strings.Contains(css, sel) {
+			t.Errorf("gradient CSS should style %s, got: %q", sel, css)
+		}
+	}
+	// Both gradient variables present
+	if !strings.Contains(css, "--accent-gradient:") {
+		t.Error("gradient CSS missing --accent-gradient (diagonal)")
+	}
+	if !strings.Contains(css, "--accent-gradient-vertical:") {
+		t.Error("gradient CSS missing --accent-gradient-vertical (top-to-bottom)")
+	}
+	if !strings.Contains(css, "linear-gradient(to bottom") {
+		t.Error("gradient CSS should include a top-to-bottom gradient for left-border accents")
+	}
+}
+
+func TestGenerateAccentCSS_SingleColorNoGradientRules(t *testing.T) {
+	css, err := GenerateAccentCSS("sky")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Single-color path must NOT emit the gradient-specific rules so
+	// existing single-color themes stay visually unchanged.
+	if strings.Contains(css, "--accent-gradient") {
+		t.Errorf("single-color CSS should not emit --accent-gradient, got: %q", css)
+	}
+	if strings.Contains(css, ".scroll-progress-bar") {
+		t.Errorf("single-color CSS should not override .scroll-progress-bar, got: %q", css)
+	}
+}
+
 func TestTailwindColorsHaveAllExpectedNames(t *testing.T) {
 	required := []string{"sky", "rose", "emerald", "teal", "slate", "indigo", "amber"}
 	for _, name := range required {

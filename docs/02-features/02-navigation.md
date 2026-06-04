@@ -25,9 +25,9 @@ volcano ./docs --search
 ```
 
 ### [[breadcrumbs|Breadcrumbs]]
-Shows current page location in hierarchy. Enabled by default.
+Shows current page location in hierarchy.
 ```bash
-volcano ./docs --breadcrumbs=false  # to disable
+volcano ./docs --breadcrumbs
 ```
 
 ### [[table-of-contents|Table of Contents]]
@@ -89,9 +89,8 @@ volcano ./docs \
   --page-nav \
   --top-nav
 
-# Minimal setup
-volcano ./docs \
-  --breadcrumbs=false
+# Minimal setup (just the sidebar tree)
+volcano ./docs
 
 # Documentation focus
 volcano ./docs \

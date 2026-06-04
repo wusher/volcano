@@ -117,7 +117,7 @@ Create `netlify.toml` in your repository root:
 npm install -g netlify-cli
 
 # Build locally
-volcano ./docs -o ./public
+volcano ./docs -o ./public --url="https://your-site.netlify.app"
 
 # Deploy
 netlify deploy --prod --dir=public
@@ -125,7 +125,7 @@ netlify deploy --prod --dir=public
 
 ### Drag and Drop
 
-1. Generate your site: `volcano ./docs -o ./public`
+1. Generate your site: `volcano ./docs -o ./public --url="https://your-site.netlify.app"`
 2. Go to [app.netlify.com](https://app.netlify.com)
 3. Drag your `public` folder to the deploy zone
 
@@ -150,7 +150,7 @@ Create `vercel.json`:
 npm install -g vercel
 
 # Build locally
-volcano ./docs -o ./public
+volcano ./docs -o ./public --url="https://your-site.vercel.app"
 
 # Deploy
 vercel --prod
@@ -172,7 +172,7 @@ bucket = "./public"
 
 Build command in Cloudflare dashboard:
 ```bash
-go install github.com/wusher/volcano@latest && volcano ./docs -o ./public
+go install github.com/wusher/volcano@latest && volcano ./docs -o ./public --url="https://my-docs.pages.dev"
 ```
 
 ## Self-Hosting

@@ -15,26 +15,28 @@ docs/
     └── cli.md
 ```
 
-## Generate
+## Preview While You Write
 
-```bash
-volcano ./docs -o ./public --title="My Site"
-```
-
-## Preview
-
-```bash
-volcano serve ./public
-```
-
-Open http://localhost:1776
-
-## Development Mode
-
-Serve source files directly (regenerates on each request):
+The fastest loop — point `serve` at your source folder and Volcano renders each request on the fly:
 
 ```bash
 volcano serve ./docs
+```
+
+Open http://localhost:1776. Edit a markdown file, refresh the browser, see the change.
+
+## Generate Static Files
+
+When you're ready to ship, generate the static site. `--url` is required so canonical and Open Graph tags resolve correctly:
+
+```bash
+volcano ./docs -o ./public --title="My Site" --url="https://example.com"
+```
+
+You can also serve the built output (handy for testing pre-deploy):
+
+```bash
+volcano serve ./public
 ```
 
 ## Output Structure
@@ -50,7 +52,7 @@ public/
 │       └── index.html      # /guides/installation/
 ```
 
-Each page includes sidebar navigation, breadcrumbs, and table of contents.
+Each page includes sidebar navigation and an auto-generated table of contents (when the page has 3+ headings).
 
 ## Next
 

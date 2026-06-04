@@ -32,8 +32,8 @@ go install github.com/wusher/volcano@latest
 # Preview your notes
 volcano serve ./my-notes --title="My Site"
 
-# Or build for deployment
-volcano ./my-notes --title="My Site"
+# Or build for deployment (--url is required)
+volcano ./my-notes --title="My Site" --url="https://example.com"
 ```
 
 Your folder structure becomes the site navigation. That's it.

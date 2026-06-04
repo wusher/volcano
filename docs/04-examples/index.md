@@ -21,5 +21,5 @@ volcano serve ./docs
 **Custom theme:**
 ```bash
 volcano css -o theme.css
-volcano ./docs --css ./theme.css
+volcano ./docs --css ./theme.css --url="https://example.com"
 ```
