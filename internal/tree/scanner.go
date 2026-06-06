@@ -40,17 +40,16 @@ func Scan(inputDir string) (*Site, error) {
 		}
 	}
 
-	// If still no index, use the first file in root as the home page
+	// If still no index, designate the first root-level file as the home page.
+	// IMPORTANT: keep the file in root.Children so it stays visible in the
+	// sidebar. Previously we both renamed Path → "index.md" and removed the
+	// node from Children, which silently stole the file from the navigation
+	// and confused users who couldn't find a file they knew existed.
 	if !root.HasIndex && len(root.Children) > 0 {
-		for i, child := range root.Children {
+		for _, child := range root.Children {
 			if !child.IsFolder {
 				root.HasIndex = true
 				root.IndexPath = child.Path
-				// Change Path to "index.md" so it renders to root index.html
-				// (SourcePath remains unchanged for reading the actual file)
-				child.Path = "index.md"
-				// Remove from navigation - it will be the home page
-				root.Children = append(root.Children[:i], root.Children[i+1:]...)
 				break
 			}
 		}

@@ -383,6 +383,41 @@ func TestIntegrationStory20_KeyboardShortcuts(t *testing.T) {
 	}
 }
 
+// Help modal must not advertise the ⌘K search shortcut when --search is off.
+// Surfacing it when search was never wired tells users to press a hotkey that
+// can't do anything.
+func TestHelpModalHidesSearchShortcutWhenSearchDisabled(t *testing.T) {
+	outputDir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	html, _ := os.ReadFile(filepath.Join(outputDir, "index.html"))
+	body := string(html)
+
+	if strings.Contains(body, "shortcuts-modal") && strings.Contains(body, "Open search") {
+		t.Error("help modal should not list ⌘K / Open search when --search is disabled")
+	}
+}
+
+func TestHelpModalShowsSearchShortcutWhenSearchEnabled(t *testing.T) {
+	outputDir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "--search", "./example"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	html, _ := os.ReadFile(filepath.Join(outputDir, "index.html"))
+	body := string(html)
+
+	if !strings.Contains(body, "Open search") {
+		t.Error("help modal should list ⌘K / Open search when --search is enabled")
+	}
+}
+
 // Story 21: Print Stylesheet
 func TestIntegrationStory21_PrintStyles(t *testing.T) {
 	outputDir := t.TempDir()

@@ -262,11 +262,11 @@
     <dialog id="shortcuts-modal" class="shortcuts-modal">
         <h2>Keyboard Shortcuts</h2>
         <dl class="shortcuts-list">
-            <div class="shortcut-group">
+{{if .SearchEnabled}}            <div class="shortcut-group">
                 <dt><kbd>⌘K</kbd></dt>
                 <dd>Open search</dd>
             </div>
-            <div class="shortcut-group">
+{{end}}            <div class="shortcut-group">
                 <dt><kbd>t</kbd></dt>
                 <dd>Toggle theme</dd>
             </div>
