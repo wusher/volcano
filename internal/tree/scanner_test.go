@@ -515,3 +515,58 @@ func TestSortAndPrune(t *testing.T) {
 		}
 	}
 }
+
+// A folder containing only an index.md must survive sortAndPrune.
+// The regression: such folders looked "empty" (their index file is not in
+// Children — it's promoted to HasIndex on the folder itself) and got dropped,
+// silently disappearing from the sidebar.
+func TestSortAndPrune_PreservesIndexOnlyFolders(t *testing.T) {
+	root := NewNode("Root", "", true)
+
+	soloSection := NewNode("Quickstart", "quickstart", true)
+	soloSection.HasIndex = true
+	soloSection.IndexPath = "quickstart/index.md"
+	root.AddChild(soloSection)
+
+	emptyFolder := NewNode("Empty", "empty", true)
+	root.AddChild(emptyFolder)
+
+	sortAndPrune(root)
+
+	if len(root.Children) != 1 {
+		t.Fatalf("Children count = %d, want 1 (index-only folder kept, empty folder pruned)", len(root.Children))
+	}
+	if root.Children[0].Name != "Quickstart" {
+		t.Errorf("Child[0].Name = %q, want %q (index-only folder should survive)", root.Children[0].Name, "Quickstart")
+	}
+}
+
+// A folder's display name should come from its index.md's H1 (when present),
+// not from CleanLabel on the folder name. That way `06-cli/index.md` with
+// `# CLI Reference` shows "CLI Reference" in the sidebar, not "Cli".
+func TestScan_FolderNameFromIndexH1(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a folder with an index.md whose H1 is "CLI Reference".
+	section := filepath.Join(tmpDir, "06-cli")
+	if err := os.MkdirAll(section, 0755); err != nil {
+		t.Fatal(err)
+	}
+	indexContent := []byte("# CLI Reference\n\nFlags and config.\n")
+	if err := os.WriteFile(filepath.Join(section, "index.md"), indexContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	site, err := Scan(tmpDir)
+	if err != nil {
+		t.Fatalf("Scan failed: %v", err)
+	}
+
+	if len(site.Root.Children) != 1 {
+		t.Fatalf("Children = %d, want 1", len(site.Root.Children))
+	}
+	got := site.Root.Children[0].Name
+	if got != "CLI Reference" {
+		t.Errorf("folder.Name = %q, want %q (should come from index.md H1)", got, "CLI Reference")
+	}
+}

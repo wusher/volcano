@@ -1,55 +1,53 @@
 # Volcano
 
-**Turn markdown folders into websites. Zero config.**
+**Turn any markdown folder into a website. Zero config.**
 
 <style>
-.logo-float {
-  max-width: 260px;
-}
-
+.logo-float { max-width: 220px; }
 @media (min-width: 768px) {
-  .logo-float {
-    float: right;
-  }
+  .logo-float { float: right; margin-left: 2rem; }
 }
 </style>
 
-<img src="logo.png" alt="Volcano Logo" class="logo-float">
+<img src="logo.png" alt="" class="logo-float">
 
+Point Volcano at a folder of `.md` files. Get a styled, navigable site with sidebar tree, search, dark mode, wiki links, and clean URLs — no `_config.yml`, no plugins, no build pipeline. Single Go binary.
 
----
+It works on whatever you already have: an Obsidian vault, a `docs/` folder, a pile of notes.
 
-Point Volcano at any markdown folder and get a beautiful, navigable website. Works with Obsidian vaults, documentation folders, or any collection of markdown files.
-
-**Single binary. No dependencies. No config files.**
-
-## Quick Start
+## 30-Second Start
 
 ```bash
 # Install
 go install github.com/wusher/volcano@latest
 
-# Preview your notes
-volcano serve ./my-notes --title="My Site"
-
-# Or build for deployment (--url is required)
-volcano ./my-notes --title="My Site" --url="https://example.com"
+# Preview a folder in the browser
+volcano serve ./my-notes
 ```
 
-Your folder structure becomes the site navigation. That's it.
+That's it. Open [http://localhost:1776](http://localhost:1776). Edit files, refresh the page, see changes.
 
-## Features
+![Volcano running on its own docs](/images/ui/homepage.png)
 
-- Tree navigation and search
-- Clean URLs and SEO tags
-- Dark mode
-- Wiki links and admonitions
-- Code highlighting with copy button
-- Mobile responsive
+## What You Get By Default
 
-## Documentation
+- **Sidebar tree** — your folder structure is the navigation
+- **Wiki links** — `[[Page Name]]` resolves automatically
+- **Admonitions** — `:::tip`, `:::note`, `:::warning`, `:::danger` callout boxes
+- **Code highlighting** with copy buttons
+- **Image lightbox** — click any image in the content area to view it full-size
+- **Dark mode** toggle (press `t`)
+- **Clean URLs** — `setup.md` becomes `/setup/`
+- **SEO meta tags** — Open Graph, canonical, schema.org
+- **Mobile responsive**
 
-- [[Getting Started]] — Build your first site in 5 minutes
-- [[guides/index|Guides]] — Learn Volcano features
-- [[reference/index|Reference]] — CLI flags and options
-- [[examples/index|Examples]] — Real-world setups
+Optional with one flag each: `--search` (Cmd+K palette), `--breadcrumbs`, `--top-nav`, `--page-nav`, `--instant-nav`, `--pwa`.
+
+## Where Next
+
+- **[Quickstart](/quickstart/)** — install → write → preview → deploy in 15 minutes
+- **[Writing](/writing/)** — markdown, wiki links, admonitions, file organization
+- **[Appearance](/appearance/)** — themes, accent colors, custom CSS
+- **[Features](/features/)** — search, navigation, keyboard shortcuts
+- **[Deploying](/deploying/)** — GitHub Pages, Netlify, Vercel, self-hosting
+- **[CLI Reference](/cli/)** — every flag and config option

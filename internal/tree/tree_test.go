@@ -113,6 +113,17 @@ func TestNodeHasMarkdownContent(t *testing.T) {
 		t.Error("Folder with nested file should have markdown content")
 	}
 
+	// A folder whose only markdown file is its own index.md doesn't have that
+	// file in Children (it's been promoted to HasIndex), but it absolutely
+	// has content — without this, sortAndPrune drops the folder and any
+	// single-page section disappears from the sidebar.
+	indexOnlyFolder := NewNode("IndexOnly", "section", true)
+	indexOnlyFolder.HasIndex = true
+	indexOnlyFolder.IndexPath = "section/index.md"
+	if !indexOnlyFolder.HasMarkdownContent() {
+		t.Error("Folder with only index.md should have markdown content")
+	}
+
 	// Nested empty folders have no content
 	emptyOuter := NewNode("EmptyOuter", "", true)
 	emptyInner := NewNode("EmptyInner", "empty", true)

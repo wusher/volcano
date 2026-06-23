@@ -181,8 +181,22 @@ func (s *Server) log(format string, args ...interface{}) {
 	}
 }
 
+// isLogNoise returns true for request paths that are known browser-driven
+// probes — there's nothing useful for the user to see in the log, and the
+// 404s these generate just look like real errors. Currently filters:
+//   - /.well-known/appspecific/com.chrome.devtools.json — Chrome DevTools
+//     workspace auto-discovery probe (M-135+). Fires on every page when
+//     DevTools is open. See
+//     https://chromium.googlesource.com/devtools/devtools-frontend/+/main/docs/ecosystem/automatic_workspace_folders.md
+func isLogNoise(path string) bool {
+	return path == "/.well-known/appspecific/com.chrome.devtools.json"
+}
+
 // logRequest logs an HTTP request
 func (s *Server) logRequest(method, path string, status int, duration time.Duration) {
+	if isLogNoise(path) {
+		return
+	}
 	if !s.config.Quiet {
 		statusColor := ""
 		resetColor := ""

@@ -33,11 +33,16 @@ var VanillaCSS string
 //go:embed themes/presentation.css
 var PresentationCSS string
 
+// ReadableCSS is the embedded readable theme — dyslexia-friendly, OpenDyslexic font.
+//
+//go:embed themes/readable.css
+var ReadableCSS string
+
 // CSS is kept for backward compatibility, points to docs theme
 var CSS = LayoutCSS + "\n" + DocsCSS
 
 // ValidThemes lists all available theme names
-var ValidThemes = []string{"docs", "blog", "presentation", "vanilla"}
+var ValidThemes = []string{"docs", "blog", "presentation", "readable", "vanilla"}
 
 // GetCSS returns the CSS for the specified theme
 // If theme is empty, returns the docs theme (default)
@@ -54,6 +59,8 @@ func GetThemeCSS(theme string) string {
 		return BlogCSS
 	case "presentation":
 		return PresentationCSS
+	case "readable":
+		return ReadableCSS
 	case "vanilla":
 		return VanillaCSS
 	case "docs", "":
@@ -73,7 +80,7 @@ func ValidateTheme(theme string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("invalid theme %q, valid themes are: docs, blog, presentation, vanilla", theme)
+	return fmt.Errorf("invalid theme %q, valid themes are: docs, blog, presentation, readable, vanilla", theme)
 }
 
 // CSSLoader provides CSS content loading functionality.

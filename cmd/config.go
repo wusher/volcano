@@ -39,7 +39,7 @@ func DefaultConfig() *Config {
 		OutputDir:       "./output",
 		Port:            1776,
 		Title:           "My Site",
-		AccentColor:     "sky",  // Default accent color (Tailwind sky-500)
+		AccentColor:     "sky", // Default accent color (Tailwind sky-500)
 		ShowBreadcrumbs: false, // Breadcrumbs off by default — opt in with --breadcrumbs
 		ViewTransitions: true,  // View transitions enabled by default
 	}

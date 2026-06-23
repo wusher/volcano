@@ -57,6 +57,12 @@ func (n *Node) HasMarkdownContent() bool {
 	if !n.IsFolder {
 		return true // Files are content
 	}
+	// An index.md isn't kept in Children (it's promoted to the folder itself)
+	// but it absolutely counts as content — otherwise sortAndPrune drops the
+	// folder and a one-page section vanishes from the sidebar.
+	if n.HasIndex {
+		return true
+	}
 	for _, child := range n.Children {
 		if child.HasMarkdownContent() {
 			return true

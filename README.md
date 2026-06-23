@@ -95,7 +95,7 @@ volcano
 | `-p, --port` | Server port | `1776` |
 | `--title` | Site title | `My Site` |
 | `--url` | Site base URL (for SEO) | |
-| `--theme` | Built-in theme: docs, blog, presentation, vanilla | `docs` |
+| `--theme` | Built-in theme: docs, blog, presentation, readable, vanilla | `docs` |
 | `--accent-color` | Accent color: Tailwind name, hex, or two-color gradient (e.g. `sky`, `#0ea5e9`, `lime-sky`, `#444444-#555555`) | `sky` |
 | `--instant-nav` | Enable hover prefetching | `false` |
 | `--search` | Enable search (Cmd+K) | `false` |
@@ -186,6 +186,19 @@ volcano ./talk \
   --theme presentation \
   --accent-color emerald \
   --title="My Talk"
+```
+
+### Dyslexia-Friendly Reading
+
+The `readable` theme uses the OpenDyslexic font, off-white cream background,
+generous letter/word spacing, and capped line length — optimized for readers
+with dyslexia and other reading-processing challenges (not a low-vision
+accessibility theme; it's specifically tuned for reading difficulty):
+
+```bash
+volcano ./docs \
+  --theme readable \
+  --title="Project Documentation"
 ```
 
 ### Development Server

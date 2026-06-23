@@ -1186,3 +1186,47 @@ body.command-palette-open {
   overflow: hidden;
 }
 
+/* ==========================================================================
+   IMAGE LIGHTBOX
+   ==========================================================================
+   Activated by clicking any .prose img. JS toggles .open + body.lightbox-open. */
+
+.prose img {
+  cursor: zoom-in;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.lightbox.open {
+  display: flex;
+}
+
+.lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  cursor: zoom-out;
+}
+
+.lightbox-image {
+  position: relative;
+  z-index: 1;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  cursor: zoom-out;
+}
+
+body.lightbox-open {
+  overflow: hidden;
+}
+

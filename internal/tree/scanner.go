@@ -116,6 +116,12 @@ func scanDirectory(basePath, currentPath string, parent *Node, allPages *[]*Node
 			if IsIndexFile(name) && parent.IsFolder {
 				parent.HasIndex = true
 				parent.IndexPath = relPath
+				// Promote the index's H1 to the folder's display name so the
+				// sidebar label matches the page title (e.g. folder `06-cli`
+				// with `# CLI Reference` shows "CLI Reference", not "Cli").
+				if fileNode.H1Title != "" {
+					parent.Name = fileNode.H1Title
+				}
 			}
 
 			// Skip adding index files to the tree navigation

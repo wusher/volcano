@@ -1,0 +1,635 @@
+/* ==========================================================================
+   VOLCANO READABLE THEME
+   ==========================================================================
+   Dyslexia-friendly theme. Optimized for readers with dyslexia and similar
+   reading challenges (letter inversion, tracking difficulty, surface text
+   crowding). This is NOT a low-vision/accessibility-contrast theme — it's
+   tuned specifically for reading-processing difficulty.
+
+   Design choices (informed by British Dyslexia Association + research from
+   Atkinson Hyperlegible & Bionic Reading projects):
+
+     - Font: OpenDyslexic (weighted bottoms reduce letter-flipping confusion).
+       Falls back to Lexend (a tuned reading-speed font), then Atkinson
+       Hyperlegible, then Verdana — all readable choices.
+     - Off-white cream background instead of pure white (reduces glare).
+     - Soft dark text instead of pure black (less optical vibration).
+     - Larger base font (20px) and generous line-height (1.85).
+     - Wider letter-spacing and word-spacing to reduce crowding.
+     - Narrow column (~60ch) — long lines are the #1 dyslexia reading killer.
+     - Left-aligned only (NO justification — uneven word gaps hurt tracking).
+     - Bold for emphasis; italics are avoided in prose styling.
+     - Clear heading hierarchy with extra space above each new section.
+   ========================================================================== */
+
+/* OpenDyslexic loaded directly from the official antijingoist/opendyslexic
+   repo via jsDelivr's GitHub mirror. This is more reliable than the
+   cdnfonts.com proxy, which sometimes returns the CSS but not the
+   actual woff2 files. Lexend stays as the Google Fonts fallback. */
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('https://cdn.jsdelivr.net/gh/antijingoist/opendyslexic@master/compiled/OpenDyslexic-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('https://cdn.jsdelivr.net/gh/antijingoist/opendyslexic@master/compiled/OpenDyslexic-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;700&display=swap');
+
+/* ==========================================================================
+   CSS VARIABLES - Colors & Typography
+   ========================================================================== */
+
+:root {
+  /* Cream/off-white palette — glare-reduced for long reading sessions */
+  --bg-primary: #fdf6e3;
+  --bg-secondary: #f5edd6;
+  --bg-tertiary: #ece4ca;
+
+  /* Soft dark slate instead of pure black */
+  --text-primary: #1c1a17;
+  --text-secondary: #3c372f;
+  --text-muted: #6e6555;
+
+  --border-color: #d8cfb6;
+  --link-color: #1f6f9c;
+  --link-hover: #134e6f;
+  --code-bg: #f0e8cf;
+
+  --accent-background: color-mix(in srgb, var(--accent) 12%, var(--bg-primary));
+  --accent-foreground: color-mix(in srgb, var(--accent) 25%, var(--text-primary));
+
+  /* Sidebar kept compact so the body content dominates. The smaller
+     sidebar font (set below) compensates for OpenDyslexic's natural
+     width so labels still fit on one line. */
+  --sidebar-width: 240px;
+  --content-max-width: 620px;
+
+  /* Dyslexia-friendly font stack. OpenDyslexic is the primary; the
+     fallback chain stays in legibility-friendly territory. */
+  --font-dyslexic: 'OpenDyslexic', 'Lexend', 'Atkinson Hyperlegible',
+                   Verdana, Tahoma, 'Trebuchet MS', sans-serif;
+  --font-sans: var(--font-dyslexic);
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'SF Mono', Consolas, monospace;
+}
+
+[data-theme="dark"] {
+  /* Dim warm-grey palette — avoids pure white-on-black flare */
+  --bg-primary: #2b2620;
+  --bg-secondary: #34302a;
+  --bg-tertiary: #3d3933;
+
+  --text-primary: #f0e8d8;
+  --text-secondary: #d6cdb8;
+  --text-muted: #a59a82;
+
+  --border-color: #4a4640;
+  --link-color: #8ecae6;
+  --link-hover: #c6dff0;
+  --code-bg: #1f1c18;
+
+  --accent-background: color-mix(in srgb, var(--accent) 25%, var(--bg-primary));
+  --accent-foreground: color-mix(in srgb, var(--accent) 35%, var(--text-primary));
+}
+
+/* ==========================================================================
+   BASE TYPOGRAPHY
+   ========================================================================== */
+
+html {
+  /* Normal body size — this theme is for reading difficulty, not vision
+     impairment. The dyslexia benefits come from the FONT, spacing, and
+     line length, not oversized type. */
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Don't auto-justify — uneven word spacing breaks tracking. */
+  text-align: left;
+}
+
+body {
+  font-family: var(--font-dyslexic);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-weight: 400;
+  /* Wider letter + word spacing — gives letters/words breathing room
+     so they're less likely to crowd each other in the reader's eye. */
+  letter-spacing: 0.02em;
+  word-spacing: 0.12em;
+}
+
+a {
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+
+a:hover {
+  color: var(--link-hover);
+}
+
+/* ==========================================================================
+   SIDEBAR — blog-style: blends with the body, no panel
+   ========================================================================== */
+
+.sidebar {
+  /* Same background as body — sidebar reads as part of one continuous
+     reading surface, not a separate panel. (Blog-style, not docs-style.) */
+  background: var(--bg-primary);
+  border-right: none;
+  font-family: var(--font-dyslexic);
+  /* Smaller than other themes' sidebars — OpenDyslexic is naturally
+     wide and tall, so dropping to ~11px keeps the nav from
+     visually competing with the body content. */
+  font-size: 0.7rem;
+  line-height: 1.4;
+  /* Reset the body's wide dyslexia spacing inside the sidebar — those
+     spacings help for reading-flow prose but make nav labels even
+     wider and cause more wrapping. */
+  letter-spacing: normal;
+  word-spacing: normal;
+}
+
+/* Tighten the chevron→label gap. Layout.css gives .folder-header a 0.25rem
+   gap and .folder-toggle a 0.25rem padding — combined with the link's
+   own padding-left, that's a ~17px gap. Pull it in. */
+.folder-header {
+  gap: 0;
+}
+
+.folder-toggle {
+  padding: 0 0.1rem;
+}
+
+/* Indent nested children PAST the chevron column. Default layout.css
+   uses padding-left: 1rem on .folder-children, but with the chevron
+   button taking ~24px on the parent row, children visually outdent
+   relative to their parent label. Push them clear of the chevron. */
+.folder-children {
+  padding-left: 1.4rem;
+}
+
+.sidebar-header {
+  border-bottom: none;
+}
+
+.site-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+
+.nav-search {
+  border-bottom: none;
+}
+
+.search-input {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-dyslexic);
+  font-size: 0.9rem;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent, var(--text-primary));
+  box-shadow: 0 0 0 3px var(--accent-background);
+}
+
+.tree-nav a {
+  border-radius: 4px;
+  color: var(--text-secondary);
+  padding: 0.25rem 0.5rem;
+  text-decoration: none;
+  /* Uniform weight across folders + files. Bold is reserved for the
+     active item so the "you are here" cue carries the weight contrast
+     instead of having every folder label shout. */
+  font-weight: 400;
+}
+
+.tree-nav a:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.tree-nav a.active {
+  /* Keep the SAME weight as inactive items. OpenDyslexic Bold is
+     significantly wider than Regular — switching weight on click
+     causes the row to grow and sometimes wrap to a new line, which
+     reads as the page reflowing. The darker text + soft warm-cream
+     background carry the "you are here" signal without any width
+     change. */
+  color: var(--text-primary);
+  font-weight: 400;
+  background: var(--bg-tertiary);
+}
+
+.folder-link,
+.folder-label {
+  color: var(--text-secondary);
+  /* Same regular weight as file links — uniform sidebar typography.
+     Active state handles the emphasis via .tree-nav a.active. */
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.folder-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   BREADCRUMBS + TOP NAV
+   ========================================================================== */
+
+.breadcrumbs,
+.top-nav {
+  background: var(--bg-primary);
+  border-bottom: none;
+}
+
+.breadcrumbs ol {
+  font-size: 0.85rem;
+  font-family: var(--font-dyslexic);
+}
+
+.breadcrumbs a {
+  color: var(--text-muted);
+}
+
+.breadcrumbs a:hover {
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   PROSE — generous, calm, dyslexia-friendly
+   ========================================================================== */
+
+.prose {
+  font-family: var(--font-dyslexic);
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--text-primary);
+  /* Center prose on the VIEWPORT, not on the post-sidebar content box.
+     Layout.css ships `margin: 0 auto` which centers within the space
+     left over after the sidebar, visually shifting the column right
+     by half the sidebar width. This formula pushes the prose left so
+     its center sits exactly at 50vw regardless of sidebar width.
+
+     The subtracted 2rem accounts for .content's padding-left so the
+     math lands on the prose box, not on its container. max() with 0
+     prevents negative margins on narrow viewports — there the prose
+     falls back to hugging the left of .main-wrapper. */
+  margin-left: max(0px, calc(50vw - var(--content-max-width) / 2 - var(--sidebar-width) - 2rem));
+  margin-right: auto;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  font-weight: 700;
+  /* Bold + slightly tighter line-height for headings. Keep letter-spacing
+     loose so even big type doesn't crowd. */
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+  /* Generous space before each new heading — the eye needs a rest point. */
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.prose h1 {
+  font-size: 1.75rem;
+  margin-top: 0.5rem;
+}
+
+.prose h2 {
+  font-size: 1.4rem;
+  margin-top: 2.5rem;
+}
+
+.prose h3 { font-size: 1.2rem; }
+.prose h4 { font-size: 1.05rem; }
+.prose h5, .prose h6 { font-size: 0.95rem; }
+
+.prose p {
+  /* Cap line length — long lines are catastrophic for dyslexic tracking.
+     ~60ch is a common readability sweet spot. */
+  max-width: 60ch;
+  margin: 1.2rem 0;
+}
+
+.prose ul,
+.prose ol {
+  max-width: 60ch;
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin: 0.5rem 0;
+}
+
+/* Bold over italics — italics fonts often slope letters in ways
+   that increase letter confusion. */
+.prose em {
+  font-style: normal;
+  font-weight: 700;
+}
+
+.prose strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Quiet neutral left border on blockquotes — the calm reading vibe of
+   the theme doesn't want a saturated accent stripe pulling the eye.
+   !important defeats the auto-injected gradient border-image that
+   GenerateAccentCSS appends after the theme CSS. */
+.prose blockquote {
+  border-left: 4px solid var(--border-color) !important;
+  border-image: none !important;
+  padding: 0.5rem 1rem 0.5rem 1.25rem;
+  margin: 1.5rem 0;
+  background: var(--bg-secondary);
+  border-radius: 0 6px 6px 0;
+  color: var(--text-secondary);
+  /* Also reset italics inside quotes for the same reason as <em>. */
+  font-style: normal;
+}
+
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 3rem auto;
+  max-width: 60ch;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+/* Code */
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  letter-spacing: 0;
+}
+
+.prose pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  letter-spacing: 0;
+  word-spacing: normal;
+}
+
+.prose pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Tables */
+.prose th,
+.prose td {
+  border: 1px solid var(--border-color);
+  padding: 0.6rem 0.9rem;
+}
+
+.prose th {
+  background: var(--bg-secondary);
+  font-weight: 700;
+  text-align: left;
+}
+
+/* Admonitions — neutral left border, no accent. Same reasoning as
+   blockquote: this theme keeps the reading surface calm. */
+.admonition {
+  border-left: 4px solid var(--border-color) !important;
+  border-image: none !important;
+  background: var(--bg-secondary);
+  padding: 1rem 1.25rem;
+  margin: 2rem 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.admonition-heading {
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   PAGE NAVIGATION + TOC
+   ========================================================================== */
+
+.page-nav {
+  border-top: 1px solid var(--border-color);
+  margin-top: 3rem;
+}
+
+.page-nav-prev,
+.page-nav-next {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.page-nav-prev:hover,
+.page-nav-next:hover {
+  border-color: var(--accent, var(--text-muted));
+  background: var(--accent-background);
+  text-decoration: none;
+}
+
+.page-nav-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.page-nav-title {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.toc-sidebar {
+  /* Uniform 1px border on all sides — no accent stripe. The
+     !important on background defeats the gradient-strip layer that
+     GenerateAccentCSS would otherwise inject onto the left edge. */
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 6px;
+  font-family: var(--font-dyslexic);
+  /* Same reasoning as the sidebar — TOC labels are chrome, not prose.
+     Reset the wide dyslexia spacing so headings fit on one line. */
+  letter-spacing: normal;
+  word-spacing: normal;
+}
+
+.toc-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.toc a {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.toc a:hover {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.toc a.active {
+  color: var(--accent, var(--text-primary));
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   BUTTONS (theme/zen/search toggles, copy, back-to-top)
+   ========================================================================== */
+
+.theme-toggle,
+.zen-toggle,
+.search-toggle,
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-dyslexic);
+}
+
+.theme-toggle:hover,
+.zen-toggle:hover,
+.search-toggle:hover {
+  color: var(--text-primary);
+}
+
+.copy-button {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+.back-to-top {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  color: var(--text-primary);
+}
+
+.close-modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.scroll-progress {
+  background: var(--bg-tertiary);
+}
+
+.scroll-progress-bar {
+  background: var(--accent, var(--text-primary));
+}
+
+/* ==========================================================================
+   MOBILE
+   ========================================================================== */
+
+.mobile-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mobile-header .mobile-site-title {
+  font-family: var(--font-dyslexic);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.drawer-backdrop {
+  background-color: rgba(28, 26, 23, 0.5);
+}
+
+/* ==========================================================================
+   PRINT
+   ========================================================================== */
+
+@media print {
+  body {
+    background: #fdf6e3 !important;
+    color: #1c1a17 !important;
+  }
+}
+
+/* ==========================================================================
+   SYNTAX HIGHLIGHTING — soft palette (Solarized-light inspired)
+   Lower contrast than typical syntax themes; matches the cream background.
+   ========================================================================== */
+
+.chroma { background: var(--code-bg); }
+.chroma .hl { background: rgba(255, 255, 0, 0.15); }
+.chroma .lnt, .chroma .ln { color: #93a1a1; }
+.chroma .k, .chroma .kc, .chroma .kd, .chroma .kn, .chroma .kp, .chroma .kr, .chroma .kt { color: #859900; font-weight: 700; }
+.chroma .na { color: #268bd2; }
+.chroma .nb { color: #b58900; }
+.chroma .nc { color: #b58900; font-weight: 700; }
+.chroma .no { color: #cb4b16; }
+.chroma .nd { color: #6c71c4; }
+.chroma .nf { color: #268bd2; }
+.chroma .nt { color: #268bd2; }
+.chroma .s, .chroma .sa, .chroma .sb, .chroma .sc, .chroma .dl,
+.chroma .s2, .chroma .se, .chroma .sh, .chroma .si, .chroma .sx,
+.chroma .sr, .chroma .s1, .chroma .ss { color: #2aa198; }
+.chroma .sd { color: #93a1a1; }
+.chroma .m, .chroma .mb, .chroma .mf, .chroma .mh, .chroma .mi, .chroma .il, .chroma .mo { color: #d33682; }
+.chroma .o, .chroma .ow { color: #859900; }
+.chroma .c, .chroma .ch, .chroma .cm, .chroma .c1, .chroma .cs { color: #93a1a1; }
+.chroma .cp { color: #cb4b16; }
+.chroma .gd { color: #dc322f; background-color: rgba(220, 50, 47, 0.08); }
+.chroma .gi { color: #859900; background-color: rgba(133, 153, 0, 0.08); }
+.chroma .gu { color: #6c71c4; font-weight: 700; }
+
+[data-theme="dark"] .chroma .lnt,
+[data-theme="dark"] .chroma .ln { color: #6e6555; }
+[data-theme="dark"] .chroma .k, [data-theme="dark"] .chroma .kc, [data-theme="dark"] .chroma .kd,
+[data-theme="dark"] .chroma .kn, [data-theme="dark"] .chroma .kp, [data-theme="dark"] .chroma .kr,
+[data-theme="dark"] .chroma .kt { color: #b8c66c; }
+[data-theme="dark"] .chroma .s, [data-theme="dark"] .chroma .s1, [data-theme="dark"] .chroma .s2 { color: #7dc8c3; }
+[data-theme="dark"] .chroma .c, [data-theme="dark"] .chroma .c1, [data-theme="dark"] .chroma .cm { color: #8a8270; }

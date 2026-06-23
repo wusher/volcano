@@ -1021,6 +1021,9 @@ func (s *DynamicServer) logError(format string, args ...interface{}) {
 
 // logRequest logs an HTTP request
 func (s *DynamicServer) logRequest(method, path string, status int, duration time.Duration) {
+	if isLogNoise(path) {
+		return
+	}
 	if !s.config.Quiet {
 		statusColor := ""
 		resetColor := ""

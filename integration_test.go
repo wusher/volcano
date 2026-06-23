@@ -182,11 +182,13 @@ func TestIntegrationNavigation(t *testing.T) {
 
 	html := string(content)
 
-	// Verify navigation contains links to pages
+	// Verify navigation contains links to pages.
+	// Folder display names come from their index.md's H1 when present
+	// (api/index.md has "# API Reference"); otherwise CleanLabel of the folder name.
 	navLinks := []string{
 		"Getting Started",
 		"Guides",
-		"Api", // "api" folder becomes "Api" per CleanLabel
+		"API Reference",
 	}
 
 	for _, link := range navLinks {
@@ -261,7 +263,9 @@ func TestIntegrationStory14_TOC(t *testing.T) {
 func TestIntegrationStory15_Breadcrumbs(t *testing.T) {
 	outputDir := t.TempDir()
 	var stdout, stderr bytes.Buffer
-	exitCode := Run([]string{"-o", outputDir, "--title=Test Site", "--url=https://example.com", "./example"}, &stdout, &stderr)
+	// Breadcrumbs are off by default since v1.1.2 — pass --breadcrumbs explicitly
+	// to opt in for this acceptance test.
+	exitCode := Run([]string{"-o", outputDir, "--title=Test Site", "--breadcrumbs", "--url=https://example.com", "./example"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("Generation failed: %s", stderr.String())
 	}
@@ -415,6 +419,64 @@ func TestHelpModalShowsSearchShortcutWhenSearchEnabled(t *testing.T) {
 
 	if !strings.Contains(body, "Open search") {
 		t.Error("help modal should list ⌘K / Open search when --search is enabled")
+	}
+}
+
+// Lightbox is always-on (no flag) — clicking any .prose img opens an overlay.
+// Test confirms the JS handler and CSS rules ship in the rendered HTML.
+func TestImageLightboxShipsInLayout(t *testing.T) {
+	outputDir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	html, _ := os.ReadFile(filepath.Join(outputDir, "index.html"))
+	body := string(html)
+
+	// The lightbox script triggers off ".prose img" clicks
+	if !strings.Contains(body, ".prose img") {
+		t.Error("lightbox JS should reference '.prose img' selector")
+	}
+	if !strings.Contains(body, "lightbox") {
+		t.Error("lightbox JS/CSS should be embedded in every page")
+	}
+
+	// CSS rule for the overlay — search the (hashed) CSS files under assets/
+	cssFiles, _ := filepath.Glob(filepath.Join(outputDir, "assets", "*.css"))
+	found := false
+	for _, p := range cssFiles {
+		data, _ := os.ReadFile(p)
+		if strings.Contains(string(data), "lightbox") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("no CSS file under %s/assets contained .lightbox rules", outputDir)
+	}
+}
+
+// The ←/→ heading-nav row is rendered for every theme but starts hidden;
+// layout.js reveals it at modal-open time when --volcano-theme=presentation.
+// Static-HTML test just confirms the row exists with the toggle attribute.
+func TestHelpModalContainsPresentationOnlyHeadingShortcut(t *testing.T) {
+	outputDir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	exitCode := Run([]string{"-o", outputDir, "--url=https://example.com", "./example"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("Generation failed: %s", stderr.String())
+	}
+
+	html, _ := os.ReadFile(filepath.Join(outputDir, "index.html"))
+	body := string(html)
+
+	if !strings.Contains(body, "data-presentation-only") {
+		t.Error("help modal should contain a [data-presentation-only] row for layout.js to toggle")
+	}
+	if !strings.Contains(body, "Previous / next heading") {
+		t.Error("help modal should describe the ←/→ heading-nav shortcut")
 	}
 }
 

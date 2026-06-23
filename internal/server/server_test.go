@@ -325,6 +325,27 @@ func TestLogRequest300(t *testing.T) {
 	}
 }
 
+// Chrome DevTools probes /.well-known/appspecific/com.chrome.devtools.json
+// on every page load when DevTools is open. We still 404 it (correct behavior
+// — we don't expose a workspace map), but the log line was just noise.
+func TestLogRequest_SuppressesDevToolsProbe(t *testing.T) {
+	var buf bytes.Buffer
+	s := New(Config{Dir: ".", Port: 8080, Quiet: false}, &buf)
+
+	s.logRequest("GET", "/.well-known/appspecific/com.chrome.devtools.json", 404, 0)
+
+	if buf.Len() != 0 {
+		t.Errorf("DevTools probe should not log; got %q", buf.String())
+	}
+
+	// Sanity check the filter is path-specific — other /.well-known/ paths
+	// (e.g. security.txt, change-password) should still log normally.
+	s.logRequest("GET", "/.well-known/security.txt", 404, 0)
+	if !strings.Contains(buf.String(), "security.txt") {
+		t.Errorf("other /.well-known/ paths should still log; got %q", buf.String())
+	}
+}
+
 func TestResponseRecorder(t *testing.T) {
 	rec := httptest.NewRecorder()
 	rr := &responseRecorder{ResponseWriter: rec, statusCode: http.StatusOK}

@@ -96,6 +96,32 @@ func TestPresentationCSS(t *testing.T) {
 	}
 }
 
+func TestReadableCSS(t *testing.T) {
+	if ReadableCSS == "" {
+		t.Error("ReadableCSS should not be empty")
+	}
+
+	// Readable theme must declare the OpenDyslexic font stack
+	if !strings.Contains(ReadableCSS, "OpenDyslexic") {
+		t.Error("ReadableCSS should set OpenDyslexic as the primary font")
+	}
+
+	// Standard color variable scaffolding (light + dark)
+	for _, check := range []string{":root", "--bg-primary", "--text-primary", "[data-theme=\"dark\"]"} {
+		if !strings.Contains(ReadableCSS, check) {
+			t.Errorf("ReadableCSS should contain %q", check)
+		}
+	}
+
+	// Dyslexia-friendly typography choices we promise in the docs
+	if !strings.Contains(ReadableCSS, "letter-spacing") {
+		t.Error("ReadableCSS should set letter-spacing for dyslexia friendliness")
+	}
+	if !strings.Contains(ReadableCSS, "word-spacing") {
+		t.Error("ReadableCSS should set word-spacing for dyslexia friendliness")
+	}
+}
+
 func TestVanillaCSS(t *testing.T) {
 	if VanillaCSS == "" {
 		t.Error("VanillaCSS should not be empty")
@@ -127,6 +153,7 @@ func TestGetCSS(t *testing.T) {
 		{"docs", &DocsCSS},
 		{"blog", &BlogCSS},
 		{"presentation", &PresentationCSS},
+		{"readable", &ReadableCSS},
 		{"vanilla", &VanillaCSS},
 		{"", &DocsCSS},        // Default
 		{"invalid", &DocsCSS}, // Unknown falls back to docs
@@ -157,6 +184,7 @@ func TestValidateTheme(t *testing.T) {
 		{"docs", false},
 		{"blog", false},
 		{"presentation", false},
+		{"readable", false},
 		{"vanilla", false},
 		{"", false}, // Empty is valid (defaults to docs)
 		{"invalid", true},

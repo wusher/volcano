@@ -336,10 +336,72 @@ function isPresentationMode() {
 // Shortcuts modal
 function showShortcutsModal() {
     const modal = document.getElementById('shortcuts-modal');
-    if (modal && modal.showModal) modal.showModal();
+    if (!modal) return;
+    const presentation = isPresentationMode();
+    modal.querySelectorAll('[data-presentation-only]').forEach(function(el) {
+        el.hidden = !presentation;
+    });
+    if (modal.showModal) modal.showModal();
 }
 
 function closeShortcutsModal() {
     const modal = document.getElementById('shortcuts-modal');
     if (modal && modal.close) modal.close();
 }
+
+// Image lightbox: click any prose image to view it full-size.
+// Skip images that are already wrapped in a link (the link wins), and images
+// opted out with class="no-zoom".
+(function() {
+    let overlay = null;
+
+    function open(src, alt) {
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'lightbox';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-label', 'Image viewer');
+            const backdrop = document.createElement('div');
+            backdrop.className = 'lightbox-backdrop';
+            const img = document.createElement('img');
+            img.className = 'lightbox-image';
+            img.alt = '';
+            overlay.appendChild(backdrop);
+            overlay.appendChild(img);
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay || e.target.classList.contains('lightbox-backdrop') || e.target.classList.contains('lightbox-image')) {
+                    close();
+                }
+            });
+            document.body.appendChild(overlay);
+        }
+        const lightboxImg = overlay.querySelector('.lightbox-image');
+        lightboxImg.src = src;
+        lightboxImg.alt = alt || '';
+        overlay.classList.add('open');
+        document.body.classList.add('lightbox-open');
+    }
+
+    function close() {
+        if (overlay) {
+            overlay.classList.remove('open');
+            document.body.classList.remove('lightbox-open');
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        const img = e.target.closest('.prose img');
+        if (!img) return;
+        if (img.closest('a')) return;
+        if (img.classList.contains('no-zoom')) return;
+        e.preventDefault();
+        open(img.currentSrc || img.src, img.alt);
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && overlay && overlay.classList.contains('open')) {
+            close();
+        }
+    });
+})();
